@@ -37,6 +37,7 @@ from .engine import (
     explain,
     verify_numbers,
 )
+from .gemini_routes import router as gemini_router
 from .portfolio import ExposureIndex, open_index
 from .tenant import TenantAnswers, TorontoPack, quote_tenant
 
@@ -101,6 +102,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(gemini_router)
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------

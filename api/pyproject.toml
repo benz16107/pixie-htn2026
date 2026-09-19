@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "elasticsearch>=9.1.0,<10",
     "fastapi>=0.141.1",
+    "google-genai>=1.33.0",
     "h3>=4.5.0",
     "httpx>=0.28.1",
     "openai>=3.16.2",
