@@ -177,12 +177,12 @@ class World:
         for c in self.claims.values():
             self.claims_by_policy[c["policy"]].append(c)
 
-        # bound comparables by line: T4's estimate_premium reads this; built once here per "every
-        # dominant access pattern is an index built at World.load" (DESIGN.md).
+        # bound comparables by line: T4's estimate_premium reads this. A Policy record only exists
+        # once a submission binds, so every Policy is "bound" regardless of its later status
+        # (active/expired/non_renewed/cancelled all still carry a real technical_premium/TIV).
         self.bound_by_line: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for p in self.policies.values():
-            if p["status"] in ("bound", "active"):
-                self.bound_by_line[p["line_of_business"]].append(p)
+            self.bound_by_line[p["line_of_business"]].append(p)
 
     @staticmethod
     def load(snapshot_dir: str = DEFAULT_SNAPSHOT_DIR, packs: list[str] | None = None,
@@ -263,6 +263,19 @@ class World:
         b = self.buildings[bid]
         return Building(id=bid, tiv=b["tiv"], year_built=b["year_built"], construction=b["construction_type"],
                          sprinklered=b["sprinklered"], roof_year=b.get("roof_year"))
+
+    def bound_comparables(self, line: str) -> list[tuple[str, float, float]]:
+        """(policy_number, technical_premium, tiv) for every bound policy on `line` whose TIV is
+        resolvable. T4's estimate_premium reads this to build the premium comparables."""
+        out: list[tuple[str, float, float]] = []
+        for p in self.bound_by_line.get(line, []):
+            tp = p.get("technical_premium")
+            if not tp:
+                continue
+            tiv, _sites = self._tiv_via_policy(p)
+            if isinstance(tiv, Known) and tiv.v > 0:
+                out.append((p["policy_number"], float(tp), tiv.v))
+        return out
 
     def _tiv_via_policy(self, policy: dict[str, Any]) -> tuple[Value, tuple[Site, ...]]:
         """bound plan: Policy.exposure_units -> location -> buildings"""
