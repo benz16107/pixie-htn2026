@@ -9,7 +9,7 @@
     "141",
     "143"
   ],
-  "answerKey": "api/../eval/answer_key.yaml",
+  "answerKey": "eval/answer_key.yaml",
   "tiers": [
     {
       "tier": "engine (no model)",
