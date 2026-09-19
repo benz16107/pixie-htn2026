@@ -65,20 +65,82 @@ def send_text(store: CaseStore, text: str) -> dict[str, Any]:
     return body
 
 
+BLOCKING_ISSUE_TEXT = {
+    "duplicate_account": "duplicate account, two brokers",
+    "stale_submission": "stale submission, insured bound elsewhere",
+    "limit_vs_tiv": "requested limit far below insured value",
+}
+
+
+def _clip(text: str, n: int = 48) -> str:
+    """Cut on a word boundary: a phone shows one line per case."""
+    text = " ".join(text.split())
+    return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "..."
+
+
+def _open_fact(row: dict[str, Any], case: dict[str, Any] | None) -> tuple[str, str]:
+    """(fact, who can resolve it) for an open case: its flipper, else the fact still unresolved."""
+    flip = (row["decision"].get("flippers") or [{}])[0]
+    if flip.get("fact"):
+        return flip["fact"].replace("_", " "), flip.get("resolver", "broker")
+    # No flipper left: name the unresolved fact that can still fail the guideline, not just any estimate.
+    factors = (case or {}).get("factors", [])
+    unresolved = [f for f in factors if f["provenance"] in ("missing", "estimated")]
+    failing = [f for f in unresolved if "not_acceptable" in f["possible"]]
+    for f in failing or unresolved:
+        resolver = next((x.get("resolver", "broker") for x in (case or {}).get("facts", [])
+                          if x["id"] == f["fact"]), "broker")
+        return f["fact"].replace("_", " "), resolver
+    return "the last open fact", "broker"
+
+
+def _needs(row: dict[str, Any], asked: bool, case: dict[str, Any] | None = None) -> str:
+    """The one thing a human has to do about this case, from the row's own computed facts."""
+    decision = row["decision"]
+    if decision["kind"] == "open":
+        fact, who = _open_fact(row, case)
+        return f"{fact} missing, {who} asked" if asked else f"needs {fact} from the {who}"
+    issues = [i["kind"] for i in row.get("issues", []) if i["kind"] in BLOCKING_ISSUE_TEXT]
+    if decision["kind"] == "refer":
+        because = (decision.get("because") or [""])[0]
+        label = "consumer referral" if row.get("region") == "toronto" else "refer"
+        return f"{label}: {_clip(because)}"
+    if issues:
+        return BLOCKING_ISSUE_TEXT[issues[0]] + (", desk reviewed" if row.get("deepDived") else "")
+    if decision["kind"] == "routed":
+        return f"route to the {decision.get('to', 'right')} desk"
+    return f"{decision['kind']}, no open question"
+
+
 def digest_text(store: CaseStore, n: int = 3) -> tuple[str, list[str]]:
-    """The top n open cases by value at stake, numbered the way the reply commands index them."""
-    live = [c["queue"] for c in store.list_cases() if c["queue"]["status"] in ("received", "cleared", "quoted")]
-    work = sorted((r for r in live if r["decision"]["kind"] in ("open", "refer")), key=lambda r: -r["valueAtStake"])
-    rest = sorted((r for r in live if r not in work), key=lambda r: -r["valueAtStake"])
-    top = (work + rest)[:n]   # cases needing a call first, then the largest of the rest, kind named on each line
-    lines = ["Atlas desk: " + ("nothing open." if not top else f"{len(top)} to work.")]
+    """The cases that actually need a person, in that order: open first, then refers (including
+    consumer referrals), then deep-dived declines carrying a blocking data issue, then value order."""
+    rows = [c["queue"] for c in store.list_cases()]
+    live = [r for r in rows if r["status"] in ("received", "cleared", "quoted", "referred")]
+    by_value = sorted(live, key=lambda r: -r.get("valueAtStake", 0))
+    asked = {r["caseId"] for r in live
+             if any(o["status"] in ("sent", "dry") for o in store.outbox_for(r["caseId"]))}
+
+    buckets = [
+        [r for r in by_value if r["decision"]["kind"] == "open"],
+        [r for r in by_value if r["decision"]["kind"] == "refer"],
+        [r for r in by_value if r["decision"]["kind"] == "decline" and r.get("deepDived")
+         and any(i["kind"] in BLOCKING_ISSUE_TEXT for i in r.get("issues", []))],
+        by_value,
+    ]
+    top: list[dict[str, Any]] = []
+    for bucket in buckets:
+        for r in bucket:
+            if len(top) < n and r["caseId"] not in {x["caseId"] for x in top}:
+                top.append(r)
+
+    lines = ["Pixie: " + ("nothing needs you." if not top else f"{len(top)} need you.")]
     for i, r in enumerate(top, start=1):
-        score = f" {r['score']['lo']}-{r['score']['hi']}" if r.get("score") else ""   # routed cases have none
-        lines.append(f"{i}. {r['caseId']} {r['insured']} - {r['state']} {r['line']}, "
-                     f"${r['valueAtStake']:,.0f}, {r['decision']['kind']}{score}"
-                     + (f", needs {r['decision']['flippers'][0]['fact']}" if r["decision"].get("flippers") else ""))
+        stored = store.get_case(r["caseId"]) or {}
+        lines.append(f"{i}. {r['caseId']} {_clip(r['insured'], 28)}, {r['state']} {r['line']}: "
+                     f"{_needs(r, r['caseId'] in asked, stored.get('case'))}")
     if top:
-        lines.append(f"Reply: approve 1 / refer 2 / why {len(top)}")
+        lines.append(f"Reply: approve 1 / refer 2 / why {len(top)} (or just the number to approve)")
     return "\n".join(lines), [r["caseId"] for r in top]
 
 

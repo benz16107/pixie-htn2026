@@ -16,7 +16,8 @@ def test_request_broker_info_is_idempotent_and_lists_only_flippers(tmp_path, mon
 
     first = request_broker_info(store, case, a, RULES, "Lumen Data Works Inc")
     assert first["status"] == "dry" and first["facts"] == ["premium"]
-    assert "Grace Moreau" in first["body"] and "50,000-175,000" in first["body"]
+    assert "Grace Moreau" in first["body"] and "$50,000-$175,000" in first["body"]
+    assert "Pixie" in first["subject"] and "Pixie underwriting desk" in first["body"]
     assert "year built" not in first["body"] and first["to"].endswith("+broker@gmail.com")
 
     events = [e.kind for e in store.tail("138")]

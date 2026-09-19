@@ -28,6 +28,10 @@ COMPOSIO_URL = "https://backend.composio.dev/api/v3.1/tools/execute/{tool}"
 BROKER_INBOX = os.environ.get("ATLAS_BROKER_INBOX", "benz16107+broker@gmail.com")
 
 
+def _money_fact(fact: str) -> bool:
+    return fact in ("tiv", "premium", "loss_5yr")
+
+
 def _band_text(rules: RulesFile, fact: str) -> str:
     rule = next((r for r in rules.rules if r.fact == fact), None)
     if rule is None:
@@ -36,9 +40,10 @@ def _band_text(rules: RulesFile, fact: str) -> str:
     for band, pred in rule.bands.items():
         if band == "not_acceptable" or "else" in pred:
             continue
+        money = _money_fact(fact)
         if "between" in pred:
             lo, hi = pred["between"]
-            parts.append(f"{band} {lo:,}-{hi:,}")
+            parts.append(f"{band} {'$' if money else ''}{lo:,}-{'$' if money else ''}{hi:,}")
         elif "in" in pred:
             parts.append(f"{band} {', '.join(map(str, pred['in']))}")
         elif "lte" in pred:
@@ -54,10 +59,15 @@ def _band_text(rules: RulesFile, fact: str) -> str:
 
 def _value_text(case: Case, fact: str) -> str:
     v = case.fact(fact)
+    money = _money_fact(fact)
+
+    def fmt(x: Any) -> str:
+        return f"${x:,.0f}" if money and isinstance(x, (int, float)) else str(x)
+
     if isinstance(v, Known):
-        return f"we have {v.v} ({v.source})"
+        return f"we have {fmt(v.v)} ({v.source})"
     if isinstance(v, Estimated):
-        return f"we can only estimate {v.lo:,.0f}-{v.hi:,.0f} ({v.method})"
+        return f"we can only estimate {fmt(v.lo)}-{fmt(v.hi)} ({v.method})"
     return f"we have nothing on file ({v.reason})"
 
 
@@ -65,17 +75,20 @@ def compose_request(case: Case, a: Assessment, rules: RulesFile, insured: str, f
     """Subject, body and recipient for the broker information request. Every number is from the case."""
     contact_name = case.contact.v.split(" <")[0] if isinstance(case.contact, Known) else "there"
     case_no = case.id.removeprefix("SUB-")
+    named = ", ".join(f.replace("_", " ") for f in facts)
+    one = len(facts) == 1
     lines = [f"Hi {contact_name},", "",
-             f"On submission {case_no} for {insured}, our desk scored the risk at "
-             f"{a.score.lo:.0f}-{a.score.hi:.0f} out of 100. It stays open only because of the following, and "
-             f"each one changes the outcome:", ""]
+             f"We are working submission {case_no} for {insured}. It scores {a.score.lo:.0f}-{a.score.hi:.0f} "
+             f"against our 2025 property guideline, and {'one item' if one else f'{len(facts)} items'} still "
+             f"{'decides' if one else 'decide'} whether we can quote:", ""]
     for fact in facts:
         band = _band_text(rules, fact)
         lines.append(f"- {fact.replace('_', ' ')}: {_value_text(case, fact)}."
-                     + (f" The 2025 guideline bands are {band}." if band else ""))
-    lines += ["", "Anything else can wait; these are the fields that decide it.", "",
-              "Thanks,", "Atlas underwriting desk"]
-    return {"to": BROKER_INBOX, "subject": f"Submission {case_no} ({insured}): the facts that decide it",
+                     + (f" The guideline bands are {band}." if band else ""))
+    lines += ["", f"Send {'that' if one else 'those'} and we will re-rate the same day. Nothing else is "
+                  "holding it up.", "",
+              "Thanks,", "Pixie underwriting desk"]
+    return {"to": BROKER_INBOX, "subject": f"Pixie: submission {case_no} ({insured}), {named} needed",
             "body": "\n".join(lines)}
 
 
