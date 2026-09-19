@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import type { Actor, DeskEvent } from "@/contract";
 import { parseHazard, parseSkip, prettyBands } from "@/lib/format";
 
@@ -60,87 +61,95 @@ function headline(e: DeskEvent): { title: string; detail: string } {
 }
 
 /**
- * The case walks the desk: one station per agent, each holding what it produced, the case token
- * parked at whoever is working. Cards land as their events arrive.
+ * The case walks the desk. The rail is a real row of stations, one column each, and the band
+ * below it holds a single card: what the desk is saying right now, or the broker email when
+ * that moment comes. Everything earlier is in the chatter log, so nothing stacks.
  */
-export function StationLine({ events, caseTitle }: { events: DeskEvent[]; caseTitle: string }) {
+export function StationLine({
+  events,
+  caseTitle,
+  takeover,
+}: {
+  events: DeskEvent[];
+  caseTitle: string;
+  /** A moment that owns the card slot for as long as it lasts, e.g. the broker email. */
+  takeover?: ReactNode;
+}) {
   const loud = events.filter((e) => !QUIET.has(e.kind));
   const present = ORDER.filter((a) => loud.some((e) => e.actor === a));
   const stations = present.length ? present : ORDER.slice(0, 6);
   const latest = loud.at(-1);
-  const at = stations.indexOf((latest?.actor ?? "system") as Actor);
-  const step = 100 / (stations.length + 1);
-  // Seven stations do not fit seven cards. Show the four that spoke most recently.
-  const recent = new Set(
-    [...stations]
-      .map((a) => ({ a, t: loud.filter((e) => e.actor === a).at(-1)?.tMs ?? -1 }))
-      .sort((x, y) => y.t - x.t)
-      .slice(0, 4)
-      .map((x) => x.a),
-  );
+  const at = Math.max(0, stations.indexOf((latest?.actor ?? "system") as Actor));
+  const pct = ((at + 0.5) / stations.length) * 100;
+  const here = latest ? loud.filter((e) => e.actor === latest.actor).length : 0;
+  const h = latest ? headline(latest) : null;
+  const geo = !!latest && GEO.has(latest.actor);
 
   return (
-    <div className="pointer-events-none absolute inset-0">
-      <div className="absolute inset-x-0 top-[56%] h-[2px] bg-rule">
+    <section className="relative z-10 shrink-0 border-t border-ink bg-paper px-4 pb-2.5 pt-1.5" aria-label="Where the case is on the desk">
+      {/* the case token, alone on its row, so it can travel without meeting anything */}
+      <div className="relative h-[21px]">
         <div
-          className="absolute left-0 top-0 h-[2px] bg-ink transition-[width] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
-          style={{ width: `${(at + 1) * step}%` }}
-        />
-
-        {stations.map((a, i) => {
-          const mine = loud.filter((e) => e.actor === a);
-          const last = mine.at(-1);
-          const live = i === at;
-          const x = (i + 1) * step;
-          // Alternate the cards that are actually shown, so neighbours never sit at the same height.
-          const up = [...recent].sort((m, n) => stations.indexOf(m) - stations.indexOf(n)).indexOf(a) % 2 === 0;
-          const h = last ? headline(last) : null;
-          return (
-            <div key={a}>
-              <span
-                className={`absolute -top-[9px] -ml-[10px] size-5 rounded-full border-2 bg-paper ${
-                  live ? "border-rust shadow-[0_0_0_6px_rgba(162,73,47,0.14)]" : mine.length ? "border-ink bg-ink" : "border-rule"
-                }`}
-                style={{ left: `${x}%` }}
-              />
-              <span
-                className={`absolute top-[26px] -translate-x-1/2 whitespace-nowrap text-[10.5px] font-semibold uppercase tracking-[0.1em] ${live ? "text-rust" : "text-dim"}`}
-                style={{ left: `${x}%` }}
-              >
-                {NAME[a]}
-                {mine.length > 1 && <span className="ml-1 font-mono text-[9.5px] font-normal opacity-70">{mine.length}</span>}
-              </span>
-              {h && !recent.has(a) && (
-                <span className="absolute top-[44px] -translate-x-1/2 whitespace-nowrap font-mono text-[9.5px] text-dim" style={{ left: `${x}%` }}>
-                  {mine.length} step{mine.length > 1 ? "s" : ""}
-                </span>
-              )}
-              {h && recent.has(a) && (
-                <div
-                  className={`lane-card pointer-events-auto absolute w-[198px] rounded-sm border px-2.5 py-2 text-[11.5px] leading-snug ${
-                    up ? "bottom-[30px]" : "top-[48px]"
-                  } ${live ? "border-[1.5px] border-rust bg-paper" : GEO.has(a) ? "border-ochre bg-ochre-soft/95" : "border-rule bg-paper/96"}`}
-                  style={{ left: `clamp(8px, calc(${x}% - 99px), calc(100% - 206px))` }}
-                >
-                  <b className="mb-0.5 line-clamp-2 block font-semibold">{h.title}</b>
-                  <span className="line-clamp-3 block">{h.detail}</span>
-                  <span className="mt-1 block font-mono text-[9.5px] text-dim">
-                    t+{(last!.tMs / 1000).toFixed(0)}s{mine.length > 1 ? ` · ${mine.length} steps here` : ""}
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        <div
-          className="absolute -top-[17px] -ml-[58px] w-[116px] rounded-sm bg-ink px-2.5 py-1.5 text-paper transition-[left] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
-          style={{ left: `${(at + 1) * step}%`, zIndex: 3 }}
+          className="num absolute top-0 -translate-x-1/2 whitespace-nowrap rounded-sm bg-ink px-2 py-[2px] text-[10px] text-paper transition-[left] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          style={{ left: `clamp(66px, ${pct}%, calc(100% - 66px))` }}
         >
-          <b className="block text-[12px] font-medium">{caseTitle}</b>
-          <span className="font-mono text-[9.5px] opacity-75">{loud.length} steps so far</span>
+          {caseTitle} · {loud.length} steps
         </div>
       </div>
-    </div>
+
+      <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${stations.length}, minmax(0, 1fr))` }}>
+        <span aria-hidden className="absolute inset-x-0 top-[6px] h-[2px] bg-rule" />
+        <span
+          aria-hidden
+          className="absolute left-0 top-[6px] h-[2px] bg-ink transition-[width] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          style={{ width: `${pct}%` }}
+        />
+        {stations.map((a, i) => {
+          const mine = loud.filter((e) => e.actor === a);
+          const live = i === at;
+          return (
+            <li key={a} className="relative flex flex-col items-center gap-[5px]">
+              <span
+                className={`size-[14px] rounded-full border-2 bg-paper ${
+                  live ? "border-rust shadow-[0_0_0_5px_rgba(162,73,47,0.14)]" : mine.length ? "border-ink bg-ink" : "border-rule"
+                }`}
+              />
+              <span className={`truncate text-[10px] font-semibold uppercase tracking-[0.09em] ${live ? "text-rust" : mine.length ? "text-ink" : "text-dim"}`}>
+                {NAME[a]}
+              </span>
+              <span className="num text-[9px] text-dim">{mine.length ? `${mine.length} step${mine.length > 1 ? "s" : ""}` : "—"}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* one card slot: it swaps, it never stacks */}
+      <div className="mt-2 h-[104px]">
+        {takeover ??
+          (h && latest ? (
+            <article
+              key={latest.id}
+              className={`lane-card flex h-full flex-col overflow-hidden rounded-sm border px-3 py-2 text-[12px] leading-snug ${
+                geo ? "border-ochre bg-ochre-soft/70" : "border-ink bg-land/60"
+              }`}
+            >
+              <p className="kicker mb-0.5">{NAME[latest.actor] ?? latest.actor}</p>
+              <b className="block truncate font-semibold" title={h.title}>
+                {h.title}
+              </b>
+              {h.detail && (
+                <span className="mt-0.5 line-clamp-2 text-dim" title={h.detail}>
+                  {h.detail}
+                </span>
+              )}
+              <span className="num mt-auto pt-1 text-[9.5px] text-dim">
+                t+{(latest.tMs / 1000).toFixed(0)}s{here > 1 ? ` · ${here} steps here` : ""} · earlier steps are in the chatter log
+              </span>
+            </article>
+          ) : (
+            <p className="flex h-full items-center text-[12px] text-dim">The case has not reached a station yet.</p>
+          ))}
+      </div>
+    </section>
   );
 }
