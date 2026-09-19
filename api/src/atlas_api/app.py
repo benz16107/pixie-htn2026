@@ -372,3 +372,69 @@ class AskRequest(BaseModel):
 async def ask_route(req: AskRequest) -> dict[str, Any]:
     from .ask import ask
     return await ask(req.question.strip(), get_store())
+
+
+# ---------- actions (T11) and the queue event bus (T13) -------------------------------------------
+
+_bus: set[asyncio.Queue] = set()
+
+
+def publish(kind: str, data: dict[str, Any]) -> None:
+    """Fan a human decision or an action status out to every open /events/queue stream."""
+    for q in list(_bus):
+        q.put_nowait({"kind": kind, **data})
+
+
+def _case_and_assessment(case_id: str):
+    from .events import CaseFile
+    store = get_store()
+    case = _world.case(f"SUB-{case_id}")
+    run = store.latest_run(case_id)
+    if run:
+        for name, value in CaseFile.fold(store.tail(case_id, run_id=run)).facts.items():
+            case = case.with_fact(name, value, by="desk")
+    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    return case, assess(case, rules), rules
+
+
+@app.post("/cases/{case_id}/actions/request_info")
+@app.post("/actions/{case_id}/request-info")
+def action_request_info(case_id: str) -> dict[str, Any]:
+    from .actions import request_broker_info
+    from .events import ActionP
+
+    store, case_id = get_store(), case_id.removeprefix("SUB-")
+    if store.get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    case, a, rules = _case_and_assessment(case_id)
+    run = store.latest_run(case_id)
+    facts = next((e.payload.facts for e in reversed(store.tail(case_id, run_id=run) if run else [])
+                  if isinstance(e.payload, ActionP) and e.payload.action == "request_broker_info"), None)
+    out = request_broker_info(store, case, a, rules, store.get_case(case_id)["case"]["title"], facts)
+    apply_desk_run(store, _world, case_id) if run else None
+    publish("action", {"caseId": case_id, "status": out["status"], "channel": "gmail", "key": out["id"]})
+    return out
+
+
+@app.get("/outbox/{case_id}")
+def outbox(case_id: str) -> list[dict[str, Any]]:
+    return get_store().outbox_for(case_id.removeprefix("SUB-"))
+
+
+@app.get("/events/queue", response_model=None)
+async def queue_events(request: Request):
+    """SSE of human decisions and action status, for live queue rows (T13)."""
+    async def gen():
+        q: asyncio.Queue = asyncio.Queue()
+        _bus.add(q)
+        try:
+            yield "event: hello\ndata: {}\n\n"
+            while not await request.is_disconnected():
+                try:
+                    item = await asyncio.wait_for(q.get(), timeout=15)
+                    yield f"event: queue\ndata: {json.dumps(item)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
+        finally:
+            _bus.discard(q)
+    return StreamingResponse(gen(), media_type="text/event-stream")
