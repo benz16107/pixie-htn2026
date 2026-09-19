@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
+from . import insights_routes
 from .engine import (
     DEFAULT_RULES_DIR,
     Assessment,
@@ -79,6 +80,8 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _store = CaseStore.open()
     world = _world = World.load()
     _index = open_index(world)
+    from .precedent import open_precedent_index
+    insights_routes.init(world, open_precedent_index(world))
     rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
     for sub in world.submissions.values():
         case = world.case(f"SUB-{sub['id']}")
@@ -101,6 +104,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(insights_routes.router)
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------

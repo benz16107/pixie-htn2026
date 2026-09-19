@@ -44,6 +44,7 @@ from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, Confl
                      EstimateP, FindingP, GapP, NoteP, Option, Payload, PlanP, QueryP, QueryRetryP,
                      ResolutionP, RunStatsP, ScoreP, ToolCallP)
 from .portfolio import RADIUS_KM, ExposureIndex, open_index
+from .precedent import open_precedent_index
 
 API_DIR = Path(__file__).resolve().parents[2]
 Depth = Literal["skim", "standard", "deep"]
@@ -219,8 +220,9 @@ PROMPTS: dict[str, str] = {
     "hazard": (
         "You are Hazard. Call site_layers, then for each location decide which cached layers are worth reading "
         "for this site (use_layer) and which to skip (skip_layer) with a one-line reason each, e.g. skip earthquake "
-        "where the region is not seismic. Read at least flood. A missing layer is a gap, never a guess. Answer the "
-        "Lead's brief in 1-2 sentences. " + _NUMBERS_RULE),
+        "where the region is not seismic. Read at least flood. A missing layer is a gap, never a guess. Call "
+        "search_precedent once to cite what happened on comparable past risks the book already wrote or declined. "
+        "Answer the Lead's brief in 1-2 sentences. " + _NUMBERS_RULE),
     "portfolio": (
         "You are Portfolio. Call concentration to get the active property TIV already held near this case. "
         "Concentration counts TIV regardless of peril, so address one ask to hazard: which perils drive the risk "
@@ -403,6 +405,7 @@ class Desk:
         self.policy = policy or DeskPolicy()
         self.rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
         self.portfolio = open_index(world, max_penalty=(self.rules.portfolio_points or {}).get("max_penalty", 10))
+        self.precedent = open_precedent_index(world)
         self.sem = asyncio.Semaphore(self.policy.concurrency)
         self._fed = None
 
@@ -563,7 +566,23 @@ class Desk:
                                         provenance="external", skipped=source))
             return "skipped"
 
-        return [site_layers, use_layer, skip_layer]
+        @function_tool
+        def search_precedent() -> str:
+            """The 3 nearest past risks (bound or declined) to this case from the book, by hybrid
+            text+semantic search over pixie-precedent, and what happened to each (premium, incurred
+            losses, or why declined)."""
+            result = run.desk.precedent.search(run.case, k=3)
+            if not result.hits:
+                return "no comparable precedent in the book"
+            n_loss = sum(1 for h in result.hits if (h.incurred or 0) > 0)
+            cites = "; ".join(f"{h.insured} ({h.decision}): {h.outcome}" for h in result.hits)
+            text = (f"[{result.backend}] {len(result.hits)} similar past risks in the book: {cites}. "
+                    f"{n_loss} of {len(result.hits)} produced losses.")
+            run.post("hazard", FindingP(text=text, fact="precedent.search", provenance="known",
+                                        source=f"{result.backend}: pixie-precedent, {result.n} docs"))
+            return run.fact(text)
+
+        return [site_layers, use_layer, skip_layer, search_precedent]
 
     def _portfolio_tools(self, run: _CaseRun) -> list:
         @function_tool
