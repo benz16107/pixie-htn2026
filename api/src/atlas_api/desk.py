@@ -43,7 +43,7 @@ from .engine import (DEFAULT_RULES_DIR, Assessment, Decided, Open, Routed, Rules
 from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, ConflictP, DecisionP, DeskEvent,
                      EstimateP, FindingP, GapP, NoteP, Option, Payload, PlanP, QueryP, QueryRetryP,
                      ResolutionP, RunStatsP, ScoreP, ToolCallP)
-from .portfolio import RADIUS_KM, PortfolioIndex
+from .portfolio import RADIUS_KM, ExposureIndex, open_index
 
 API_DIR = Path(__file__).resolve().parents[2]
 Depth = Literal["skim", "standard", "deep"]
@@ -311,7 +311,7 @@ class _CaseRun:
 
 @dataclass
 class _PortfolioHook:
-    index: PortfolioIndex
+    index: ExposureIndex
     insured: int
 
     def impact(self, case: Case) -> Any:
@@ -402,7 +402,7 @@ class Desk:
         self.models = models or ModelConfig.from_env()
         self.policy = policy or DeskPolicy()
         self.rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
-        self.portfolio = PortfolioIndex(world, max_penalty=(self.rules.portfolio_points or {}).get("max_penalty", 10))
+        self.portfolio = open_index(world, max_penalty=(self.rules.portfolio_points or {}).get("max_penalty", 10))
         self.sem = asyncio.Semaphore(self.policy.concurrency)
         self._fed = None
 
@@ -574,11 +574,12 @@ class Desk:
                 run.post("portfolio", GapP(text="No site coordinates, concentration unknown",
                                            fact="portfolio.concentration", reason="no site", resolver="broker"))
                 return "gap: no site"
-            text = (f"{imp.n_locations} active property locations hold {_fmt_money(imp.near_tiv)} within "
-                    f"{RADIUS_KM:.0f} km ({_fmt_money(imp.cell_tiv)} in H3 cell {imp.cell}), {imp.points:+.1f} pts")
+            text = (f"[{imp.backend}] {imp.n_locations} active property locations hold {_fmt_money(imp.near_tiv)} "
+                    f"within {RADIUS_KM:.0f} km ({_fmt_money(imp.cell_tiv)} in H3 cell {imp.cell}), "
+                    f"{imp.points:+.1f} pts")
             run.post("portfolio", FindingP(text=text, fact="portfolio.concentration", value=imp.near_tiv,
                                            provenance="known", score_delta=imp.points,
-                                           source=f"policies {', '.join(imp.policies)}",
+                                           source=f"{imp.backend}: policies {', '.join(imp.policies)}",
                                            lat=run.case.sites[0].lat, lng=run.case.sites[0].lng,
                                            cells=[imp.cell, *imp.near_cells]))
             return run.fact(text + f"; policies {', '.join(imp.policies)}")

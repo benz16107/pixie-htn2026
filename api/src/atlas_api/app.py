@@ -37,6 +37,7 @@ from .engine import (
     explain,
     verify_numbers,
 )
+from .portfolio import ExposureIndex, open_index
 from .tenant import TenantAnswers, TorontoPack, quote_tenant
 
 load_dotenv()
@@ -63,6 +64,7 @@ _init_sentry()
 
 _store: CaseStore | None = None
 _world: World | None = None
+_index: ExposureIndex | None = None
 _tasks: set[asyncio.Task] = set()
 
 
@@ -73,9 +75,10 @@ def get_store() -> CaseStore:
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    global _store, _world
+    global _store, _world, _index
     _store = CaseStore.open()
     world = _world = World.load()
+    _index = open_index(world)
     rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
     for sub in world.submissions.values():
         case = world.case(f"SUB-{sub['id']}")
@@ -402,10 +405,9 @@ def map_pins() -> list[dict[str, Any]]:
 
 @app.get("/map/book")
 def map_book(res: int = 5, peril: str = "") -> list[dict[str, Any]]:
-    from .maps import book
     if res not in (3, 5, 7):
         raise HTTPException(status_code=400, detail="res must be 3, 5 or 7")
-    return book(_world, res, peril)
+    return _index.book(res, peril)
 
 
 # ---------- ask (T9) ----------------------------------------------------------------------------
