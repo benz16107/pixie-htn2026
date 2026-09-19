@@ -75,3 +75,13 @@ def test_events_endpoint_json_and_sse_replay_offline(tmp_path, monkeypatch):
         app_mod.apply_desk_run(app_mod.get_store(), app_mod._world, "138")
         view = client.get("/cases/138").json()
         assert view["explanation"] == "x" and view["explanationVerified"] is True
+
+
+def test_ask_serves_cache_and_says_so_offline(tmp_path, monkeypatch):
+    from atlas_api.ask import _key, ask
+    monkeypatch.setenv("ATLAS_OFFLINE", "1")
+    store = CaseStore.open(tmp_path / "ask.sqlite")
+    store.cache_set(_key("Open property submissions with no premium"), {"answer": "cached", "attempts": []})
+    assert asyncio.run(ask("open property  submissions with no premium", store))["answer"] == "cached"
+    miss = asyncio.run(ask("something new", store))
+    assert miss["attempts"] == [] and "Offline" in miss["answer"]

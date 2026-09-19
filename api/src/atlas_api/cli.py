@@ -101,10 +101,22 @@ def main() -> None:
     args = sys.argv[1:]
     if args[:1] == ["triage"]:
         triage()
+    elif args[:1] == ["ask"]:
+        import asyncio
+        import json
+
+        from .ask import CANNED, ask
+        from .case_store import CaseStore
+        async def run_all() -> None:
+            for q in (args[1:] or CANNED):
+                r = await ask(q, CaseStore.open(), use_cache=False)
+                print(json.dumps({"q": q, "attempts": [(a.get("lint"), a.get("error"), a["rows"]) for a in r["attempts"]],
+                                  "rows": len(r["rows"]), "answer": r["answer"]}, default=str))
+        asyncio.run(run_all())
     elif args[:1] == ["record"] and len(args) == 3 and args[1] == "--cases":
         record([c.strip().removeprefix("SUB-") for c in args[2].split(",") if c.strip()])
     else:
-        print("usage: atlas triage | atlas record --cases 138,126,143", file=sys.stderr)
+        print("usage: atlas triage | atlas record --cases 138,126,143 | atlas ask [question]", file=sys.stderr)
         raise SystemExit(2)
 
 

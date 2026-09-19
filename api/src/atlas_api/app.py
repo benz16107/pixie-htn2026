@@ -360,3 +360,15 @@ def map_book(res: int = 5, peril: str = "") -> list[dict[str, Any]]:
     if res not in (3, 5, 7):
         raise HTTPException(status_code=400, detail="res must be 3, 5 or 7")
     return book(_world, res, peril)
+
+
+# ---------- ask (T9) ----------------------------------------------------------------------------
+
+class AskRequest(BaseModel):
+    question: str
+
+
+@app.post("/ask")
+async def ask_route(req: AskRequest) -> dict[str, Any]:
+    from .ask import ask
+    return await ask(req.question.strip(), get_store())

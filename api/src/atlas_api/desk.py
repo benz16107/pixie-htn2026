@@ -54,6 +54,25 @@ Specialist = Literal["intake", "appetite", "hazard", "portfolio"]
 PRICES = {"gpt-6-astra": (10.0, 50.0), "gpt-5.6-luna": (0.20, 1.20), "gpt-5.6-sol": (4.0, 20.0)}
 
 
+# ---------- Federato: one client + schema graph per process ---------------------------------------
+
+_FED: tuple | None = None
+
+
+def federato_tools():
+    """(FederatoClient, SchemaGraph, QueryBuilder) with caches pinned under api/ whatever the cwd."""
+    global _FED
+    if _FED is None:
+        from .federato import FederatoClient, JsonFileCache, QueryBuilder, SchemaGraph
+        c = FederatoClient.from_env()
+        c.cache_dir, c.token_path = API_DIR / "cache", API_DIR / ".token"
+        c.query_cache = JsonFileCache(API_DIR / "cache" / "federato" / "q")
+        c._schema_cache_path = API_DIR / "cache" / "federato" / "schema.json"
+        graph = SchemaGraph.from_schema(c.schema())
+        _FED = (c, graph, QueryBuilder(graph))
+    return _FED
+
+
 # ---------- config ------------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -370,16 +389,7 @@ class Desk:
         return self.world.submissions[int(case_id)]["insured"]
 
     def federato(self):
-        if self._fed is None:
-            from .federato import FederatoClient, QueryBuilder, SchemaGraph
-            c = FederatoClient.from_env()
-            c.cache_dir, c.token_path = API_DIR / "cache", API_DIR / ".token"
-            from .federato import JsonFileCache
-            c.query_cache = JsonFileCache(API_DIR / "cache" / "federato" / "q")
-            c._schema_cache_path = API_DIR / "cache" / "federato" / "schema.json"
-            graph = SchemaGraph.from_schema(c.schema())
-            self._fed = (c, graph, QueryBuilder(graph))
-        return self._fed
+        return federato_tools()
 
     # ---- model turns --------------------------------------------------------------------------
 
