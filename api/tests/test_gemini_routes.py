@@ -54,9 +54,11 @@ class _Candidate:
 
 
 class _FakeResponse:
-    def __init__(self, text: str = "", candidates=None) -> None:
+    def __init__(self, text: str = "", candidates=None, executable_code: str = "", code_execution_result: str = "") -> None:
         self.text = text
         self.candidates = candidates or []
+        self.executable_code = executable_code
+        self.code_execution_result = code_execution_result
 
 
 class _FakeModels:
@@ -138,3 +140,22 @@ def test_speech_route_caches_wav_to_disk(client) -> None:
     r2 = c.get("/gemini/speech", params={"text": "Your quote is approved."})
     assert r2.content == r1.content
     assert fake.models.calls == 1  # second read came from the cached .wav
+
+
+def test_verify_route_trusts_python_not_the_models_prose(client) -> None:
+    """Gemini's own printed claim says the numbers don't match; code_execution_result is only
+    shown for transparency. `matches` must still come from summing in Python, per invariant 1."""
+    c, fake = client
+    fake.models.next = _FakeResponse(
+        executable_code="print(sum([100.0, 20.0]))",
+        code_execution_result="Sum: 120.00\nEquals 999.00: False",
+    )
+    r = c.post("/gemini/verify", json={"base": 100.0, "lines": [{"label": "X", "dollars": 20.0}], "total": 120.0})
+    body = r.json()
+    assert body["matches"] is True  # 100 + 20 == 120, regardless of what the fake model's text claims
+    assert "sum(" in body["code"]
+    assert fake.models.calls == 1
+
+    r2 = c.post("/gemini/verify", json={"base": 100.0, "lines": [{"label": "X", "dollars": 20.0}], "total": 120.0})
+    assert r2.json()["cached"] is True
+    assert fake.models.calls == 1

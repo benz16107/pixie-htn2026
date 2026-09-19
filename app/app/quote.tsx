@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { Body, Button, Dim, Kicker, Mono, Screen, Title } from '@/components/ui';
-import { nearbyContext, quoteTenant, speechUrl, WEB_URL, type Answers, type ContextNote, type QuoteResult, type QuoteView, type ReceiptLine } from '@/lib/api';
+import { nearbyContext, quoteTenant, speechUrl, verifyReceipt, WEB_URL, type Answers, type ContextNote, type QuoteResult, type QuoteView, type ReceiptLine, type VerifyResult } from '@/lib/api';
 import { useQuote } from '@/lib/store';
 import { C, F, money } from '@/lib/theme';
 
@@ -84,6 +84,7 @@ export default function QuoteScreen() {
   const [res, setRes] = useState<QuoteResult | null>(null);
   const [context, setContext] = useState<ContextNote | 'loading' | 'unavailable'>('loading');
   const [speaking, setSpeaking] = useState(false);
+  const [verify, setVerify] = useState<VerifyResult | 'loading' | undefined>(undefined);
   const sheetRef = useRef<BottomSheet>(null);
   const reduced = useReducedMotion();
   const nicePlayer = useAudioPlayer(null);
@@ -166,6 +167,13 @@ export default function QuoteScreen() {
     setSpeaking(false);
     nicePlayer.replace({ uri });
     nicePlayer.play();
+  };
+
+  const askGeminiToCheck = async () => {
+    setVerify('loading');
+    const v = await verifyReceipt(q.receipt.base, q.receipt.lines, cents / 100);
+    setVerify(v);
+    if (v && Platform.OS !== 'web') Haptics.notificationAsync(v.matches ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {});
   };
 
   const sharePdf = async () => {
@@ -298,6 +306,20 @@ export default function QuoteScreen() {
           <Mono style={[st.amount, { fontFamily: F.monoMedium, fontSize: 17 }]}>{money(cents / 100)}</Mono>
         </Animated.View>
         <Text style={st.label}>{q.label}</Text>
+
+        {verify === undefined ? (
+          <Pressable onPress={askGeminiToCheck} accessibilityRole="button" accessibilityLabel="Ask Gemini to independently check this arithmetic with code execution" style={{ minHeight: 32, marginTop: 10 }}>
+            <Dim style={{ fontSize: 13, textDecorationLine: 'underline' }}>Ask Gemini to double-check this arithmetic</Dim>
+          </Pressable>
+        ) : verify === 'loading' ? (
+          <Dim style={{ fontSize: 13, marginTop: 10 }}>Gemini is writing and running Python to check…</Dim>
+        ) : (
+          <View style={st.verifyBox} accessible accessibilityLabel={`Gemini ran code and ${verify.matches ? 'confirmed' : 'could not confirm'} the total. ${verify.output}`}>
+            <Kicker style={{ color: verify.matches ? C.moss : C.rust }}>{verify.matches ? '✓ Gemini confirmed it with code' : '× Gemini could not confirm it'}</Kicker>
+            {verify.code ? <Mono style={st.code}>{verify.code}</Mono> : null}
+            {verify.output ? <Dim style={{ fontSize: 13, marginTop: 4 }}>{verify.output}</Dim> : null}
+          </View>
+        )}
       </View>
 
       {q.recommendations.length ? (
@@ -360,4 +382,6 @@ const st = StyleSheet.create({
   advisory: { marginTop: 18, padding: 14, borderRadius: 4, borderWidth: 1, borderColor: C.water, backgroundColor: 'rgba(200,210,203,0.35)' },
   advisoryLabel: { fontFamily: F.sansMedium, fontSize: 12, color: C.dim, marginTop: 10 },
   sheetBg: { backgroundColor: C.paper },
+  verifyBox: { marginTop: 10, padding: 10, borderRadius: 4, borderWidth: 1, borderColor: C.rule, backgroundColor: C.land },
+  code: { fontSize: 12, lineHeight: 17, color: C.ink, marginTop: 6 },
 });

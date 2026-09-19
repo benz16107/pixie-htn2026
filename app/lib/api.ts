@@ -140,3 +140,16 @@ export async function nearbyContext(p: Place, kind: 'consumer' | 'commercial' = 
 export function speechUrl(text: string): string | undefined {
   return API ? `${API}/gemini/speech?text=${encodeURIComponent(text)}` : undefined;
 }
+
+export interface VerifyResult { matches: boolean; code: string; output: string; cached: boolean }
+
+// Bonus: asks Gemini to independently add up the same receipt lines with its code-execution tool.
+// `matches` is computed in Python on the server from these same numbers, never from Gemini's own
+// claim -- this is a transparency demo of a second check, not the check the quote itself relies on.
+export async function verifyReceipt(base: number, lines: ReceiptLine[], total: number): Promise<VerifyResult | undefined> {
+  return call<VerifyResult>(`/gemini/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ base, lines: lines.map((l) => ({ label: l.label, dollars: l.dollars })), total }),
+  });
+}

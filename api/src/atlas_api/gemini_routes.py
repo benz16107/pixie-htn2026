@@ -34,6 +34,7 @@ TTS_CACHE_DIR = REPO_ROOT / "cache" / "gemini_tts"
 
 INVENTORY_MODEL = "gemini-3.6-flash"
 CONTEXT_MODEL = "gemini-3.6-flash"
+VERIFY_MODEL = "gemini-3.6-flash"
 TTS_MODEL = "gemini-2.5-flash-preview-tts"
 TTS_VOICE = "Kore"
 
@@ -297,3 +298,58 @@ def speech(text: str) -> Response:
         path.write_bytes(_wav_bytes(pcm))
     return Response(content=path.read_bytes(), media_type="audio/wav",
                      headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
+# ---------- 4. bonus: Gemini code execution double-checks the receipt arithmetic -----------------
+#
+# `matches` is computed in Python from the same numbers the client already summed (invariant 1:
+# code decides, never the model's own claim). Gemini's generated code and its own printed answer
+# are shown only as a transparent, on-demand demo of a second, independent check -- the checkmark
+# the quote screen already shows above this is the one that counts.
+
+class VerifyLine(BaseModel):
+    label: str
+    dollars: float
+
+
+class VerifyRequest(BaseModel):
+    base: float
+    lines: list[VerifyLine]
+    total: float
+
+
+class VerifyResult(BaseModel):
+    matches: bool
+    code: str
+    output: str
+    cached: bool
+
+
+@router.post("/verify", response_model=VerifyResult)
+def verify(req: VerifyRequest) -> VerifyResult:
+    numbers = [req.base] + [l.dollars for l in req.lines]
+    key = "verify:" + _cache_key(str(numbers), f"{req.total:.2f}")
+    cached = _store().cache_get(key)
+    if cached is not None:
+        return VerifyResult(**cached, cached=True)
+
+    from google.genai import types
+
+    prompt = (
+        f"Write and run Python code that adds these numbers: {numbers}. "
+        f"Print the sum rounded to 2 decimal places, then print whether it equals {req.total:.2f}."
+    )
+    try:
+        resp = _client().models.generate_content(
+            model=VERIFY_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(tools=[types.Tool(code_execution=types.ToolCodeExecution())]),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemini code execution call failed: {exc}") from exc
+
+    matches = abs(round(sum(numbers), 2) - round(req.total, 2)) < 0.01
+    result = VerifyResult(matches=matches, code=(resp.executable_code or "").strip(),
+                          output=(resp.code_execution_result or "").strip(), cached=False)
+    _store().cache_set(key, result.model_dump(exclude={"cached"}))
+    return result
