@@ -132,7 +132,10 @@ export async function scanInventory(photoUris: string[]): Promise<InventoryOutco
 // "What's around you" (consumer) / underwriting note (commercial): Gemini Maps grounding.
 // Advisory only -- the caller must never fold this into a price.
 export async function nearbyContext(p: Place, kind: 'consumer' | 'commercial' = 'consumer'): Promise<ContextNote | undefined> {
-  return call<ContextNote>(`/gemini/context?lat=${p.lat}&lng=${p.lng}&kind=${kind}`);
+  // The address goes in too: without it the model answers "no location was provided".
+  return call<ContextNote>(
+    `/gemini/context?lat=${p.lat}&lng=${p.lng}&address=${encodeURIComponent(p.address)}&kind=${kind}`,
+  );
 }
 
 // URL for the cached Gemini TTS reading of `text`; undefined when no API is configured (the
