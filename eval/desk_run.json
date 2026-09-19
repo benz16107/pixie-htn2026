@@ -1,11 +1,11 @@
 {
  "138": {
-  "runId": "r1789854521",
-  "events": 37,
+  "runId": "r1789855234",
+  "events": 35,
   "byActor": {
    "system": 4,
    "lead": 6,
-   "intake": 9,
+   "intake": 7,
    "portfolio": 3,
    "hazard": 12,
    "appetite": 3
@@ -15,9 +15,8 @@
    "plan": 1,
    "ask": 2,
    "finding": 8,
-   "tool_call": 12,
+   "tool_call": 11,
    "estimate": 1,
-   "query_retry": 1,
    "query": 1,
    "answer": 2,
    "conflict": 2,
@@ -27,56 +26,12 @@
    "note": 1
   },
   "verdict": "request_info",
-  "explanation": "Keep the submission open pending broker confirmation and confirmed premium terms rather than declining on a comparable-based estimate. Review neighboring policies for shared hurricane and wind exposure before reassessing appetite, since the favorable flood finding does not settle the overall decision.",
+  "explanation": "Request broker confirmation of the actual premium before determining whether the submission meets the premium guideline. The favourable hazard findings do not override the premium uncertainty, and the overall assessment remains open; confirmation should inform reassessment rather than imply automatic acceptance.",
   "fallback": false,
-  "calls": 14,
-  "tokensIn": 11884,
-  "tokensOut": 1501,
-  "costUsd": 0.0331,
-  "seconds": 28.4
- },
- "126": {
-  "runId": "r1789854521",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "decline",
-  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 676,
-  "tokensOut": 352,
-  "costUsd": 0.0027,
-  "seconds": 9.3
- },
- "143": {
-  "runId": "r1789854521",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "decline",
-  "explanation": "Decline: business_type:not_acceptable, primary_admin:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 676,
-  "tokensOut": 352,
-  "costUsd": 0.0027,
-  "seconds": 9.3
+  "calls": 13,
+  "tokensIn": 10395,
+  "tokensOut": 1194,
+  "costUsd": 0.0341,
+  "seconds": 20.8
  }
 }

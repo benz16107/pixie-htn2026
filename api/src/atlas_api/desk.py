@@ -209,10 +209,12 @@ PROMPTS: dict[str, str] = {
         "in 1-2 sentences. " + _NUMBERS_RULE),
     "appetite": (
         "You are Appetite. Call assess_case: it runs the deterministic guideline engine on the case with every "
-        "finding folded in. You cannot change a score or a band. Narrate in 2-3 sentences what moved the interval "
-        "and any contradiction (a factor in target beside one that fails, or an estimate deciding a hard-fail "
-        "factor), and name which fact would resolve it and who can supply it. You may ask intake one question if a "
-        "fact it owns would resolve a contradiction. " + _NUMBERS_RULE),
+        "finding folded in. You cannot change a score or a band. Write `summary` as 2-3 plain sentences an "
+        "underwriter would say out loud, in this order: (1) what moved the interval and why, naming the fact and "
+        "the finding that moved it; (2) the contradiction, spelled out as 'X is in <band> but Y is not acceptable' "
+        "or 'the decision hangs on an estimate of Z'; (3) which single fact would settle it and who can supply it "
+        "(broker, intake, hazard, portfolio). Never write bare jargon like 'Open; interval 30-75'. You may ask "
+        "intake one question if a fact it owns would settle the contradiction. " + _NUMBERS_RULE),
     "answer": "Answer the question from another agent on the desk in 1-2 sentences, using your tools if needed. "
               + _NUMBERS_RULE,
     "lead_decide": (
