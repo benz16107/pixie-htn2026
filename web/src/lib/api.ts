@@ -1,5 +1,9 @@
 import type { AskResult, CaseView, DeskEvent, Hex, QueueRow } from "@/contract";
 import askFixture from "@/fixtures/ask.json";
+import backtestFixture from "@/fixtures/backtest.json";
+
+// contract.ts leaves BacktestView open; this is the shape the page reads (mirrors proof.BacktestReport).
+export type Backtest = typeof backtestFixture;
 import type { Pin } from "@/components/BookMap";
 import mapBook from "@/fixtures/map-book.json";
 import mapPins from "@/fixtures/map-pins.json";
@@ -78,6 +82,7 @@ export const api = {
   ask: async (question: string) =>
     (await postJson<AskResult>(`/ask`, { question })) ??
     ((askFixture as unknown as Record<string, AskResult>)[question] as AskResult | undefined),
+  backtest: async () => (await get<Backtest>(`/backtest`, () => backtestFixture)) as Backtest,
   requestInfo: (caseId: string) => post(`/actions/${caseId}/request-info`, {}),
   digest: (n: number) => post(`/actions/digest`, { n }),
 };
