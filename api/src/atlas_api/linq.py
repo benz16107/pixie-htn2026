@@ -136,9 +136,11 @@ def digest_text(store: CaseStore, n: int = 3) -> tuple[str, list[str]]:
 
     lines = ["Pixie: " + ("nothing needs you." if not top else f"{len(top)} need you.")]
     for i, r in enumerate(top, start=1):
-        stored = store.get_case(r["caseId"]) or {}
+        stored = (store.get_case(r["caseId"]) or {}).get("case") or {}
+        risks = len(((stored.get("challenge") or {}).get("risks")) or [])
+        flagged = f"; {risks} risk{'s' if risks != 1 else ''} flagged by the challenger" if risks else ""
         lines.append(f"{i}. {r['caseId']} {_clip(r['insured'], 28)}, {r['state']} {r['line']}: "
-                     f"{_needs(r, r['caseId'] in asked, stored.get('case'))}")
+                     f"{_needs(r, r['caseId'] in asked, stored)}{flagged}")
     if top:
         lines.append(f"Reply: approve 1 / refer 2 / why {len(top)} (or just the number to approve)")
     return "\n".join(lines), [r["caseId"] for r in top]

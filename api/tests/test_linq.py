@@ -87,3 +87,17 @@ def test_our_hmac_matches_the_signature_linq_really_sent(monkeypatch):
     assert verify(raw["body"].encode(), raw["headers"]) is True
     tampered = raw["body"].replace('"1"', '"2"')
     assert verify(tampered.encode(), raw["headers"]) is False
+
+
+def test_digest_mentions_the_challenger_risks(tmp_path, monkeypatch):
+    from atlas_api.case_store import CaseStore
+    store = CaseStore.open(tmp_path / "d.sqlite")
+    store.put_case("138", {
+        "queue": {"caseId": "138", "insured": "Lumen Data Works Inc", "line": "property", "state": "FL",
+                   "status": "cleared", "valueAtStake": 2_073_000, "score": {"lo": 30, "hi": 75},
+                   "decision": {"kind": "open", "flippers": [{"fact": "premium", "resolver": "broker"}]},
+                   "issues": [], "deepDived": True, "region": "us"},
+        "case": {"caseId": "138", "facts": [], "factors": [],
+                  "challenge": {"argument": "a", "risks": [{"risk": "r1"}, {"risk": "r2"}]}}})
+    text, ids = digest_text(store, 3)
+    assert ids == ["138"] and "2 risks flagged by the challenger" in text

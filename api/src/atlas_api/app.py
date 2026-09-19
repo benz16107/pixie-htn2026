@@ -272,7 +272,7 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     factors, portfolio line, the verified explanation, proposed actions. Deterministic, no model."""
     from . import layers
     from .desk import Desk
-    from .events import ActionP, CaseFile, DecisionP, FindingP
+    from .events import ActionP, CaseFile, ChallengeP, DecisionP, FindingP, ResponseP
 
     events = store.tail(case_id, run_id=store.latest_run(case_id))
     f = CaseFile.fold(events)
@@ -302,6 +302,14 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     if port:
         view["portfolio"] = {"line": port.text, "points": port.score_delta, "neighbourhoodTiv": port.value,
                              "threshold": 25_000_000}
+    challenge = next((e.payload for e in reversed(events) if isinstance(e.payload, ChallengeP)), None)
+    response = next((e.payload for e in reversed(events) if isinstance(e.payload, ResponseP)), None)
+    view["challenge"] = (None if challenge is None else {
+        "argument": challenge.argument, "source": challenge.source, "verified": challenge.verified,
+        "risks": [risk.model_dump() for risk in challenge.risks],
+        "changeMyMind": challenge.change_my_mind,
+        "responses": (response.responses if response else []),
+        "verdictChanged": bool(response.verdict_changed) if response else False})
     view["explanation"] = f.decision.explanation
     view["explanationVerified"] = True
     view["actions"] = [{"key": e.payload.action, "channel": "email", "status": e.payload.status,

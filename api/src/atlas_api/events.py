@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from .case import Estimated, Known, Missing, Value
 
-Actor = Literal["lead", "intake", "appetite", "hazard", "portfolio", "system", "human"]
+Actor = Literal["lead", "intake", "appetite", "hazard", "portfolio", "challenger", "system", "human"]
 Option = Literal["decline", "refer_with_subjectivity", "accept_with_subjectivity", "request_info", "route"]
 
 
@@ -134,6 +134,29 @@ class DecisionP(_P):
     action: str | None = None
 
 
+class RiskP(BaseModel):
+    risk: str
+    size: str                                  # sized from the case's own numbers, or says it cannot be
+    likelihood: str                            # plain words: "likely", "possible if the broker confirms"
+    remedy: str
+    grounded: bool = True
+
+
+class ChallengeP(_P):
+    kind: Literal["challenge"] = "challenge"
+    argument: str                              # the strongest case against the draft decision
+    risks: list[RiskP] = []
+    change_my_mind: list[str] = []             # evidence that would flip it, from the sensitivity output
+    source: Literal["model", "sensitivity"] = "model"
+    verified: bool = True
+
+
+class ResponseP(_P):
+    kind: Literal["response"] = "response"
+    responses: list[dict[str, Any]] = []       # [{risk, response, accepted}] one per challenged risk
+    verdict_changed: bool = False
+
+
 class ActionP(_P):
     kind: Literal["action"] = "action"
     action: str
@@ -182,12 +205,13 @@ class NoteP(_P):
 
 Payload = Annotated[Union[
     PlanP, QueryP, QueryRetryP, FindingP, EstimateP, GapP, AskP, AnswerP, ConflictP, ResolutionP,
-    AssessmentP, DecisionP, ActionP, ActionResultP, InboundP, ToolCallP, RunStatsP, NoteP,
+    AssessmentP, DecisionP, ChallengeP, ResponseP, ActionP, ActionResultP, InboundP, ToolCallP,
+    RunStatsP, NoteP,
 ], Field(discriminator="kind")]
 
 Kind = Literal["plan", "query", "query_retry", "finding", "estimate", "gap", "ask", "answer", "conflict",
-               "resolution", "assessment", "decision", "action", "action_result", "inbound", "tool_call",
-               "run_stats", "note"]
+               "resolution", "assessment", "challenge", "response", "decision", "action", "action_result",
+               "inbound", "tool_call", "run_stats", "note"]
 
 
 class DeskEvent(BaseModel):

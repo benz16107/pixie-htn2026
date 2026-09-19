@@ -40,9 +40,9 @@ from .case import Case, Estimated, Known, Missing, World
 from .case_store import CaseStore
 from .engine import (DEFAULT_RULES_DIR, Assessment, Decided, Open, Routed, RulesFile, assess,
                      estimate_premium, explain, risk_points)
-from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, ConflictP, DecisionP, DeskEvent,
-                     EstimateP, FindingP, GapP, NoteP, Option, Payload, PlanP, QueryP, QueryRetryP,
-                     ResolutionP, RunStatsP, ScoreP, ToolCallP)
+from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, ChallengeP, ConflictP, DecisionP,
+                     DeskEvent, EstimateP, FindingP, GapP, NoteP, Option, Payload, PlanP, QueryP, QueryRetryP,
+                     ResolutionP, ResponseP, RiskP, RunStatsP, ScoreP, ToolCallP)
 from .portfolio import RADIUS_KM, ExposureIndex, open_index
 
 API_DIR = Path(__file__).resolve().parents[2]
@@ -89,7 +89,7 @@ class ModelConfig:
 @dataclass(frozen=True)
 class DeskPolicy:
     concurrency: int = 4                 # agent turns in flight across the whole run
-    max_llm_calls_per_case: int = 20     # model requests (tool loops count each request)
+    max_llm_calls_per_case: int = 22     # model requests (tool loops count each request)
     max_ask_rounds: int = 2              # specialist-to-specialist rounds
     max_turns: int = 8                   # per agent turn
     max_query_attempts: int = 3          # Intake's lint/run/retry loop per turn
@@ -196,6 +196,31 @@ class LeadDecision(BaseModel):
     explanation: str
 
 
+class RiskOut(BaseModel):
+    risk: str
+    size: str          # sized from the case's own numbers, or say plainly that it cannot be sized
+    likelihood: str    # plain words
+    remedy: str        # subjectivity, higher deductible, inspection, a question to the broker, decline
+
+
+class ChallengeOut(BaseModel):
+    argument: str              # the strongest argument against the draft decision, citing facts
+    risks: list[RiskOut]
+    change_my_mind: list[str]  # the evidence that would flip it
+
+
+class RiskResponse(BaseModel):
+    risk: str
+    response: str
+    accepted: bool             # True if the Lead takes the remedy or concedes the point
+
+
+class LeadResponse(BaseModel):
+    responses: list[RiskResponse]
+    verdict: Option
+    explanation: str
+
+
 _NUMBERS_RULE = ("Never compute or invent a number. Only repeat numbers exactly as they appear in tool results "
                  "or the case digest; a checker rejects any other number.")
 
@@ -236,6 +261,20 @@ PROMPTS: dict[str, str] = {
         "intake one question if a fact it owns would settle the contradiction. " + _NUMBERS_RULE),
     "answer": "Answer the question from another agent on the desk in 1-2 sentences, using your tools if needed. "
               + _NUMBERS_RULE,
+    "challenger": (
+        "You are the Challenger on an underwriting desk: the devil's advocate. You get the case facts, every "
+        "specialist finding, the deterministic sensitivity analysis, and the Lead's draft decision. Write (a) the "
+        "strongest argument AGAINST that draft, citing specific facts; (b) 2 to 4 risks if the draft is wrong, each "
+        "sized from the case's own numbers and each with a likelihood in plain words; (c) a remedy per risk (a "
+        "subjectivity, a higher deductible, an inspection, a question to the broker, or decline with an invitation "
+        "to re-quote); (d) what would change your mind, taken from the sensitivity flip points. If a risk cannot be "
+        "sized from the numbers you were given, write 'cannot be sized from the case's own numbers' rather than "
+        "estimating one. " + _NUMBERS_RULE),
+    "lead_respond": (
+        "You are the Lead underwriter. The Challenger has argued against your draft decision. Respond to EVERY risk "
+        "by name: say whether you accept it (and take the remedy) or why it does not change the decision. Then give "
+        "your final verdict from `verdict_allowed` and a 2-3 sentence explanation. Changing your mind is allowed and "
+        "expected when the argument is good. " + _NUMBERS_RULE),
     "lead_decide": (
         "You are the Lead underwriter. Code has detected conflicts between specialists; resolve every one by picking "
         "an option from its `allowed` list only, with a one-sentence reason citing findings. Then pick the verdict "
@@ -763,24 +802,154 @@ class Desk:
         verdict = out.verdict if out and out.verdict in verdict_allowed else verdict_allowed[0]
         template = explain(a)
         explanation, verified = r.checked(out.explanation, template) if out else (template, True)
-        fallback = out is None or explanation == template
         if out and not verified:
             r.post("system", NoteP(text=f"verify_numbers rejected the Lead's explanation "
                                         f"({', '.join(verify_numbers(out.explanation, r.facts))}); template used"))
+
+        # The Challenger argues against the draft, and the Lead must answer every risk before deciding.
+        verdict, explanation, challenge_id = await self._challenge(r, case, a, verdict, explanation, findings)
+
+        fallback = out is None or explanation == template
         action = "request_broker_info" if verdict == "request_info" else None
         dec = DecisionP(text=f"{verdict.replace('_', ' ').capitalize()}: {explanation}", verdict=verdict,
                         explanation=explanation, verified=True, fallback=fallback,
                         action="Broker email proposed" if action else None)
-        r.post("lead", dec, refs=list(conflict_ids.values()))
+        self._gate_on_challenge(r)   # no decision event until every challenged risk has a response
+        r.post("lead", dec, refs=list(conflict_ids.values()) + ([challenge_id] if challenge_id else []))
         if action:
             flips = [fr.fact for fr in r.triage.factors if len(fr.possible) > 1] or ["premium"]
             r.post("lead", ActionP(text=f"Request from broker: {', '.join(flips)}", action=action, facts=flips))
         return self._close(r, case, a, dec)
 
+    async def _challenge(self, r: _CaseRun, case: Case, a: Assessment, verdict: Option, explanation: str,
+                         findings: list[str]) -> tuple[Option, str, str | None]:
+        """The sixth agent. Returns the (possibly changed) verdict, explanation, and the challenge event id.
+
+        Code gates the decision: a `response` event addressing every risk is posted before any decision
+        event, exactly like the conflict gate. Nothing the Challenger writes survives verify_numbers
+        failure, so a risk it cannot ground says so instead of carrying an invented number.
+        """
+        from .explain import sensitivity as sensitivity_report
+
+        sens = sensitivity_report(case, self.rules, CaseFile.fold(r.events()).hazard_multipliers or None)
+        r.fact(json.dumps(sens, default=str))
+        flips = [f["flip"]["text"] for f in sens["facts"] if f.get("flip")]
+
+        out: ChallengeOut | None = await self._turn(
+            r, Agent(name="challenger", instructions=PROMPTS["challenger"], model=self.models.specialist,
+                     output_type=ChallengeOut),
+            json.dumps({"case": r.case_id, "draft_verdict": verdict, "draft_explanation": explanation,
+                        "assessment": explain(a), "findings": findings,
+                        "sensitivity": {"decision": sens["decision"], "flips": flips,
+                                         "facts": [{"fact": f["fact"], "low": f["low"], "high": f["high"]}
+                                                    for f in sens["facts"]]}}, default=str),
+            reserve=1)
+        if out is None:
+            return self._deterministic_challenge(r, verdict, explanation, sens)
+
+        argument, ok = r.checked(out.argument, "The argument could not be grounded in the computed facts.")
+        risks: list[RiskP] = []
+        for risk in out.risks[:4]:
+            size, sized = r.checked(risk.size, "cannot be sized from the case's own numbers")
+            remedy, _ok = r.checked(risk.remedy, "ask the broker to confirm the open fact")
+            title, _t = r.checked(risk.risk, "risk stated without grounding")
+            risks.append(RiskP(risk=title, size=size, likelihood=risk.likelihood[:80], remedy=remedy,
+                               grounded=sized))
+        minds = [m for m in (r.checked(x, "")[0] for x in out.change_my_mind[:4]) if m] or flips
+        challenge = r.post("challenger", ChallengeP(
+            text=f"Against {verdict.replace('_', ' ')}: {argument[:160]}", argument=argument, risks=risks,
+            change_my_mind=minds, source="model", verified=ok))
+
+        allowed = allowed_options(a)
+        answer: LeadResponse | None = await self._turn(
+            r, Agent(name="lead", instructions=PROMPTS["lead_respond"], model=self.models.lead,
+                     output_type=LeadResponse),
+            json.dumps({"case": r.case_id, "draft_verdict": verdict, "draft_explanation": explanation,
+                        "verdict_allowed": allowed,
+                        "challenge": {"argument": argument,
+                                       "risks": [risk.model_dump() for risk in risks],
+                                       "change_my_mind": minds}}),
+            reserve=0)
+
+        answered = {x.risk: x for x in (answer.responses if answer else [])}
+        responses = []
+        for risk in risks:
+            match = answered.get(risk.risk) or next((x for x in answered.values()
+                                                      if x.risk[:24].lower() in risk.risk.lower()), None)
+            if match is None:
+                responses.append({"risk": risk.risk, "accepted": False,
+                                   "response": "The Lead did not address this risk; it stands on the record."})
+            else:
+                text, _ok = r.checked(match.response, "Addressed without citing a number.")
+                responses.append({"risk": risk.risk, "accepted": bool(match.accepted), "response": text})
+
+        final_verdict = answer.verdict if answer and answer.verdict in allowed else verdict
+        final_explanation = explanation
+        if answer:
+            candidate, ok_numbers = r.checked(answer.explanation, explanation)
+            final_explanation = candidate if ok_numbers else explanation
+        changed = final_verdict != verdict
+        r.post("lead", ResponseP(
+            text=("Answered the challenger: " + ("verdict changed to " + final_verdict.replace("_", " ")
+                                                  if changed else "verdict stands")),
+            responses=responses, verdict_changed=changed), refs=[challenge.id])
+        return final_verdict, final_explanation, challenge.id
+
+    def _gate_on_challenge(self, r: _CaseRun) -> None:
+        """The decision gate: a challenge with an unanswered risk blocks the decision event, so code
+        fills the gap with 'not addressed' rather than letting the decision slip through silently."""
+        events = r.events()
+        challenge = next((e.payload for e in reversed(events) if isinstance(e.payload, ChallengeP)), None)
+        if challenge is None:
+            return
+        answered = {x["risk"] for e in events if isinstance(e.payload, ResponseP)
+                    for x in e.payload.responses}
+        missing = [risk for risk in challenge.risks if risk.risk not in answered]
+        if missing:
+            r.post("lead", ResponseP(
+                text=f"Gate: {len(missing)} challenged risk(s) had no response; recorded as unaddressed",
+                responses=[{"risk": risk.risk, "accepted": False,
+                             "response": "Not addressed by the Lead before the decision."} for risk in missing],
+                verdict_changed=False))
+
+    def _deterministic_challenge(self, r: _CaseRun, verdict: Option, explanation: str,
+                                 sens: dict[str, Any]) -> tuple[Option, str, str | None]:
+        """No model call: the challenge is read straight off the sensitivity analysis. Used for skim
+        cases and whenever the Challenger turn is skipped by the budget."""
+        movers = [f for f in sens["facts"] if f.get("movesDecision")]
+        flips = [f["flip"]["text"] for f in sens["facts"] if f.get("flip")]
+        if movers:
+            argument = (f"{verdict.replace('_', ' ')} rests on facts that are not settled: "
+                        + "; ".join(f"{f['label'].lower()} is {f['provenance']} and its range spans "
+                                    f"{f['low'].get('decision')} to {f['high'].get('decision')}" for f in movers[:3]))
+            risks = [RiskP(risk=f"{f['label']} resolves against us",
+                           size=f"the interval moves {f['spread']:.0f} points across its range",
+                           likelihood="open until the resolver answers",
+                           remedy=f"ask the {f['resolver']} for {f['fact'].replace('_', ' ')}", grounded=True)
+                     for f in movers[:3]]
+        else:
+            argument = (f"No unresolved fact on this case can change {verdict.replace('_', ' ')}: every factor the "
+                        f"guideline reads is known.")
+            risks = []
+        challenge = r.post("challenger", ChallengeP(
+            text=f"Against {verdict.replace('_', ' ')}: {argument[:160]}", argument=argument, risks=risks,
+            change_my_mind=flips, source="sensitivity", verified=True))
+        r.post("lead", ResponseP(
+            text="Answered the challenger: verdict stands on the known facts",
+            responses=[{"risk": risk.risk, "accepted": False,
+                         "response": f"Noted; {risk.remedy} is the only route to change it, and the decision does "
+                                     f"not depend on a model's opinion."} for risk in risks],
+            verdict_changed=False), refs=[challenge.id])
+        return verdict, explanation, challenge.id
+
     def _template_decision(self, r: _CaseRun) -> CaseResult:
+        """Skim cases: no model call anywhere, and the challenge comes from the sensitivity analysis."""
+        from .explain import sensitivity as sensitivity_report
+
         a = r.triage
         verdict = allowed_options(a)[0]
         text = explain(a)
+        self._deterministic_challenge(r, verdict, text, sensitivity_report(r.case, self.rules))
         dec = DecisionP(text=f"{verdict.capitalize()}: {text}", verdict=verdict, explanation=text, verified=True,
                         fallback=True)
         r.post("lead", dec)
