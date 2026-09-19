@@ -451,15 +451,8 @@ class Desk:
 
     def _memo(self, r: _CaseRun) -> memory.CaseMemo:
         """What the desk is willing to remember about a case: who and what, not how much."""
-        c, sub = r.case, self.world.submissions[int(r.case_id)]
-        perils = sorted({k.split(":")[-1] for k in CaseFile.fold(r.events()).hazard_multipliers})
-        return memory.CaseMemo(
-            case_id=r.case_id,
-            insured=str(self.world.insureds.get(sub["insured"], {}).get("name", "?")),
-            broker=str(self.world.brokers.get(sub.get("broker"), {}).get("name", "unknown")),
-            state=str(c.primary_admin.v) if isinstance(c.primary_admin, Known) else "unknown",
-            business=str(c.business_type.v) if isinstance(c.business_type, Known) else "unknown",
-            issues=tuple(sorted({i.kind for i in c.issues})), perils=tuple(perils))
+        perils = tuple(sorted({k.split(":")[-1] for k in CaseFile.fold(r.events()).hazard_multipliers}))
+        return memory.memo_for(self.world, r.case_id, r.case, perils)
 
     async def _recall(self, runs: dict[str, _CaseRun]) -> list[str]:
         """Recall for the planning turn only. Two stores answer two questions: the per-underwriter

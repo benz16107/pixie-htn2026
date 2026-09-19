@@ -193,6 +193,14 @@ class RecallP(_P):
     advisory: bool = True                      # recall never supplies a number or a decision tier
 
 
+class JudgementP(_P):
+    kind: Literal["judgement"] = "judgement"
+    source: str                                # "backboard/system-one:jev-1.13.0"
+    answers: list[dict[str, Any]] = []         # [{question, answer, probability, confidence}]
+    model_number: bool = True                  # these numbers are the model's, never the engine's
+    about: str = ""                            # what was judged, e.g. "inbound broker message"
+
+
 class ToolCallP(_P):
     kind: Literal["tool_call"] = "tool_call"
     tool: str
@@ -223,12 +231,12 @@ class NoteP(_P):
 Payload = Annotated[Union[
     PlanP, QueryP, QueryRetryP, FindingP, EstimateP, GapP, AskP, AnswerP, ConflictP, ResolutionP,
     AssessmentP, DecisionP, ChallengeP, ResponseP, ActionP, ActionResultP, InboundP, GuardrailP,
-    RecallP, ToolCallP, RunStatsP, NoteP,
+    RecallP, JudgementP, ToolCallP, RunStatsP, NoteP,
 ], Field(discriminator="kind")]
 
 Kind = Literal["plan", "query", "query_retry", "finding", "estimate", "gap", "ask", "answer", "conflict",
                "resolution", "assessment", "challenge", "response", "decision", "action", "action_result",
-               "inbound", "guardrail", "recall", "tool_call", "run_stats", "note"]
+               "inbound", "guardrail", "recall", "judgement", "tool_call", "run_stats", "note"]
 
 
 class DeskEvent(BaseModel):

@@ -182,6 +182,6 @@ async def recall(sess: SQLiteSession, limit: int = 8, skip_case: str = "") -> li
     out = []
     for item in items:
         content = item.get("content") if isinstance(item, dict) else None
-        if isinstance(content, str) and content and not (skip_case and content.startswith(f"case {skip_case} ")):
+        if isinstance(content, str) and content and content.split(";")[0].strip() != f"case {skip_case}":
             out.append(content)
     return out

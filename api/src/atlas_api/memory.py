@@ -55,8 +55,14 @@ BOUNDARY = ("Advisory only: memory may shape which questions get asked and how t
             "list, so the verify_numbers guardrail rejects any sentence that repeats one.")
 
 
+def offline() -> bool:
+    return os.environ.get("ATLAS_OFFLINE") == "1"
+
+
 def enabled() -> bool:
-    return bool(os.environ.get("BACKBOARD_API_KEY"))
+    """Live only with a key and only when the demo is not pinned offline. `ATLAS_OFFLINE=1` still
+    serves the disk cache below, so a recorded recall replays with the network unplugged."""
+    return bool(os.environ.get("BACKBOARD_API_KEY")) and not offline()
 
 
 # ---------- the memo: one shape for both memories (Backboard) and recall (SQLiteSession) ----------
@@ -84,6 +90,20 @@ class CaseMemo:
     def query(self) -> str:
         return (f"What has this desk seen before from broker {self.broker}, from insured "
                 f"{self.insured}, in {self.state}, on {self.business} property risks?")
+
+
+def memo_for(world: Any, case_id: str, case: Any, perils: tuple[str, ...] = ()) -> CaseMemo:
+    """The one builder both the desk and the API use, so they remember the same shape of thing."""
+    from .case import Known
+
+    sub = world.submissions[int(case_id)]
+    return CaseMemo(
+        case_id=case_id,
+        insured=str(world.insureds.get(sub["insured"], {}).get("name", "?")),
+        broker=str(world.brokers.get(sub.get("broker"), {}).get("name", "unknown")),
+        state=str(case.primary_admin.v) if isinstance(case.primary_admin, Known) else "unknown",
+        business=str(case.business_type.v) if isinstance(case.business_type, Known) else "unknown",
+        issues=tuple(sorted({i.kind for i in case.issues})), perils=perils)
 
 
 @dataclass(frozen=True)
@@ -145,7 +165,8 @@ async def recall(memo: CaseMemo, limit: int = 5, cite_guideline: bool = False) -
     if hit is not None:
         return Recall(lines=hit["lines"], guideline=hit.get("guideline", ""), source="cache")
     if not enabled():
-        return Recall(source="off", detail="BACKBOARD_API_KEY is unset; see docs/BACKBOARD.md")
+        return Recall(source="off", detail="offline: this recall is not in the cache" if offline()
+                      else "BACKBOARD_API_KEY is unset; see docs/BACKBOARD.md")
     client = _client()
     try:
         aid = await assistant_id(client)
@@ -221,7 +242,8 @@ async def judge(state: Any, questions: dict[str, Any]) -> tuple[list[Judgement],
     must label every number as a model judgement and must never feed one into a score or a price.
     """
     if not enabled():
-        return [], "BACKBOARD_API_KEY is unset; see docs/BACKBOARD.md"
+        return [], ("offline: no cached judgement for this message" if offline()
+                    else "BACKBOARD_API_KEY is unset; see docs/BACKBOARD.md")
     cache = _cache()
     key = _key("judge", repr(state), repr(sorted(questions)))
     hit = cache.get(key)

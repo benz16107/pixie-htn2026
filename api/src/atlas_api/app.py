@@ -27,6 +27,7 @@ from . import composio_routes
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
 from . import insights_routes
+from . import openai_routes
 from .engine import (
     DEFAULT_RULES_DIR,
     Assessment,
@@ -91,6 +92,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _index = open_index(world)
     from .precedent import open_precedent_index
     insights_routes.init(world, open_precedent_index(world))
+    openai_routes.init(world, _store)
     rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
     for sub in world.submissions.values():
         case = world.case(f"SUB-{sub['id']}")
@@ -117,6 +119,7 @@ app.include_router(insights_routes.router)
 app.include_router(composio_routes.router)  # A7: Composio actions beyond the one email
 app.include_router(linq_router)  # A5: tapbacks, typing, receipt images, in-thread quotes
 app.include_router(gemini_router)  # A6: photo inventory, Maps grounding, TTS, code-execution check
+app.include_router(openai_routes.router)  # A1: OpenAI runtime settings, Backboard memory and judgements
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------
