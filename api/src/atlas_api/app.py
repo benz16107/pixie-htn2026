@@ -310,12 +310,16 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
         "changeMyMind": challenge.change_my_mind,
         "responses": (response.responses if response else []),
         "verdictChanged": bool(response.verdict_changed) if response else False})
+    # The engine's `decision` is the guideline's; `deskVerdict` is what the Lead settled on after the
+    # conflicts and the Challenger, which can differ (a decline the desk refers with subjectivities).
+    view["deskVerdict"] = f.decision.verdict
     view["explanation"] = f.decision.explanation
     view["explanationVerified"] = True
     view["actions"] = [{"key": e.payload.action, "channel": "email", "status": e.payload.status,
                         "at": str(e.ts)} for e in events if isinstance(e.payload, ActionP)]
     row = data["queue"]
-    row.update(score=view["score"], decision=view["decision"],
+    row.update(score=view["score"], decision=view["decision"], deskVerdict=f.decision.verdict,
+               challengeRisks=len((view.get("challenge") or {}).get("risks") or []),
                deepDived=any(e.actor not in ("system", "lead") for e in events),
                enrichmentDelta=0 if view["score"] is None else round(a.score.mid - bare.score.mid))
     store.put_case(case_id, {"queue": row, "case": view})

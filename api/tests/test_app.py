@@ -31,8 +31,8 @@ def test_queue_open_returns_21_rows_under_500ms(client):
     assert elapsed_ms < 500
 
     row = rows[0]
-    assert set(row) == {"caseId", "insured", "line", "state", "status", "valueAtStake", "region",
-                         "score", "decision", "issues", "deepDived", "enrichmentDelta"}
+    assert {"caseId", "insured", "line", "state", "status", "valueAtStake", "region",
+             "score", "decision", "issues", "deepDived", "enrichmentDelta"} <= set(row)
     assert row["region"] == "us" and set(row["score"]) == {"lo", "hi"}
     assert row["decision"]["kind"] in {"accept", "refer", "decline", "approve", "open", "routed"}
 
