@@ -1,11 +1,12 @@
 from pathlib import Path
 import sys
 
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from packs.toronto.layers import TorontoPack  # noqa: E402
+from packs.toronto.layers import TorontoPack, _elastic_client  # noqa: E402
 
 
 def test_three_demo_addresses_have_different_factors() -> None:
@@ -36,3 +37,17 @@ def test_map_rings_are_closed_lat_lng() -> None:
     assert hexes
     assert all(item["ring"][0] == item["ring"][-1] for item in hexes)
     assert all(-90 <= lat <= 90 and -180 <= lng <= 180 for item in hexes for lat, lng in item["ring"])
+
+
+def test_elastic_flood_and_fire_lookup_agrees_with_local() -> None:
+    """ST_INTERSECTS/ST_DISTANCE against toronto-flood-zones/toronto-fire-stations should find the
+    same flood study area the local point-in-polygon check finds, and a plausible fire distance.
+    Skips (not fails) when Elastic or the two indices aren't reachable (AGENTS.md invariant 4;
+    run scripts/load_toronto_layers.py to load them)."""
+    pack = TorontoPack()
+    if pack._client is None:
+        pytest.skip("Elastic unreachable; run scripts/load_toronto_layers.py against a live project")
+    basement = pack.profile_point(43.6903801, -79.4594893, unit_level="basement")
+    assert basement.backend == "elastic"
+    assert basement.basement_flooding_study_area == "BFA3"   # same asset id the local check finds
+    assert 0 < basement.fire_station_km < 10

@@ -133,8 +133,8 @@ def _receipt(profile: TorontoProfile, answers: TenantAnswers, rules: RulesFile) 
     multiply("Break-ins near you", profile.break_ins_multiplier, break_source,
              profile.break_ins_multiplier in {0.92, 1.10})
     multiply("Fire protection", profile.fire_multiplier,
-             f"Toronto Fire Stations: nearest {profile.fire_station_km:.1f} km")
-    water_source = "Toronto basement flooding study areas"
+             f"[{profile.backend}] Toronto Fire Stations: nearest {profile.fire_station_km:.1f} km")
+    water_source = f"[{profile.backend}] Toronto basement flooding study areas"
     if profile.basement_flooding_study_area:
         water_source += f" {profile.basement_flooding_study_area}"
     if answers.unit_level == "upper":
@@ -192,10 +192,10 @@ def _case_view(
                 {"peril": "break_ins", "line": f"Break-ins within one cell ring: {profile.ring_count}",
                  "applied": profile.break_ins_multiplier, "capped": profile.break_ins_multiplier in {0.92, 1.10},
                  "source": "TPS Break and Enter 2023-2026", "citation": "https://data.torontopolice.on.ca/"},
-                {"peril": "fire", "line": f"Fire station {profile.fire_station_km:.1f} km away",
+                {"peril": "fire", "line": f"[{profile.backend}] Fire station {profile.fire_station_km:.1f} km away",
                  "applied": profile.fire_multiplier, "capped": False, "source": "Toronto Fire Stations",
                  "citation": "https://open.toronto.ca/dataset/fire-station-locations/"},
-                {"peril": "water", "line": "Basement flooding study-area lookup",
+                {"peril": "water", "line": f"[{profile.backend}] Basement flooding study-area lookup",
                  "applied": profile.water_multiplier, "capped": False,
                  "source": "Toronto Basement Flooding Study Areas",
                  "citation": "https://open.toronto.ca/dataset/basement-flooding-study-areas/"},

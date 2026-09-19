@@ -11,6 +11,7 @@ import argparse
 import bisect
 import json
 import math
+import os
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +24,52 @@ ROOT = Path(__file__).resolve().parent
 RAW = ROOT / "raw"
 SCORES_PATH = ROOT / "hex_scores.json"
 PACK_PATH = ROOT / "pack.yaml"
+
+# ---- Elastic: live ES|QL geo lookups, exact-point instead of the H3-cell-center-baked local scores.
+# A standalone helper (not importing atlas_api) so packs/ stays a region pack the api reaches into,
+# never the other way. TorontoPack falls back to the local flood-polygon/haversine math below whenever
+# Elastic is unreachable or unset, same "prefer Elastic, fall back silently" shape as
+# atlas_api.portfolio.ExposureIndex (AGENTS.md invariant 4: the demo never blanks out).
+FLOOD_INDEX = "toronto-flood-zones"
+FIRE_INDEX = "toronto-fire-stations"
+
+
+def _elastic_client() -> Any | None:
+    url = os.environ.get("ELASTIC_URL")
+    user, pw = os.environ.get("ELASTIC_USERNAME"), os.environ.get("ELASTIC_PASSWORD")
+    if not (url and user and pw):
+        return None
+    try:
+        from elasticsearch import Elasticsearch
+        client = Elasticsearch(url, basic_auth=(user, pw), request_timeout=3)
+        if not client.ping():
+            return None
+        return client
+    except Exception:
+        return None
+
+
+def _esql_rows(client: Any, query: str) -> list | None:
+    """None = Elastic didn't answer (caller falls back to local); [] is a real empty result."""
+    try:
+        return client.esql.query(query=query).body["values"]
+    except Exception:
+        return None
+
+
+def _elastic_lookup(client: Any, lat: float, lng: float) -> tuple[str | None, float | None] | None:
+    """(basement flood study-area asset id or None, nearest fire station km) from live ES|QL against
+    the exact point, or None entirely if Elastic didn't answer either query."""
+    point = f'TO_GEOPOINT("POINT({lng} {lat})")'
+    flood_rows = _esql_rows(client, f"FROM {FLOOD_INDEX} | WHERE ST_INTERSECTS({point}, shape) "
+                                     f"| KEEP asset_id | LIMIT 1")
+    fire_rows = _esql_rows(client, f"FROM {FIRE_INDEX} | EVAL d = ST_DISTANCE(location, {point}) "
+                                    f"| SORT d ASC | LIMIT 1 | KEEP d")
+    if flood_rows is None or fire_rows is None:
+        return None
+    study_area = flood_rows[0][0] if flood_rows else None
+    fire_km = fire_rows[0][0] / 1000.0 if fire_rows else None
+    return study_area, fire_km
 
 
 def _load(name: str) -> dict[str, Any]:
@@ -200,6 +247,7 @@ class TorontoProfile:
     fire_station_km: float
     fire_multiplier: float
     total: float
+    backend: str = "local"   # "elastic" | "local" -- which one answered the flood/fire lookup
 
 
 class TorontoPack:
@@ -215,22 +263,34 @@ class TorontoPack:
             _point(feature["geometry"])
             for feature in json.loads((root / "raw" / "fire_stations.geojson").read_text())["features"]
         ]
+        self._client = _elastic_client()   # pinged once per pack instance, not per quote
 
     def profile_point(self, lat: float, lng: float, *, unit_level: str = "upper") -> TorontoProfile:
         cell = h3.latlng_to_cell(lat, lng, int(self.config["h3_resolution"]))
         record = self.cells.get(cell)
         if record is None:
             raise ValueError("point is outside the scored pack")
-        study_area = next(
-            (
-                feature["properties"].get("Asset Identification")
-                for feature in self.flood_features
-                if _contains(feature["geometry"], lat, lng)
-            ),
-            None,
-        )
+
+        live = _elastic_lookup(self._client, lat, lng) if self._client is not None else None
+        if live is not None:
+            backend = "elastic"
+            study_area, fire_station_km = live
+            fire_station_km = fire_station_km if fire_station_km is not None else record["fire_station_km"]
+            fire_multiplier = 1.0 if fire_station_km <= 1.5 else 1.03 if fire_station_km <= 3.0 else 1.05
+        else:
+            backend = "local"
+            study_area = next(
+                (
+                    feature["properties"].get("Asset Identification")
+                    for feature in self.flood_features
+                    if _contains(feature["geometry"], lat, lng)
+                ),
+                None,
+            )
+            fire_station_km, fire_multiplier = record["fire_station_km"], record["fire_multiplier"]
+
         water = 1.10 if study_area and unit_level in {"basement", "ground"} else 1.0
-        total = _clamp(record["break_ins_multiplier"] * record["fire_multiplier"] * water, 0.85, 1.25)
+        total = _clamp(record["break_ins_multiplier"] * fire_multiplier * water, 0.85, 1.25)
         return TorontoProfile(
             cell=cell,
             ring_count=record["ring_count"],
@@ -238,9 +298,10 @@ class TorontoPack:
             break_ins_multiplier=record["break_ins_multiplier"],
             basement_flooding_study_area=study_area,
             water_multiplier=water,
-            fire_station_km=record["fire_station_km"],
-            fire_multiplier=record["fire_multiplier"],
+            fire_station_km=round(fire_station_km, 3),
+            fire_multiplier=fire_multiplier,
             total=round(total, 4),
+            backend=backend,
         )
 
     def map_hexes(self, lat: float, lng: float, k: int = 3) -> list[dict[str, Any]]:
