@@ -61,11 +61,50 @@ def triage() -> None:
     print(f"\n{len(rows)} submissions triaged.")
 
 
+def record(case_ids: list[str]) -> None:
+    """Run the desk live on `case_ids`, store the events (var/atlas.sqlite) for replay, and write
+    eval/desk_run.json with per-case events per actor, calls, cost and wall time."""
+    import asyncio
+    import json
+    from collections import Counter
+    from pathlib import Path
+
+    from dotenv import load_dotenv
+
+    from . import app as _app  # noqa: F401  Sentry init (OpenAIAgentsIntegration) when SENTRY_DSN_API is set
+    from .case_store import CaseStore
+    from .desk import Desk
+
+    load_dotenv()
+    store = CaseStore.open()
+    desk = Desk(World.load(), store)
+    results = asyncio.run(desk.run(case_ids))
+    report = {}
+    for cid, res in results.items():
+        events = store.tail(cid, run_id=store.latest_run(cid))
+        by_actor = Counter(e.actor for e in events)
+        report[cid] = {
+            "runId": events[0].run_id if events else None, "events": len(events), "byActor": dict(by_actor),
+            "kinds": dict(Counter(e.kind for e in events)), "verdict": res.decision.verdict,
+            "explanation": res.decision.explanation, "fallback": res.decision.fallback,
+            "calls": res.calls, "tokensIn": res.tokens_in, "tokensOut": res.tokens_out,
+            "costUsd": round(res.cost_usd, 4), "seconds": round(res.seconds, 1),
+        }
+        print(f"{cid}: {res.decision.verdict} in {res.seconds:.0f} s, {res.calls} calls, ${res.cost_usd:.3f}; "
+              f"events {dict(by_actor)}")
+    out = Path(__file__).resolve().parents[3] / "eval" / "desk_run.json"
+    out.write_text(json.dumps(report, indent=1))
+    print(f"wrote {out}")
+
+
 def main() -> None:
-    if len(sys.argv) > 1 and sys.argv[1] == "triage":
+    args = sys.argv[1:]
+    if args[:1] == ["triage"]:
         triage()
+    elif args[:1] == ["record"] and len(args) == 3 and args[1] == "--cases":
+        record([c.strip().removeprefix("SUB-") for c in args[2].split(",") if c.strip()])
     else:
-        print("usage: atlas triage", file=sys.stderr)
+        print("usage: atlas triage | atlas record --cases 138,126,143", file=sys.stderr)
         raise SystemExit(2)
 
 
