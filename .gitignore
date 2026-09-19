@@ -1,0 +1,10 @@
+.env
+.token
+**/.venv/
+**/node_modules/
+**/.next/
+**/.expo/
+cache/
+*.pyc
+__pycache__/
+.DS_Store
