@@ -73,6 +73,12 @@ def test_case_not_found_is_404(client):
     assert client.get("/cases/999999").status_code == 404
 
 
+def test_backtest_route_serves_generated_report(client):
+    report = client.get("/backtest")
+    assert report.status_code == 200
+    assert report.json()["b4"]["factors"][0]["declines"] == 17
+
+
 def test_cors_allows_web_localhost(client):
     resp = client.get("/health", headers={"Origin": "http://localhost:3000"})
     assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"

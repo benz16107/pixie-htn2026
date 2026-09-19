@@ -10,8 +10,10 @@ components render real data unchanged.
 from __future__ import annotations
 
 import os
+import json
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, AsyncIterator, Literal
 
 from dotenv import load_dotenv
@@ -36,6 +38,8 @@ from .engine import (
 from .tenant import TenantAnswers, TorontoPack, quote_tenant
 
 load_dotenv()
+
+BACKTEST_PATH = Path(__file__).resolve().parents[3] / "eval" / "backtest.json"
 
 
 def _init_sentry() -> None:
@@ -276,3 +280,10 @@ def map_toronto(lat: float, lng: float, k: int = 3) -> list[dict[str, Any]]:
     if not 0 <= k <= 6:
         raise HTTPException(status_code=422, detail="k must be between 0 and 6")
     return _tenant_pack().map_hexes(lat, lng, k)
+
+
+@app.get("/backtest")
+def backtest_report() -> dict[str, Any]:
+    if not BACKTEST_PATH.exists():
+        raise HTTPException(status_code=503, detail="backtest has not been generated")
+    return json.loads(BACKTEST_PATH.read_text())
