@@ -22,6 +22,12 @@ Report: how many the desk also declines, and how many for the matching reason.
 ## B3. Enrichment effect (all scored property cases)
 Score each case with external hazard layers on vs off. Report the cases whose decision tier changes, naming the factor that changed it.
 
+**Added after the first run (2026-09-20), with the reason.** The pre-registered metric came back 0: no property case changed decision tier, because the property declines are structural hard fails (state outside the 2025 list, building age, loss history) that no external layer can move. Rather than quietly swap the metric, the tier-change count stays and is reported as 0 with that reason, and four sub-metrics are added so "enrichment matters" is measurable instead of asserted:
+- `intervalMoved` and `medianAbsMidpointMove`: how many cases had their score interval move at all, and the median size of the move in points.
+- `rankChanged`, `rankQueueN` and `rankMoves`: how many open-queue cases change rank position with layers on, and by how many places. Ranking uses the same order `/queue` uses (interval midpoint, then value at stake).
+- `topMovers` and `topMoversOpenQueue`: the three cases the layers move most, overall and inside the open queue, each naming the peril and the applied multiplier.
+- Every row carries `hardFailCapped`, so a move inside an already-capped decline is not passed off as a decision change.
+
 ## B4. Guideline vs book (n = 27 bound property policies)
 How many bound property policies the 2025 guideline would decline, by factor. Expected headline (from the raw data): premium above $175K on 17 of 27. This explains why agreement with past human binds is low: the humans wrote outside the 2025 guideline.
 

@@ -16,7 +16,7 @@ if str(API_SRC) not in sys.path:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from atlas_api.case import Known, World  # noqa: E402
+from atlas_api.case import OPEN_STATUSES, Known, World  # noqa: E402
 from atlas_api.engine import (  # noqa: E402
     DEFAULT_RULES_DIR,
     Decided,
@@ -135,24 +135,71 @@ def _b2(world: World, rules: RulesFile) -> dict[str, Any]:
 
 
 def _b3(world: World, rules: RulesFile) -> dict[str, Any]:
+    """Enrichment effect. `changed` (tier changes) is the pre-registered metric; the interval, rank and
+    top-mover sub-metrics were added after the first run, when `changed` came back 0 (see BACKTEST.md)."""
     pack = USPack()
     submissions = sorted(
         (s for s in world.submissions.values() if s["line_of_business"] == "property"), key=lambda s: s["id"]
     )
-    changed = []
+    changed, rows = [], []
     for submission in submissions:
         case = world.case(f"SUB-{submission['id']}", as_of=submission["received_date"])
         without = assess(case, rules, pack=pack, enrich=False)
         with_layers = assess(case, rules, pack=pack, enrich=True)
         before, after = _decision(without), _decision(with_layers)
+        factors = sorted(with_layers.risk.factors, key=lambda factor: (-abs(factor.applied - 1), factor.peril))
+        top = factors[0] if factors else None
+        rows.append({
+            "caseId": str(submission["id"]), "status": submission["status"],
+            "valueAtStake": case.tiv.v if isinstance(case.tiv, Known) else 0.0,
+            "without": {"lo": round(without.score.lo, 1), "hi": round(without.score.hi, 1)},
+            "with": {"lo": round(with_layers.score.lo, 1), "hi": round(with_layers.score.hi, 1)},
+            "midpointMove": round(with_layers.score.mid - without.score.mid, 1),
+            "tierBefore": before, "tierAfter": after,
+            "hardFailCapped": bool(rules.hard_fail_cap is not None and without.score.hi <= rules.hard_fail_cap),
+            "topFactor": top.peril if top else None,
+            "topMultiplier": round(top.applied, 3) if top else None,
+        })
         if before != after:
-            factors = sorted(with_layers.risk.factors, key=lambda factor: (-abs(factor.applied - 1), factor.peril))
-            factor = factors[0]
-            changed.append({
-                "caseId": str(submission["id"]), "without": before, "with": after,
-                "factor": factor.peril, "multiplier": factor.applied,
-            })
-    return {"n": len(submissions), "changed": len(changed), "cases": changed}
+            changed.append({"caseId": str(submission["id"]), "without": before, "with": after,
+                             "factor": top.peril if top else None,
+                             "multiplier": round(top.applied, 3) if top else None})
+
+    moved = [r for r in rows if r["midpointMove"] != 0]
+    sizes = sorted(abs(r["midpointMove"]) for r in moved)
+    median_move = round(sizes[len(sizes) // 2] if len(sizes) % 2 else
+                        (sizes[len(sizes) // 2 - 1] + sizes[len(sizes) // 2]) / 2, 1) if sizes else 0.0
+
+    # Rank movement in the open queue: the same ordering /queue uses (interval midpoint, then value at stake).
+    queue = [r for r in rows if r["status"] in OPEN_STATUSES]
+
+    def ranked(key: str) -> dict[str, int]:
+        order = sorted(queue, key=lambda r: (-(r[key]["lo"] + r[key]["hi"]) / 2, -r["valueAtStake"]))
+        return {r["caseId"]: i + 1 for i, r in enumerate(order)}
+
+    before_rank, after_rank = ranked("without"), ranked("with")
+    rank_moves = [{"caseId": cid, "from": before_rank[cid], "to": after_rank[cid],
+                    "places": after_rank[cid] - before_rank[cid]}
+                   for cid in before_rank if before_rank[cid] != after_rank[cid]]
+    def movers(pool: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [{"caseId": r["caseId"], "without": r["without"], "with": r["with"], "status": r["status"],
+                  "midpointMove": r["midpointMove"], "factor": r["topFactor"], "multiplier": r["topMultiplier"],
+                  "hardFailCapped": r["hardFailCapped"]}
+                 for r in sorted(pool, key=lambda r: -abs(r["midpointMove"]))[:3]]
+
+    top_movers = movers(moved)
+    top_open = movers([r for r in moved if r["status"] in OPEN_STATUSES])
+
+    return {
+        "n": len(submissions), "changed": len(changed), "cases": changed,
+        "changedNote": ("no decision tier changed: the property declines are structural hard fails (state, age, "
+                         "loss history), which external layers cannot move"),
+        "intervalMoved": len(moved), "medianAbsMidpointMove": median_move,
+        "rankChanged": len(rank_moves), "rankQueueN": len(queue), "rankMoves": rank_moves,
+        "topMovers": top_movers, "topMoversOpenQueue": top_open, "rows": rows,
+        "addedAfterFirstRun": ["intervalMoved", "medianAbsMidpointMove", "rankChanged", "rankMoves", "topMovers",
+                                 "topMoversOpenQueue"],
+    }
 
 
 def _b4(world: World, rules: RulesFile) -> dict[str, Any]:

@@ -383,9 +383,878 @@
     ]
   },
   "b3": {
+    "addedAfterFirstRun": [
+      "intervalMoved",
+      "medianAbsMidpointMove",
+      "rankChanged",
+      "rankMoves",
+      "topMovers",
+      "topMoversOpenQueue"
+    ],
     "cases": [],
     "changed": 0,
-    "n": 38
+    "changedNote": "no decision tier changed: the property declines are structural hard fails (state, age, loss history), which external layers cannot move",
+    "intervalMoved": 38,
+    "medianAbsMidpointMove": 7.2,
+    "n": 38,
+    "rankChanged": 5,
+    "rankMoves": [
+      {
+        "caseId": "126",
+        "from": 2,
+        "places": 2,
+        "to": 4
+      },
+      {
+        "caseId": "141",
+        "from": 3,
+        "places": 2,
+        "to": 5
+      },
+      {
+        "caseId": "143",
+        "from": 4,
+        "places": 2,
+        "to": 6
+      },
+      {
+        "caseId": "134",
+        "from": 5,
+        "places": -3,
+        "to": 2
+      },
+      {
+        "caseId": "133",
+        "from": 6,
+        "places": -3,
+        "to": 3
+      }
+    ],
+    "rankQueueN": 6,
+    "rows": [
+      {
+        "caseId": "1",
+        "hardFailCapped": true,
+        "midpointMove": -15.0,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 112568000.0,
+        "with": {
+          "hi": 15,
+          "lo": 15
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "4",
+        "hardFailCapped": true,
+        "midpointMove": -14.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 104141000.0,
+        "with": {
+          "hi": 15.1,
+          "lo": 15.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "7",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 34793000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "14",
+        "hardFailCapped": true,
+        "midpointMove": -15.0,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 124074000.0,
+        "with": {
+          "hi": 15,
+          "lo": 15
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "25",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 75065000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "28",
+        "hardFailCapped": true,
+        "midpointMove": -9.8,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "earthquake",
+        "topMultiplier": 1.06,
+        "valueAtStake": 64817000.0,
+        "with": {
+          "hi": 20.2,
+          "lo": 20.2
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "31",
+        "hardFailCapped": true,
+        "midpointMove": -5.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "earthquake",
+        "topMultiplier": 1.06,
+        "valueAtStake": 26254000.0,
+        "with": {
+          "hi": 24.1,
+          "lo": 24.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "33",
+        "hardFailCapped": true,
+        "midpointMove": -14.2,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "wildfire",
+        "topMultiplier": 1.1,
+        "valueAtStake": 48121000.0,
+        "with": {
+          "hi": 15.8,
+          "lo": 15.8
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "38",
+        "hardFailCapped": true,
+        "midpointMove": -3.3,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.03,
+        "valueAtStake": 13436000.0,
+        "with": {
+          "hi": 26.7,
+          "lo": 26.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "42",
+        "hardFailCapped": true,
+        "midpointMove": -13.0,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 31868000.0,
+        "with": {
+          "hi": 17.0,
+          "lo": 17.0
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "43",
+        "hardFailCapped": true,
+        "midpointMove": -13.0,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 31868000.0,
+        "with": {
+          "hi": 17.0,
+          "lo": 17.0
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "47",
+        "hardFailCapped": true,
+        "midpointMove": -13.6,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 109076000.0,
+        "with": {
+          "hi": 11.4,
+          "lo": 11.4
+        },
+        "without": {
+          "hi": 25.0,
+          "lo": 25.0
+        }
+      },
+      {
+        "caseId": "52",
+        "hardFailCapped": true,
+        "midpointMove": -11.7,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 111284000.0,
+        "with": {
+          "hi": 18.3,
+          "lo": 18.3
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "54",
+        "hardFailCapped": true,
+        "midpointMove": -10.3,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 79108000.0,
+        "with": {
+          "hi": 19.7,
+          "lo": 19.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "61",
+        "hardFailCapped": true,
+        "midpointMove": -13.6,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 108923000.0,
+        "with": {
+          "hi": 16.4,
+          "lo": 16.4
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "65",
+        "hardFailCapped": true,
+        "midpointMove": -6.6,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "wildfire",
+        "topMultiplier": 1.05,
+        "valueAtStake": 41745000.0,
+        "with": {
+          "hi": 23.4,
+          "lo": 23.4
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "66",
+        "hardFailCapped": true,
+        "midpointMove": -6.6,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "wildfire",
+        "topMultiplier": 1.05,
+        "valueAtStake": 41745000.0,
+        "with": {
+          "hi": 23.4,
+          "lo": 23.4
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "70",
+        "hardFailCapped": true,
+        "midpointMove": -9.7,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 52665000.0,
+        "with": {
+          "hi": 20.3,
+          "lo": 20.3
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "74",
+        "hardFailCapped": true,
+        "midpointMove": -10.3,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "wildfire",
+        "topMultiplier": 1.1,
+        "valueAtStake": 12843000.0,
+        "with": {
+          "hi": 19.7,
+          "lo": 19.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "76",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 10628000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "77",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 10628000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "81",
+        "hardFailCapped": false,
+        "midpointMove": -4.0,
+        "status": "bound",
+        "tierAfter": "accept",
+        "tierBefore": "accept",
+        "topFactor": "flood",
+        "topMultiplier": 1.03,
+        "valueAtStake": 18492000.0,
+        "with": {
+          "hi": 79.4,
+          "lo": 79.4
+        },
+        "without": {
+          "hi": 83.3,
+          "lo": 83.3
+        }
+      },
+      {
+        "caseId": "83",
+        "hardFailCapped": true,
+        "midpointMove": -7.8,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "earthquake",
+        "topMultiplier": 1.06,
+        "valueAtStake": 108243000.0,
+        "with": {
+          "hi": 22.2,
+          "lo": 22.2
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "90",
+        "hardFailCapped": true,
+        "midpointMove": -12.3,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 82322000.0,
+        "with": {
+          "hi": 17.7,
+          "lo": 17.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "91",
+        "hardFailCapped": true,
+        "midpointMove": -12.3,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 82322000.0,
+        "with": {
+          "hi": 17.7,
+          "lo": 17.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "92",
+        "hardFailCapped": true,
+        "midpointMove": -10.3,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 67265000.0,
+        "with": {
+          "hi": 19.7,
+          "lo": 19.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "98",
+        "hardFailCapped": true,
+        "midpointMove": -5.9,
+        "status": "bound",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 57136000.0,
+        "with": {
+          "hi": 24.1,
+          "lo": 24.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "115",
+        "hardFailCapped": true,
+        "midpointMove": -12.3,
+        "status": "declined",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "wildfire",
+        "topMultiplier": 1.1,
+        "valueAtStake": 54397000.0,
+        "with": {
+          "hi": 17.7,
+          "lo": 17.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "118",
+        "hardFailCapped": true,
+        "midpointMove": -10.3,
+        "status": "lost",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "flood",
+        "topMultiplier": 1.1,
+        "valueAtStake": 29244000.0,
+        "with": {
+          "hi": 19.7,
+          "lo": 19.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "126",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "cleared",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 35716000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "131",
+        "hardFailCapped": true,
+        "midpointMove": -3.3,
+        "status": "lost",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.03,
+        "valueAtStake": 13436000.0,
+        "with": {
+          "hi": 26.7,
+          "lo": 26.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "132",
+        "hardFailCapped": true,
+        "midpointMove": -1.3,
+        "status": "lost",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "earthquake",
+        "topMultiplier": 1.02,
+        "valueAtStake": 12258000.0,
+        "with": {
+          "hi": 28.7,
+          "lo": 28.7
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "133",
+        "hardFailCapped": true,
+        "midpointMove": -2.0,
+        "status": "quoted",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.03,
+        "valueAtStake": 23279000.0,
+        "with": {
+          "hi": 28.0,
+          "lo": 28.0
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "134",
+        "hardFailCapped": true,
+        "midpointMove": -2.0,
+        "status": "quoted",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.03,
+        "valueAtStake": 24302000.0,
+        "with": {
+          "hi": 28.0,
+          "lo": 28.0
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "138",
+        "hardFailCapped": false,
+        "midpointMove": -2.0,
+        "status": "cleared",
+        "tierAfter": "open",
+        "tierBefore": "open",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.03,
+        "valueAtStake": 2073000.0,
+        "with": {
+          "hi": 89.7,
+          "lo": 28.0
+        },
+        "without": {
+          "hi": 91.7,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "141",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "quoted",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 35716000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "143",
+        "hardFailCapped": true,
+        "midpointMove": -5.9,
+        "status": "cleared",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "earthquake",
+        "topMultiplier": 1.06,
+        "valueAtStake": 26254000.0,
+        "with": {
+          "hi": 24.1,
+          "lo": 24.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "147",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "status": "lost",
+        "tierAfter": "decline",
+        "tierBefore": "decline",
+        "topFactor": "severe_weather",
+        "topMultiplier": 1.06,
+        "valueAtStake": 10628000.0,
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      }
+    ],
+    "topMovers": [
+      {
+        "caseId": "1",
+        "factor": "flood",
+        "hardFailCapped": true,
+        "midpointMove": -15.0,
+        "multiplier": 1.1,
+        "status": "bound",
+        "with": {
+          "hi": 15,
+          "lo": 15
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "14",
+        "factor": "flood",
+        "hardFailCapped": true,
+        "midpointMove": -15.0,
+        "multiplier": 1.1,
+        "status": "bound",
+        "with": {
+          "hi": 15,
+          "lo": 15
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "4",
+        "factor": "flood",
+        "hardFailCapped": true,
+        "midpointMove": -14.9,
+        "multiplier": 1.1,
+        "status": "bound",
+        "with": {
+          "hi": 15.1,
+          "lo": 15.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      }
+    ],
+    "topMoversOpenQueue": [
+      {
+        "caseId": "143",
+        "factor": "earthquake",
+        "hardFailCapped": true,
+        "midpointMove": -5.9,
+        "multiplier": 1.06,
+        "status": "cleared",
+        "with": {
+          "hi": 24.1,
+          "lo": 24.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "126",
+        "factor": "severe_weather",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "multiplier": 1.06,
+        "status": "cleared",
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      },
+      {
+        "caseId": "141",
+        "factor": "severe_weather",
+        "hardFailCapped": true,
+        "midpointMove": -3.9,
+        "multiplier": 1.06,
+        "status": "quoted",
+        "with": {
+          "hi": 26.1,
+          "lo": 26.1
+        },
+        "without": {
+          "hi": 30.0,
+          "lo": 30.0
+        }
+      }
+    ]
   },
   "b4": {
     "factors": [
