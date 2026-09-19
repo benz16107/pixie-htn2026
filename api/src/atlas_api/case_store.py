@@ -9,6 +9,7 @@ Tables: `cases` (pre-rendered QueueRow/CaseView JSON), `desk_events` (the DeskEv
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from pathlib import Path
 import threading
@@ -56,7 +57,8 @@ class CaseStore:
         self._lock = threading.Lock()
 
     @classmethod
-    def open(cls, path: Path = DEFAULT_DB_PATH) -> "CaseStore":
+    def open(cls, path: Path | None = None) -> "CaseStore":
+        path = Path(path or os.environ.get("ATLAS_DB") or DEFAULT_DB_PATH)   # ATLAS_DB=var/atlas-demo.sqlite at the demo
         path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(path, check_same_thread=False)
         conn.execute("PRAGMA journal_mode=WAL")

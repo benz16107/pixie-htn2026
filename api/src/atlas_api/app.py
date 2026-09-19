@@ -13,9 +13,14 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Literal
 
+import asyncio
+import json
+
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
@@ -53,6 +58,8 @@ def _init_sentry() -> None:
 _init_sentry()
 
 _store: CaseStore | None = None
+_world: World | None = None
+_tasks: set[asyncio.Task] = set()
 
 
 def get_store() -> CaseStore:
@@ -62,9 +69,9 @@ def get_store() -> CaseStore:
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    global _store
+    global _store, _world
     _store = CaseStore.open()
-    world = World.load()
+    world = _world = World.load()
     rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
     for sub in world.submissions.values():
         case = world.case(f"SUB-{sub['id']}")
@@ -75,6 +82,8 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
             "queue": queue_row(sub["id"], sub["status"], case, a, insured_name),
             "case": case_view(sub["id"], case, a, insured_name),
         })
+        if _store.latest_run(str(sub["id"])):
+            apply_desk_run(_store, world, str(sub["id"]))
     yield
 
 
@@ -221,3 +230,117 @@ def get_case(case_id: str) -> dict[str, Any]:
     if data is None:
         raise HTTPException(status_code=404, detail=f"no case {case_id}")
     return data["case"]
+
+
+# ---------- desk (T7/T8) ----------------------------------------------------------------------------
+
+def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
+    """Fold the latest desk run of a case into its stored QueueRow/CaseView: enriched interval, hazard
+    factors, portfolio line, the verified explanation, proposed actions. Deterministic, no model."""
+    from . import layers
+    from .desk import Desk
+    from .events import ActionP, CaseFile, DecisionP, FindingP
+
+    events = store.tail(case_id, run_id=store.latest_run(case_id))
+    f = CaseFile.fold(events)
+    if f.decision is None:
+        return
+    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    case = world.case(f"SUB-{case_id}")
+    for name, value in f.facts.items():
+        case = case.with_fact(name, value, by="desk")
+    port = next((e.payload for e in events if isinstance(e.payload, FindingP)
+                 and e.payload.fact == "portfolio.concentration"), None)
+    pack = layers.LayersPack(f.hazard_multipliers) if f.hazard_multipliers else None
+    a = assess(case, rules, pack, _FixedImpact(port.score_delta) if port else None)
+    bare = assess(case, rules)
+    data = store.get_case(case_id)
+    insured = world.insureds.get(world.submissions[int(case_id)]["insured"], {}).get("name", "?")
+    view = case_view(int(case_id), case, a, insured)
+    view["scoreWithoutEnrichment"] = {"lo": round(bare.score.lo), "hi": round(bare.score.hi)}
+    hz = [e.payload for e in events if isinstance(e.payload, FindingP) and e.payload.multiplier is not None]
+    view["risk"] = {
+        "factors": [{"peril": p.text.split(":")[0], "line": p.text, "applied": p.multiplier, "capped": False,
+                     "source": p.source, "citation": p.fact} for p in hz],
+        "total": getattr(a.risk, "total", 1.0), "totalCapped": False,
+        "skipped": [[p.skipped, p.text] for e in events if isinstance((p := e.payload), FindingP) and p.skipped],
+    }
+    if port:
+        view["portfolio"] = {"line": port.text, "points": port.score_delta, "neighbourhoodTiv": port.value,
+                             "threshold": 25_000_000}
+    view["explanation"] = f.decision.explanation
+    view["explanationVerified"] = True
+    view["actions"] = [{"key": e.payload.action, "channel": "email", "status": e.payload.status,
+                        "at": str(e.ts)} for e in events if isinstance(e.payload, ActionP)]
+    row = data["queue"]
+    row.update(score=view["score"], decision=view["decision"], deepDived=any(e.actor != "system" and e.actor != "lead" for e in events),
+               enrichmentDelta=round((a.score.mid - bare.score.mid)))
+    store.put_case(case_id, {"queue": row, "case": view})
+
+
+class _FixedImpact:
+    def __init__(self, points: float | None) -> None:
+        self.points = points or 0.0
+
+    def impact(self, _case: Case) -> "_FixedImpact":
+        return self
+
+
+class RunRequest(BaseModel):
+    caseIds: list[str]
+    mode: Literal["live", "replay"] = "replay"
+
+
+@app.post("/desk/run")
+async def desk_run(req: RunRequest) -> dict[str, Any]:
+    store, ids = get_store(), [c.removeprefix("SUB-") for c in req.caseIds]
+    if req.mode == "replay" or os.environ.get("ATLAS_OFFLINE") == "1":
+        return {"mode": "replay", "runs": {c: store.latest_run(c) for c in ids}}
+    from .desk import Desk
+
+    async def go() -> None:
+        await Desk(_world, store).run(ids, run_id=run_id)
+        for c in ids:
+            apply_desk_run(store, _world, c)
+
+    import time
+    run_id = f"r{int(time.time())}"
+    task = asyncio.create_task(go())
+    _tasks.add(task)
+    task.add_done_callback(_tasks.discard)
+    return {"mode": "live", "runId": run_id, "caseIds": ids}
+
+
+def _sse(e) -> str:
+    return f"id: {e.seq}\nevent: desk\ndata: {json.dumps(e.wire())}\n\n"
+
+
+@app.get("/cases/{case_id}/events", response_model=None)
+async def case_events(case_id: str, request: Request, after: int = 0, replay: int = 0, speed: float = 1.0):
+    """JSON list of the latest run by default (the web's fetch); SSE when replay=1 (recorded timing / speed)
+    or when the client asks for text/event-stream (live tail until the run closes)."""
+    from .desk import replay as replay_run
+    from .events import NoteP
+
+    store = get_store()
+    case_id = case_id.removeprefix("SUB-")
+    if replay:
+        async def gen():
+            async for e in replay_run(store, case_id, speed=speed, after=after):
+                yield _sse(e)
+        return StreamingResponse(gen(), media_type="text/event-stream")
+    if "text/event-stream" in request.headers.get("accept", ""):
+        async def tail():
+            cursor, idle = after, 0.0
+            while idle < 120 and not await request.is_disconnected():
+                batch = store.tail(case_id, after_seq=cursor)
+                for e in batch:
+                    cursor = e.seq
+                    yield _sse(e)
+                    if isinstance(e.payload, NoteP) and e.payload.calls is not None:
+                        return
+                idle = 0.0 if batch else idle + 0.25
+                await asyncio.sleep(0.25)
+        return StreamingResponse(tail(), media_type="text/event-stream")
+    run_id = store.latest_run(case_id)
+    return [e.wire() for e in store.tail(case_id, after_seq=after, run_id=run_id)] if run_id else []
