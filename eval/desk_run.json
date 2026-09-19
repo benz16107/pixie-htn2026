@@ -1,13 +1,13 @@
 {
- "138": {
-  "runId": "r1789855878",
-  "events": 42,
+ "126": {
+  "runId": "r1789856180",
+  "events": 41,
   "byActor": {
-   "system": 11,
-   "lead": 6,
-   "intake": 7,
-   "portfolio": 3,
+   "system": 10,
+   "lead": 4,
    "hazard": 12,
+   "intake": 9,
+   "portfolio": 3,
    "appetite": 3
   },
   "kinds": {
@@ -15,464 +15,125 @@
    "run_stats": 7,
    "plan": 1,
    "ask": 2,
+   "tool_call": 12,
    "finding": 8,
-   "tool_call": 11,
-   "query": 1,
+   "query": 2,
    "estimate": 1,
    "answer": 2,
-   "conflict": 2,
-   "resolution": 2,
-   "decision": 1,
-   "action": 1,
-   "note": 1
-  },
-  "verdict": "request_info",
-  "explanation": "Obtain the broker-confirmed proposed premium to assess compliance with the acceptable premium band rather than decline on comparable estimates. The overall assessment remains open, and confirmation should trigger reassessment rather than automatic acceptance because the case digest states that no single fact would resolve it.",
-  "fallback": false,
-  "calls": 14,
-  "tokensIn": 13655,
-  "tokensOut": 2228,
-  "costUsd": 0.0277,
-  "seconds": 36.9
- },
- "126": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
+   "conflict": 1,
+   "resolution": 1,
    "decision": 1,
    "note": 1
   },
   "verdict": "decline",
-  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.3
+  "explanation": "Maintain the decline because administration, construction age, and loss history fail appetite. Hazard's favorable finding is limited to mapped flood exposure, with no other peril layers assessed, and does not resolve those failures.",
+  "fallback": false,
+  "calls": 15,
+  "tokensIn": 14351,
+  "tokensOut": 1550,
+  "costUsd": 0.0273,
+  "seconds": 31.3
  },
  "141": {
-  "runId": "r1789855878",
-  "events": 4,
+  "runId": "r1789856180",
+  "events": 37,
   "byActor": {
-   "system": 2,
-   "lead": 2
+   "system": 9,
+   "lead": 5,
+   "intake": 5,
+   "hazard": 12,
+   "portfolio": 3,
+   "appetite": 3
   },
   "kinds": {
-   "assessment": 1,
+   "assessment": 2,
    "plan": 1,
+   "ask": 3,
+   "finding": 8,
+   "tool_call": 10,
+   "query": 1,
+   "run_stats": 6,
+   "answer": 2,
+   "conflict": 1,
+   "resolution": 1,
    "decision": 1,
    "note": 1
   },
   "verdict": "decline",
-  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.3
+  "explanation": "Decline based on the documented administration, construction-year, and loss-history appetite failures, notwithstanding the favorable flood assessment. Missing premium and broker confirmation of whether the requested limit reflects an intended layer or restricted scope remain unresolved, but neither establishes that the appetite failures can be waived.",
+  "fallback": false,
+  "calls": 13,
+  "tokensIn": 11606,
+  "tokensOut": 1521,
+  "costUsd": 0.0205,
+  "seconds": 35.2
  },
  "143": {
-  "runId": "r1789855878",
-  "events": 4,
+  "runId": "r1789856180",
+  "events": 39,
   "byActor": {
-   "system": 2,
-   "lead": 2
+   "system": 10,
+   "lead": 4,
+   "hazard": 12,
+   "portfolio": 4,
+   "intake": 5,
+   "appetite": 4
   },
   "kinds": {
-   "assessment": 1,
+   "assessment": 2,
    "plan": 1,
+   "ask": 3,
+   "tool_call": 10,
+   "finding": 8,
+   "run_stats": 7,
+   "query": 1,
+   "answer": 3,
+   "conflict": 1,
+   "resolution": 1,
    "decision": 1,
    "note": 1
   },
   "verdict": "decline",
-  "explanation": "Decline: business_type:not_acceptable, primary_admin:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.3
+  "explanation": "The appetite findings identify WA primary administration as independently unacceptable, supporting decline without relying on the estimated renewal classification. Refer the business-type uncertainty subject to broker confirmation of the submission\u2019s status and any distinct coverage still requested.",
+  "fallback": false,
+  "calls": 14,
+  "tokensIn": 11677,
+  "tokensOut": 1697,
+  "costUsd": 0.0243,
+  "seconds": 35.7
  },
  "134": {
-  "runId": "r1789855878",
-  "events": 4,
+  "runId": "r1789856180",
+  "events": 39,
   "byActor": {
-   "system": 2,
-   "lead": 2
+   "system": 10,
+   "lead": 4,
+   "intake": 6,
+   "hazard": 12,
+   "portfolio": 3,
+   "appetite": 4
   },
   "kinds": {
-   "assessment": 1,
+   "assessment": 2,
    "plan": 1,
+   "ask": 3,
+   "finding": 8,
+   "tool_call": 10,
+   "query": 1,
+   "run_stats": 7,
+   "answer": 3,
+   "conflict": 1,
+   "resolution": 1,
    "decision": 1,
    "note": 1
   },
   "verdict": "decline",
-  "explanation": "Decline: primary_admin:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.3
- },
- "133": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "decline",
-  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "155": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "158": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to auto desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "114": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to auto desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "148": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "145": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to cyber desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "128": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to lpl desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "142": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "137": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "146": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "144": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "157": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to auto desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "140": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "151": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "135": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
- },
- "123": {
-  "runId": "r1789855878",
-  "events": 4,
-  "byActor": {
-   "system": 2,
-   "lead": 2
-  },
-  "kinds": {
-   "assessment": 1,
-   "plan": 1,
-   "decision": 1,
-   "note": 1
-  },
-  "verdict": "route",
-  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
-  "fallback": true,
-  "calls": 1,
-  "tokensIn": 2511,
-  "tokensOut": 1208,
-  "costUsd": 0.0002,
-  "seconds": 19.4
+  "explanation": "Maintain the decline because primary_admin and loss_5yr remain unacceptable, with the reassessment unchanged at 30-30 despite favourable hazard findings. The $1,000,000 requested limit versus $24,302,000 building TIV remains unexplained, and although the broker can supply the premium estimate identified as decision-relevant, the current findings establish no acceptable basis to override the appetite failures.",
+  "fallback": false,
+  "calls": 14,
+  "tokensIn": 11308,
+  "tokensOut": 1489,
+  "costUsd": 0.0217,
+  "seconds": 36.6
  }
 }
