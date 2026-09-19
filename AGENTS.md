@@ -1,6 +1,6 @@
 # Atlas: rules for every coding agent (Claude Code, Codex)
 
-Atlas is a multi-agent underwriting desk (Federato challenge) plus a consumer quote app (Intact challenge) on one shared risk engine. Plan: ../federato/PLAN.md (and the arena-synthesized plan once it lands). Hack the North 2026, solo build.
+Atlas is a multi-agent underwriting desk (Federato challenge) plus a consumer quote app (Intact challenge) on one shared risk engine. Plan: docs/PLAN.md (tasks T1-T13, W1-W8, C1-C8, E1-E5). Design and type contracts: docs/DESIGN.md and docs/sketch/. Hack the North 2026, solo build.
 
 ## Invariants (do not break; tests enforce them)
 1. **No number comes from a model.** Scores, premiums, estimates, hazard factors, and portfolio totals are computed in code. LLMs plan queries, choose what to investigate, and write prose from already-computed values. Any explanation text is checked so that every number in it appears in the computed factor list.
