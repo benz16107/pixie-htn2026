@@ -1,12 +1,9 @@
 """SQLite CaseStore: one file (var/atlas.sqlite), four tables, per candidate-2's sketch
 (docs/arena/candidate-2/sketch/case.py) grafted into the T1-T3 design (DESIGN.md "Grafted from
-candidate-2"). One writer process, so no locking beyond WAL.
+candidate-2"). One process; a lock serialises event appends from concurrent desk tasks.
 
-Tonight's app.py only uses `cases` (pre-rendered QueueRow/CaseView JSON, read by /queue and
-/cases/{id}) and `cache` (the tiny disk-cache interface federato.py already defines against). The
-`events` and `outbox` tables are created now so T6 (DeskEvent log, SSE tail) and T11/T12 (actions,
-Linq) don't need a schema migration later; their read/write methods are intentionally minimal
-until those tasks give them a real shape to serve.
+Tables: `cases` (pre-rendered QueueRow/CaseView JSON), `desk_events` (the DeskEvent log, T6),
+`cache`, `outbox` (T11/T12).
 """
 
 from __future__ import annotations
@@ -14,7 +11,11 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any
+import threading
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .events import DeskEvent
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[3] / "var" / "atlas.sqlite"
 
@@ -24,16 +25,15 @@ CREATE TABLE IF NOT EXISTS cases (
     json TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE TABLE IF NOT EXISTS events (
+CREATE TABLE IF NOT EXISTS desk_events (
     id TEXT PRIMARY KEY,
     case_id TEXT NOT NULL,
     seq INTEGER NOT NULL,
-    key TEXT NOT NULL,
+    run_id TEXT NOT NULL,
     json TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(case_id, key)
+    UNIQUE(case_id, seq)
 );
-CREATE INDEX IF NOT EXISTS idx_events_case_seq ON events(case_id, seq);
+CREATE INDEX IF NOT EXISTS idx_desk_events_case_seq ON desk_events(case_id, seq);
 CREATE TABLE IF NOT EXISTS cache (
     key TEXT PRIMARY KEY,
     json TEXT NOT NULL,
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS outbox (
 class CaseStore:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self.conn = conn
+        self._lock = threading.Lock()
 
     @classmethod
     def open(cls, path: Path = DEFAULT_DB_PATH) -> "CaseStore":
@@ -95,28 +96,33 @@ class CaseStore:
         )
         self.conn.commit()
 
-    # ---- events: append-only, idempotent by (case_id, key); T6 gives this a real payload shape --
+    # ---- events: the DeskEvent log (events.py). Idempotent by content-hash id; seq is the SSE cursor --
 
-    def post_event(self, case_id: str, key: str, payload: dict[str, Any]) -> int:
-        seq_row = self.conn.execute(
-            "SELECT COALESCE(MAX(seq), 0) + 1 FROM events WHERE case_id = ?", (case_id,)
-        ).fetchone()
-        seq = seq_row[0]
-        event_id = f"{case_id}:{key}"
-        self.conn.execute(
-            "INSERT INTO events(id, case_id, seq, key, json) VALUES (?, ?, ?, ?, ?) "
-            "ON CONFLICT(case_id, key) DO UPDATE SET json = excluded.json",
-            (event_id, case_id, seq, key, json.dumps(payload)),
-        )
-        self.conn.commit()
-        return seq
+    def append(self, e: "DeskEvent") -> bool:
+        """False (and no write) if this event id is already in the log."""
+        with self._lock:
+            if self.conn.execute("SELECT 1 FROM desk_events WHERE id = ?", (e.id,)).fetchone():
+                return False
+            seq = self.conn.execute(
+                "SELECT COALESCE(MAX(seq), 0) + 1 FROM desk_events WHERE case_id = ?", (e.case_id,)).fetchone()[0]
+            e.seq = seq
+            self.conn.execute("INSERT INTO desk_events(id, case_id, seq, run_id, json) VALUES (?, ?, ?, ?, ?)",
+                              (e.id, e.case_id, seq, e.run_id, e.model_dump_json()))
+            self.conn.commit()
+            return True
 
-    def events(self, case_id: str, after_seq: int = 0) -> list[dict[str, Any]]:
-        rows = self.conn.execute(
-            "SELECT seq, key, json FROM events WHERE case_id = ? AND seq > ? ORDER BY seq",
-            (case_id, after_seq),
-        ).fetchall()
-        return [{"seq": seq, "key": key, **json.loads(j)} for seq, key, j in rows]
+    def tail(self, case_id: str, after_seq: int = 0, run_id: str | None = None) -> list["DeskEvent"]:
+        from .events import DeskEvent
+        sql, args = "SELECT json FROM desk_events WHERE case_id = ? AND seq > ?", [case_id, after_seq]
+        if run_id:
+            sql, args = sql + " AND run_id = ?", args + [run_id]
+        rows = self.conn.execute(sql + " ORDER BY seq", args).fetchall()
+        return [DeskEvent.model_validate_json(r[0]) for r in rows]
+
+    def latest_run(self, case_id: str) -> str | None:
+        row = self.conn.execute("SELECT run_id FROM desk_events WHERE case_id = ? ORDER BY seq DESC LIMIT 1",
+                                (case_id,)).fetchone()
+        return row[0] if row else None
 
     # ---- outbox: T11/T12's action log; append + list only until those tasks land -----------------
 
