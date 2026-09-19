@@ -1,6 +1,6 @@
 # Atlas: final build plan
 
-Solo build, **Sat 17:30 to Sun 08:00 EDT**. Ben plus three coding agents. Sponsor judging Sun 09:45-11:45, about 5 minutes per demo.
+Solo build, **Sat 17:30 to Sun 08:00 EDT**. Ben plus three coding agents. Judging: a separate 5-minute pitch to each sponsor track (see `PITCHES.md`). No sleep planned.
 
 This plan was synthesized in an architecture arena: two independent designs (Opus, Fable), a Fable cross-judge with a fact check against the real data, then a merge. The design is in `DESIGN.md` (read "Synthesis decision" and "Amendments" first), types and signatures are in `sketch/`, integration facts are in `INTEGRATIONS.md`, data notes are in `NOTES.md`, and the candidates are in `arena/`. The repo rules are in `../AGENTS.md`.
 
@@ -20,7 +20,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 **Night rules:**
 - A milestone missed by more than 30 minutes triggers the cut order (section 9), not a later bedtime.
 - Every merge runs `uv run pytest -q` and `npm --prefix web run build`. Red means no merge.
-- After 02:15, only one-line, revertable fixes.
+- After 02:15, extras (Gemini, ElevenLabs, polish) only if tests stay green; after 06:00, only one-line fixes.
 
 ---
 
@@ -36,8 +36,9 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | 22:30-00:00 | Commit `eval/BACKTEST.md` **before** the first backtest run; write demo script v1 | **T9** `ask()` (plain English to query, lint, retry); **T10** routes for backtest and map | **W6** ask box; **W7** backtest page; **W5** map, timeboxed to 23:45 | **C6** backtest (22:30-23:00); **C7** `tenant.yaml` + `quote_tenant` (23:00-23:15); **E1** Expo scaffold on mocks (from 23:15) | **M3 00:00 (Federato complete)**: section 6 beats 1-4 run in a clean browser; the backtest page shows measured numbers. Tag `demo-safe-2` |
 | 00:00-01:30 | Test actions end to end on real accounts; test the Expo app on the phone | **T11** Composio broker email via the outbox; **T12** Linq digest out + webhook in + `apply_command`; **T13** SSE push of human decisions | **W8** Toronto case view + `/privacy` + `/terms`; queue live-update UI | **E2-E5** Expo: address, map (server polygons), 3 questions, decision, receipt, list-only path, "View as underwriter" | **M4 01:30**: the broker email arrives; the digest arrives on the iPhone; replying "approve 1" flips the web row within 3 s; an Expo quote completes in Expo Go |
 | 01:30-02:15 | **Precompute**: desk run on the deep-dive cases (cost cap on), 3 cached questions, backtest, 3 demo tenant quotes; record the replay; copy `var/atlas-demo.sqlite`; offline test; rehearse once | Fix list | Fix list | Offline check (`ATLAS_OFFLINE=1`, Wi-Fi off) | **Feature freeze 02:15.** Tag `demo-safe-3` |
-| 02:30-06:00 | **Sleep (3.5 h)** | idle | idle | Branch `lane/a3-night` only: **C8** Gemini surroundings card + ElevenLabs briefing (cached mp3); Expo accessibility audit; README and Devpost drafts. No merges | |
-| 06:00-07:00 | Merge chosen overnight work; rerun the precompute if the engine changed; record the backup video (5 min, screen + phone) | Only fixes Ben names | Only fixes Ben names | `CODEX.md` and `INCIDENTS.md` evidence pass | **Code freeze 07:00** |
+| 02:15-04:00 | **No sleep (Ben's call).** Pitch rehearsal per sponsor (`PITCHES.md`); fix what rehearsal breaks | Gemini surroundings card (C8 moves here); Sentry extras (Session Replay) | Web map polish if it was cut; empty and error states | ElevenLabs briefing + "Read my quote"; Expo accessibility audit | Extras land on `main` only if the tests stay green |
+| 04:00-06:00 | Record a 60-90 s clip per sponsor pitch as a backup; second full offline run | Only fixes from rehearsal | Only fixes from rehearsal | README, Intact README, Devpost drafts; `CODEX.md` pass | Tag `demo-safe-4` |
+| 06:00-07:00 | Rerun the precompute if anything changed; record the full backup video | Only fixes Ben names | Only fixes Ben names | `INCIDENTS.md` pass | **Code freeze 07:00** |
 | 07:00-07:45 | Devpost write-up, README (with the Intact section), screenshots, video; submit | | | | **Submitted 07:45** (15 min buffer) |
 | 08:00-09:45 | Rehearse the 5-minute demo three times and each 60-s pitch; mint the Federato token at 09:30; charge the phone; ready the hotspot | | | | |
 
@@ -158,7 +159,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | 11 | **Gemini** (swag) | The Hazard agent's surroundings card via Maps grounding (advisory only) | Card on 138 with cited places | cached card |
 | 12 | **ElevenLabs** (earbuds) | Spoken queue briefing; "Read my quote" in the Expo app | Tap, and it speaks | cached mp3 |
 
-**60-second booth pitches:**
+**Short pitches (the full 5-minute pitch for each sponsor is in `PITCHES.md`):**
 - **Federato:** "21 open submissions, 6 of them property, and none has a premium. Atlas scores each as a range. Where the range crosses a decision line, the desk investigates, and only there. Watch 138: Intake finds the insured value through the insured's headquarters, estimates premium from comparable bound policies, Hazard skips earthquake for Florida and checks FEMA, and Portfolio checks what we already hold in that hurricane cell. What's left only the broker can answer, so it emails the broker. Every number is code. And here's the backtest against your underwriters, with the small n on screen."
 - **Intact:** "Type a Toronto address. The same engine that underwrites commercial property prices a tenant policy from peril-matched city data, with every factor capped. You get an instant approve or refer, a receipt where every dollar has a source, and a full screen-reader path that never needs the map. Tap 'View as underwriter' and it's the same case on the desk."
 - **Rox:** "The data is messy: the same account submitted by two brokers, a submission that went stale after the insured bound coverage elsewhere, premiums missing on every open submission, and hazard tags FEMA disagrees with. Atlas keeps provenance on every value, widens the score instead of guessing, and acts: it emails the broker for exactly the fields that change the decision, and texts the underwriter the top three."
@@ -223,7 +224,7 @@ Messy-data details, the Gemini card, the ElevenLabs briefing, and the Elastic qu
 | Model ids or cost | Low | From config; flagship only for the Lead; cost cap on the precompute |
 | Federato rate limits (unknown) | Low | The local snapshot for every deterministic path; live calls only for the ask box and live mode |
 | Scope overrun | High | Section 9 cut order; `demo-safe` tags; Ben codes no features after 00:00 |
-| Sleep cut short | Medium | Hard feature freeze at 02:15; overnight work only on branches |
+| Fatigue (no sleep) | High | Feature freeze stays at 02:15 for core features; after that, extras only behind green tests; two-pass review on every merge after 04:00 |
 
 ---
 
