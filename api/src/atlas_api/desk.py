@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
+import sentry_sdk
 from agents import Agent, RunHooks, Runner, function_tool
 from pydantic import BaseModel
 
@@ -44,6 +45,7 @@ from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, Confl
                      EstimateP, FindingP, GapP, NoteP, Option, Payload, PlanP, QueryP, QueryRetryP,
                      ResolutionP, RunStatsP, ScoreP, ToolCallP)
 from .portfolio import RADIUS_KM, ExposureIndex, open_index
+from .telemetry import log, verify_numbers_alert
 
 API_DIR = Path(__file__).resolve().parents[2]
 Depth = Literal["skim", "standard", "deep"]
@@ -285,9 +287,12 @@ class _CaseRun:
         self.facts.append(s)
         return s
 
-    def checked(self, text: str, fallback: str) -> tuple[str, bool]:
+    def checked(self, text: str, fallback: str, agent: str = "lead") -> tuple[str, bool]:
         bad = verify_numbers(text, self.facts)
-        return (text, True) if not bad else (fallback, False)
+        if bad:
+            verify_numbers_alert(self.case_id, agent, text, bad, self.facts)
+            return fallback, False
+        return text, True
 
     def charge(self, model: str, usage: Any) -> None:
         pin, pout = PRICES.get(model, (0.0, 0.0))
@@ -488,9 +493,11 @@ class Desk:
                 return f"payload is not JSON: {exc}"
             client, _graph, qb = desk.federato()
             issues = [f"{i.kind} at {i.at}: {i.fix}" for i in qb.lint(payload)]
+            log("ingest.query", case_id=run.case_id, resource=payload.get("resource"), why=why)
             if issues:
                 run.post("intake", QueryP(text=f"Lint caught {len(issues)} issue(s) before the call", payload=payload,
                                           lint=issues, why=why))
+                log("ingest.rejected", level="warning", case_id=run.case_id, reason="lint", issues="; ".join(issues))
                 return run.fact("lint issues (not run): " + "; ".join(issues))
             from .federato import FederatoError, _payload_key
             if os.environ.get("ATLAS_OFFLINE") == "1" and client.query_cache.get(_payload_key(payload)) is None:
@@ -499,6 +506,7 @@ class Desk:
                 res = await asyncio.to_thread(client.query, payload)
             except FederatoError as err:
                 run.post("intake", QueryRetryP(text=f"Federato said {err}", error=str(err), payload=payload))
+                log("ingest.rejected", level="warning", case_id=run.case_id, reason="federato_error", error=str(err))
                 return run.fact(f"API error {err} details={json.dumps(err.details)[:400]}")
             run.post("intake", QueryP(text=f"{payload.get('resource')} query: {res.total} rows in {res.ms} ms",
                                       payload=payload, rows=res.total, ms=res.ms, why=why))
@@ -558,7 +566,7 @@ class Desk:
         @function_tool
         def skip_layer(location_id: str, source: str, reason: str) -> str:
             """Record that a layer is not worth reading for this location, with the reason."""
-            reason_text, ok = run.checked(reason, "not relevant for this site")
+            reason_text, ok = run.checked(reason, "not relevant for this site", agent="hazard")
             run.post("hazard", FindingP(text=f"Skipped {source}: {reason_text}", fact=f"skip.{location_id}:{source}",
                                         provenance="external", skipped=source))
             return "skipped"
@@ -630,12 +638,31 @@ class Desk:
         plans = await self._plan(runs, floors)
 
         async def one(cid: str) -> CaseResult:
+            """One Sentry root span per underwriting decision (docs/research/sentry.md item 2): every
+            agent turn and tool call the OpenAIAgentsIntegration auto-instruments below nests under
+            this span, so a judge opens one trace and sees the whole decision. Attributes set after
+            the case closes so they land on the span even on a timeout fallback."""
             r, plan = runs[cid], plans[cid]
-            try:
-                return await asyncio.wait_for(self._case(r, plan), timeout=self.policy.live_timeout_s)
-            except asyncio.TimeoutError:
-                r.post("system", NoteP(text=f"Timed out after {self.policy.live_timeout_s:.0f} s; deterministic verdict stands"))
-                return self._template_decision(r)
+            with sentry_sdk.start_span(op="pixie.underwrite_case", name=f"case {cid}") as span:
+                span.set_data("pixie.case_id", cid)
+                span.set_data("pixie.depth", plan.depth)
+                span.set_data("pixie.model_lead", self.models.lead)
+                span.set_data("pixie.model_specialist", self.models.specialist)
+                try:
+                    result = await asyncio.wait_for(self._case(r, plan), timeout=self.policy.live_timeout_s)
+                except asyncio.TimeoutError:
+                    r.post("system", NoteP(text=f"Timed out after {self.policy.live_timeout_s:.0f} s; deterministic verdict stands"))
+                    result = self._template_decision(r)
+                span.set_data("pixie.decision", result.decision.verdict)
+                span.set_data("pixie.interval_lo", round(result.assessment.score.lo))
+                span.set_data("pixie.interval_hi", round(result.assessment.score.hi))
+                span.set_data("pixie.model_calls", result.calls)
+                span.set_data("pixie.tokens_in", result.tokens_in)
+                span.set_data("pixie.tokens_out", result.tokens_out)
+                span.set_data("pixie.cost_usd", round(result.cost_usd, 4))
+                if result.decision.fallback:
+                    span.set_data("pixie.explanation_fallback", True)
+                return result
 
         results = dict(zip(case_ids, await asyncio.gather(*(one(c) for c in case_ids))))
         return results
@@ -693,14 +720,14 @@ class Desk:
             if rep is None:
                 return
             if actor in brief_ids:
-                text, ok = r.checked(rep.answer or rep.summary, "Findings posted in my lane.")
+                text, ok = r.checked(rep.answer or rep.summary, "Findings posted in my lane.", agent=actor)
                 r.post(actor, AnswerP(text=text, to="lead", in_reply_to=brief_ids[actor], verified=ok))
             if actor == "appetite":
-                text, ok = r.checked(rep.summary, "Narration withheld: it cited a number the engine did not compute.")
+                text, ok = r.checked(rep.summary, "Narration withheld: it cited a number the engine did not compute.", agent=actor)
                 r.post("appetite", FindingP(text=text, fact="appetite.narrative", provenance="known"))
             for ask in rep.asks[:1]:
                 if ask.to != actor and "?" in ask.question:   # "no action needed" is not an ask
-                    qt, _ok = r.checked(ask.question, f"what do you find that bears on my {actor} finding?")
+                    qt, _ok = r.checked(ask.question, f"what do you find that bears on my {actor} finding?", agent=actor)
                     r.post(actor, AskP(text=f"Ask {ask.to}: {qt}", to=ask.to, question=qt))
 
         await asyncio.gather(*(specialist(a) for a in ("intake", "hazard", "portfolio")))
@@ -722,7 +749,7 @@ class Desk:
                     r, self._agent(r, p.to, AnswerOut, "answer"),
                     f"Case digest: {digest}\n\nQuestion from {e.actor}: {p.question}\n\nYour lane so far: "
                     + json.dumps([x.payload.text for x in r.events() if x.actor == p.to][-8:]))
-                text, ok = r.checked(out.answer if out else "", "No answer within budget.")
+                text, ok = r.checked(out.answer if out else "", "No answer within budget.", agent=p.to)
                 r.post(p.to, AnswerP(text=text, to=e.actor, in_reply_to=e.id, verified=ok), refs=[e.id])
 
             await asyncio.gather(*(answer(e) for e in open_asks))
@@ -740,6 +767,8 @@ class Desk:
         r.fact(json.dumps(self.rules.thresholds))
         conflicts = detect_conflicts(a, self.rules, hz, port)
         conflict_ids = {c.conflict_id: r.post("system", c).id for c in conflicts}
+        for c in conflicts:
+            log("conflict.detected", case_id=r.case_id, conflict_id=c.conflict_id, stances=str(c.stances))
         verdict_allowed = allowed_options(a)
 
         findings = [f"{e.actor}: {e.payload.text}" for e in events
