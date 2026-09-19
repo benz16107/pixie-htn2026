@@ -20,6 +20,7 @@ export function WhatIf({
   start,
   sensitivity,
   before,
+  onState,
 }: {
   caseId: string;
   fact: string;
@@ -27,10 +28,14 @@ export function WhatIf({
   start: number;
   sensitivity: Sensitivity | null;
   before: { score: Interval | null; decision: string };
+  /** The 3D view next to this slider plots the same position. */
+  onState?: (s: { fact: string; value: number; score: Interval | null; kind: string }) => void;
 }) {
   const [value, setValue] = useState(start);
   const [res, setRes] = useState<WhatIfResult | null>(null);
   const seq = useRef(0);
+  const emit = useRef(onState);
+  emit.current = onState;
 
   // The API answers in well under a millisecond, so ask on every drag frame and keep the last answer.
   useEffect(() => {
@@ -49,6 +54,12 @@ export function WhatIf({
   const after = res?.after;
   const score = after?.score ?? before.score;
   const kind = after?.decision.kind ?? before.decision;
+
+  // Primitive deps on purpose: `before` is rebuilt by the parent on every render, so depending on
+  // the object itself would emit, re-render, and emit again.
+  useEffect(() => {
+    emit.current?.({ fact, value, score, kind });
+  }, [fact, value, score?.lo, score?.hi, kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <section aria-labelledby="whatif-h" className="border-t border-rule pt-3">

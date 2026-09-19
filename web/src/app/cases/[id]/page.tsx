@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Band } from "@/contract";
 import { api, type CaseWithReceipt } from "@/lib/api";
-import { explainCase, isTenantExplain, precedentFor, sensitivityOf, type Challenge, type PriceStep } from "@/lib/explain";
+import { explainCase, isTenantExplain, precedentFor, sensitivityOf, surfaceOf, type Challenge, type PriceStep } from "@/lib/explain";
 import { bandPhrase, factorValue, whenLabel } from "@/lib/format";
 import { Actions } from "@/components/Actions";
 import { CaseMap } from "@/components/LiveMap";
@@ -10,7 +10,7 @@ import { HazardCard, PortfolioCallout, portfolioSentence } from "@/components/Ca
 import { Receipt } from "@/components/Receipt";
 import { Swimlanes } from "@/components/Swimlanes";
 import { PriceWaterfall, Waterfall } from "@/components/case/Waterfall";
-import { WhatIf } from "@/components/case/WhatIf";
+import { Views } from "@/components/case/Views";
 import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
@@ -40,7 +40,7 @@ function Fold({ title, count, summary, children }: { title: string; count?: stri
 
 export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const { id } = await params;
-  const [c, events, hexes, pins, explain, sens, precedent] = await Promise.all([
+  const [c, events, hexes, pins, explain, sens, precedent, surface] = await Promise.all([
     api.case(id),
     api.events(id),
     api.mapBook("all"),
@@ -48,6 +48,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
     explainCase(id),
     sensitivityOf(id),
     precedentFor(id),
+    surfaceOf(id),
   ]);
   const percentile = await api.percentile(id);
   if (!c) notFound();
@@ -108,30 +109,27 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           </div>
 
           {isTenantExplain(explain) ? (
-            <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
+            <>
+              <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
+              {view.receipt && (
+                <div className="border-t border-rule pt-3">
+                  <Receipt r={view.receipt} />
+                </div>
+              )}
+            </>
           ) : explain && explain.steps.length > 0 ? (
-            <Waterfall x={explain} />
+            <Views
+              caseId={view.caseId}
+              surface={surface}
+              sensitivity={sens}
+              before={{ score: explain.score, decision: explain.decision.kind }}
+              whatIf={premium ? { fact: premium.fact, label: premium.label, start: startAt } : null}
+              waterfall={<Waterfall x={explain} />}
+            />
           ) : (
             <div className="flex flex-1 items-center justify-center text-[12.5px] text-dim">
               {view.decision.kind === "routed" ? view.decision.because : "No scored steps for this case."}
             </div>
-          )}
-
-          {premium && explain ? (
-            <WhatIf
-              caseId={view.caseId}
-              fact={premium.fact}
-              label={premium.label}
-              start={startAt}
-              sensitivity={sens}
-              before={{ score: explain.score, decision: explain.decision.kind }}
-            />
-          ) : (
-            view.receipt && (
-              <div className="border-t border-rule pt-3">
-                <Receipt r={view.receipt} />
-              </div>
-            )
           )}
         </section>
 
