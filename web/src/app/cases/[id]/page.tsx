@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { Actions } from "@/components/Actions";
 import { CaseMap } from "@/components/LiveMap";
 import { HazardCard, PortfolioCallout, portfolioSentence } from "@/components/CaseParts";
+import { PrecedentPanel, PercentileLine } from "@/components/BookInsights";
 import { bandPhrase, factorValue, whenLabel } from "@/lib/format";
 import { Receipt } from "@/components/Receipt";
 import { Swimlanes } from "@/components/Swimlanes";
@@ -49,7 +50,9 @@ function Facts({ c }: { c: CaseView }) {
 
 export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const { id } = await params;
-  const [c, events, hexes, pins] = await Promise.all([api.case(id), api.events(id), api.mapBook("all"), api.mapPins()]);
+  const [c, events, hexes, pins, precedent, percentile] = await Promise.all([
+    api.case(id), api.events(id), api.mapBook("all"), api.mapPins(), api.precedent(id), api.percentile(id),
+  ]);
   if (!c) notFound();
   const pin = pins.find((p) => p.caseId === c.caseId);
   const flippers = c.decision.kind === "open" ? c.decision.flippers : [];
@@ -94,6 +97,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
                   enrichment <span className="num text-ink">{delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)}</span>
                 </span>
               )}
+              {percentile && <PercentileLine p={percentile} />}
             </Kicker>
             {c.score ? (
               <IntervalBar score={c.score} />
@@ -141,6 +145,12 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             ? "No desk run. Tenant quotes are decided in code in under a second; the desk only reviews referrals."
             : "The desk has not run on this case yet."}
         </p>
+      )}
+
+      {precedent && precedent.hits.length > 0 && (
+        <div className="border-t border-rule px-10 py-6">
+          <PrecedentPanel p={precedent} />
+        </div>
       )}
 
       <div className="grid grid-cols-3 gap-10 border-t border-rule px-10 py-6">

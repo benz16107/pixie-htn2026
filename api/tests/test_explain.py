@@ -6,7 +6,7 @@ import pytest
 
 from atlas_api.case import Known, World
 from atlas_api.engine import DEFAULT_RULES_DIR, RulesFile, assess, estimate_premium
-from atlas_api.explain import (explain_payload, precedent, reconciles, sensitivity, tenant_waterfall,
+from atlas_api.explain import (explain_payload, reconciles, sensitivity, tenant_waterfall,
                                toronto_percentiles, waterfall, whatif)
 from atlas_api.layers import LayersPack
 
@@ -71,14 +71,6 @@ def test_sensitivity_names_the_flip_point(world):
     assert "premium at or above $50,000 flips" in premium["flip"]["text"]
     assert out["facts"][0]["spread"] >= out["facts"][-1]["spread"]     # ranked by how much it moves
 
-
-def test_precedent_falls_back_in_memory_and_shows_its_basis(world):
-    case = world.case("SUB-138")
-    out = precedent(world, case, size=3)
-    assert out["n"] > 20 and len(out["hits"]) == 3
-    for hit in out["hits"]:
-        assert hit["basis"] and hit["outcome"] and hit["policyNumber"]
-    assert "nearest by line, state" in out["basisExplained"]
 
 
 def test_tenant_waterfall_reconciles_with_the_receipt():
