@@ -1,5 +1,6 @@
 """T12: tolerant inbound parse, raw logging, and the human decision it writes."""
 
+import base64
 import json
 
 from fastapi.testclient import TestClient
@@ -20,6 +21,8 @@ def test_parse_is_tolerant():
 def test_webhook_logs_raw_and_writes_a_human_decision(tmp_path, monkeypatch):
     monkeypatch.setenv("ATLAS_DB", str(tmp_path / "linq.sqlite"))
     monkeypatch.delenv("ATLAS_ACTIONS", raising=False)
+    monkeypatch.delenv("LINQ_WEBHOOK_SECRET", raising=False)   # unsigned test events are accepted only when
+                                                               # no signing secret is configured
     monkeypatch.setattr("atlas_api.linq.INBOUND_DIR", tmp_path / "inbound")
     from atlas_api.app import app
 
@@ -42,3 +45,12 @@ def test_webhook_logs_raw_and_writes_a_human_decision(tmp_path, monkeypatch):
 
         junk = client.post("/webhooks/linq", content=b"not json").json()
         assert junk["ok"] is True and junk["command"] is None
+
+        # with a secret configured, an unsigned (or wrongly signed) event is logged but never acted on
+        monkeypatch.setenv("LINQ_WEBHOOK_SECRET", "whsec_" + base64.b64encode(b"k" * 24).decode())
+        forged = client.post("/webhooks/linq", content=json.dumps(
+            {"message": {"parts": [{"type": "text", "value": "decline 1"}]}}),
+            headers={"content-type": "application/json", "webhook-id": "x", "webhook-timestamp": "1",
+                     "webhook-signature": "v1,bogus"}).json()
+        assert forged["signatureValid"] is False and forged["reply"] is None
+        assert client.get(f"/cases/{case_ids[0]}").json()["decision"]["kind"] == "approve"   # unchanged
