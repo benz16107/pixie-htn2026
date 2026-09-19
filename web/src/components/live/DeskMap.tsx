@@ -36,6 +36,7 @@ export default function DeskMap({
   const map = useRef<MapLibre | null>(null);
   const [cam, setCam] = useState({ lat: 38, lng: -96, zoom: 3.2 });
   const [size, setSize] = useState({ w: 640, h: 520 });
+  const [trouble, setTrouble] = useState("");
 
   useEffect(() => {
     if (!box.current) return;
@@ -46,7 +47,9 @@ export default function DeskMap({
     });
     ro.observe(el);
     setSize({ w: el.clientWidth, h: el.clientHeight });
-    const m = new MapLibre({
+    let m: MapLibre;
+    try {
+      m = new MapLibre({
       container: el,
       style: "https://tiles.openfreemap.org/styles/positron",
       center: [-96, 38],
@@ -54,8 +57,19 @@ export default function DeskMap({
       interactive: true,
       attributionControl: { compact: true },
       canvasContextAttributes: { preserveDrawingBuffer: true },
-    });
+      });
+    } catch {
+      setTrouble("no WebGL on this machine, showing hexes only");
+      return () => ro.disconnect();
+    }
     m.on("style.load", () => earthTone(m));
+    m.on("error", (e) => setTrouble(e.error?.message ?? "map error"));
+    // If the basemap has not drawn in 6s the demo still needs a map: hexes and pins on paper.
+    const watchdog = setTimeout(() => setTrouble((t) => t || "map tiles unavailable, showing hexes only"), 6000);
+    m.once("idle", () => {
+      clearTimeout(watchdog);
+      setTrouble("");
+    });
     const sync = () => {
       const c = m.getCenter();
       setCam({ lat: c.lat, lng: c.lng, zoom: m.getZoom() });
@@ -64,15 +78,21 @@ export default function DeskMap({
     m.on("moveend", sync);
     map.current = m;
     return () => {
+      clearTimeout(watchdog);
       ro.disconnect();
       m.remove();
       map.current = null;
     };
   }, []);
 
+  const flownTo = useRef("");
   useEffect(() => {
     const m = map.current;
     if (!m || !focus) return;
+    // Only move when the target actually changes: otherwise every render restarts the flight.
+    const key = `${focus.lat},${focus.lng},${focus.zoom}`;
+    if (flownTo.current === key) return;
+    flownTo.current = key;
     const to = { center: [focus.lng, focus.lat] as [number, number], zoom: focus.zoom };
     if (reduced) m.jumpTo(to);
     else m.flyTo({ ...to, duration: 1400, curve: 1.3, essential: true });
@@ -91,9 +111,12 @@ export default function DeskMap({
   };
 
   return (
-    <div className="absolute inset-0">
+    // Land and contours sit under the canvas: when tiles fail the panel still reads as a map.
+    <div className="contours absolute inset-0 bg-land">
       <div ref={box} className="h-full w-full" />
-      <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply" />
+      {trouble && (
+        <p className="absolute bottom-2 left-2 z-10 rounded-sm border border-rule bg-paper/90 px-2 py-0.5 font-mono text-[10px] text-dim">{trouble}</p>
+      )}
       <svg className="absolute inset-0" width={size.w} height={size.h} style={{ pointerEvents: "none" }} aria-hidden>
         {hexes.map((h) => {
           const pts = h.ring.map(([la, ln]) => { const p = at(la, ln); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; }).join(" ");

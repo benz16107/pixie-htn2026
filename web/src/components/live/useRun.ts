@@ -1,12 +1,12 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DeskEvent, QueueRow } from "@/contract";
-import { PROXY, foldScore, isModelStep, type CaseState } from "@/lib/live";
+import type { DeskEvent } from "@/contract";
+import { PROXY, foldScore, isModelStep, type CaseState, type Row } from "@/lib/live";
 
 export type Speed = 1 | 2 | 4;
 
 type Options = {
-  rows: QueueRow[];
+  rows: Row[];
   /** seq count of the recorded run per case id; 0 means the desk decided it in code alone */
   recorded: Record<string, number>;
   /** used when the API cannot be reached at all */
@@ -14,7 +14,7 @@ type Options = {
   apiUp: boolean;
 };
 
-const blank = (row: QueueRow, recorded: number): CaseState => ({
+const blank = (row: Row, recorded: number): CaseState => ({
   row,
   status: "waiting",
   events: [],
@@ -80,61 +80,80 @@ export function useRun({ rows, recorded, offlineEvents, apiUp }: Options) {
       setRunning(true);
       setCases(Object.fromEntries(ids.map((id) => [id, blank(rows.find((r) => r.caseId === id)!, recorded[id] ?? 0)])));
 
+      const streamed = ids.filter((id) => recorded[id]);
       ids.forEach((id, i) => {
+        if (recorded[id]) {
+          setCases((p) => (p[id] ? { ...p, [id]: { ...p[id], status: "working" } } : p));
+          return;
+        }
         // Cases the desk settled in code get no stream: they land in queue order, fast.
-        if (!recorded[id]) {
-          timers.current.push(
-            setTimeout(
-              () => setCases((p) => (p[id] ? { ...p, [id]: { ...p[id], status: "settled" } } : p)),
-              300 + i * (260 / sp),
-            ),
-          );
-          return;
-        }
-        setCases((p) => (p[id] ? { ...p, [id]: { ...p[id], status: "working" } } : p));
+        timers.current.push(
+          setTimeout(() => setCases((p) => (p[id] ? { ...p, [id]: { ...p[id], status: "settled" } } : p)), 300 + i * (260 / sp)),
+        );
+      });
+      if (!streamed.length) return;
 
-        if (mode === "live") {
-          // Ask the desk to think for real, then poll for what it writes.
-          fetch(`${PROXY}/desk/run`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ caseIds: [id], mode: "live" }),
-          }).catch(() => {});
-          let after = 0;
-          const poll = async () => {
-            try {
-              const res = await fetch(`${PROXY}/cases/${id}/events?after=${after}`, { cache: "no-store" });
-              for (const e of (await res.json()) as DeskEvent[]) {
-                after = Math.max(after, e.seq);
-                push(id, e);
-              }
-            } catch {}
-            timers.current.push(setTimeout(poll, 900));
-          };
-          poll();
-          return;
-        }
-
-        // Replay: take the recorded run whole, then play it on our own clock. No stream to drop,
-        // it pauses and restarts cleanly, and it works with the API off.
-        const schedule = (evs: DeskEvent[]) => {
-          loaded.current[id] = evs;
-          const t0 = evs[0]?.tMs ?? 0;
-          evs.forEach((e) => timers.current.push(setTimeout(() => push(id, e), (e.tMs - t0) / sp)));
-          timers.current.push(
-            setTimeout(
-              () => setCases((p) => (p[id] ? { ...p, [id]: { ...p[id], status: "settled" } } : p)),
-              ((evs.at(-1)?.tMs ?? 0) - t0) / sp + 150,
-            ),
-          );
-        };
-        if (!apiUp) return schedule(offlineEvents[id] ?? []);
-        if (loaded.current[id]) return schedule(loaded.current[id]);
+      // Keep the whole recording to hand so the scrub can jump anywhere in it.
+      streamed.forEach((id) => {
+        if (loaded.current[id] || !apiUp) return;
         fetch(`${PROXY}/cases/${id}/events`, { cache: "no-store" })
           .then((r) => r.json() as Promise<DeskEvent[]>)
-          .then((evs) => schedule(evs.length ? evs : (offlineEvents[id] ?? [])))
-          .catch(() => schedule(offlineEvents[id] ?? []));
+          .then((evs) => {
+            loaded.current[id] = evs;
+          })
+          .catch(() => {});
       });
+
+      const settleAll = (ms: number) =>
+        timers.current.push(
+          setTimeout(() => setCases((p) => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, { ...v, status: "settled" as const }]))), ms),
+        );
+
+      if (mode === "live") {
+        fetch(`${PROXY}/desk/run`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ caseIds: streamed, mode: "live" }),
+        }).catch(() => {});
+      }
+
+      if (!apiUp) {
+        // Recorded runs from disk, on a local clock.
+        streamed.forEach((id) => {
+          const evs = offlineEvents[id] ?? [];
+          const t0 = evs[0]?.tMs ?? 0;
+          loaded.current[id] = evs;
+          evs.forEach((e) => timers.current.push(setTimeout(() => push(id, e), (e.tMs - t0) / sp)));
+          settleAll(((evs.at(-1)?.tMs ?? 0) - t0) / sp + 200);
+        });
+        return;
+      }
+
+      // One stream for every case in the run: the desk paces it, live or replayed.
+      const url =
+        mode === "live"
+          ? `${PROXY}/events/stream?cases=${streamed.join(",")}&replay=0`
+          : `${PROXY}/events/stream?cases=${streamed.join(",")}&replay=1&speed=${sp}`;
+      const es = new EventSource(url);
+      es.addEventListener("desk", (ev) => {
+        const e = JSON.parse((ev as MessageEvent).data) as DeskEvent;
+        push(e.caseId, e);
+        if (e.kind === "note") setCases((p) => (p[e.caseId] ? { ...p, [e.caseId]: { ...p[e.caseId], status: "settled" } } : p));
+      });
+      es.addEventListener("done", () => {
+        es.close();
+        settleAll(0);
+      });
+      es.onerror = () => {
+        es.close();
+        // The stream dropped: finish from the recording we already hold.
+        streamed.forEach((id) => {
+          const evs = loaded.current[id] ?? offlineEvents[id] ?? [];
+          evs.forEach((e) => push(id, e));
+        });
+        settleAll(200);
+      };
+      streams.current.push(es);
     },
     [apiUp, offlineEvents, push, recorded, rows, speed, stop],
   );

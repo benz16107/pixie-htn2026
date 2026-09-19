@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { CaseView, DeskEvent, QueueRow } from "@/contract";
+import type { CaseView, DeskEvent, Interval } from "@/contract";
 import { DecisionChip, IntervalBar, money } from "../bits";
-import { chatLine, type CaseState, type Chat } from "@/lib/live";
+import { chatLine, type CaseState, type Chat, type Row } from "@/lib/live";
 import { prettyBands } from "@/lib/format";
 import { C_ROW_H } from "./layout";
 
@@ -10,31 +10,24 @@ const str = (v: unknown) => (typeof v === "string" ? v : "");
 
 /* ---------------------------------- queue rail --------------------------------- */
 
-export function QueueRail({
-  rows,
-  cases,
+type Ranked = { r: Row; c?: CaseState; score: Interval | null; scored: boolean; group: number; mid: number };
+
+function RailRows({
+  list,
+  top,
   selected,
+  flash,
   onPick,
 }: {
-  rows: QueueRow[];
-  cases: Record<string, CaseState>;
+  list: Ranked[];
+  top: number;
   selected: string | null;
+  flash: string | null;
   onPick: (id: string) => void;
 }) {
-  // Open cases first, then declines, then routed; inside a group, by the interval that has settled.
-  const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
-  const ranked = [...rows]
-    .map((r) => {
-      const c = cases[r.caseId];
-      const score = c?.score ?? r.score;
-      const scored = !!score && (score.lo !== 0 || score.hi !== 0) && r.decision.kind !== "routed";
-      return { r, c, scored, group: GROUP[r.decision.kind] ?? 3, mid: scored ? (score.lo + score.hi) / 2 : -1, score };
-    })
-    .sort((a, b) => a.group - b.group || b.mid - a.mid || b.r.valueAtStake - a.r.valueAtStake);
-
   return (
-    <div className="relative" style={{ height: ranked.length * C_ROW_H }}>
-      {ranked.map(({ r, c, score, scored }, i) => {
+    <>
+      {list.map(({ r, c, score, scored }, i) => {
         const on = selected === r.caseId;
         const status = c?.status ?? "waiting";
         return (
@@ -43,9 +36,9 @@ export function QueueRail({
             onClick={() => onPick(r.caseId)}
             aria-current={on ? "true" : undefined}
             className={`absolute inset-x-0 flex items-center gap-2 rounded-sm border px-2 text-left transition-[transform,background-color,border-color] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
-              on ? "border-ink bg-land" : "border-transparent hover:border-rule hover:bg-land/60"
+              flash === r.caseId ? "animate-pulse border-moss bg-moss/20 motion-reduce:animate-none" : on ? "border-ink bg-land" : "border-transparent hover:border-rule hover:bg-land/60"
             }`}
-            style={{ transform: `translateY(${i * C_ROW_H}px)`, height: C_ROW_H - 3 }}
+            style={{ transform: `translateY(${(top + i) * C_ROW_H}px)`, height: C_ROW_H - 3 }}
           >
             <span
               aria-hidden
@@ -53,22 +46,109 @@ export function QueueRail({
                 status === "working" ? "animate-pulse bg-ochre motion-reduce:animate-none" : status === "settled" ? "bg-ink" : "bg-rule"
               }`}
             />
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 flex-1 overflow-hidden">
               <span className="block truncate text-[12px] font-medium leading-tight">{r.insured}</span>
-              <span className="num text-[10px] text-dim">
+              <span className="num block truncate text-[10px] text-dim">
                 #{r.caseId} · {r.state} · {money(r.valueAtStake)}
               </span>
             </span>
-            {status === "settled" ? (
-              <DecisionChip decision={r.decision} />
+            {status === "settled" || ("by" in r.decision && r.decision.by === "human") ? (
+              <span className="shrink-0"><DecisionChip decision={r.decision} /></span>
             ) : status === "working" ? (
-              <span className="num text-[10px] text-ochre">{scored ? `${score.lo}–${score.hi}` : "—"}</span>
+              <span className="num shrink-0 text-[10px] text-ochre">{scored ? `${score!.lo}–${score!.hi}` : "—"}</span>
             ) : (
-              <span className="num text-[10px] text-dim">queued</span>
+              <span className="num shrink-0 text-[10px] text-dim">{scored ? "queued" : "—"}</span>
             )}
           </button>
         );
       })}
+    </>
+  );
+}
+
+export function QueueRail({
+  rows,
+  cases,
+  selected,
+  flash,
+  onPick,
+}: {
+  rows: Row[];
+  cases: Record<string, CaseState>;
+  selected: string | null;
+  flash: string | null;
+  onPick: (id: string) => void;
+}) {
+  // Commercial cases first, by the interval that has settled; consumer referrals last.
+  const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
+  const rank = (r: Row) => {
+    const c = cases[r.caseId];
+    const score = c?.score ?? r.score;
+    const scored = !!score && (score.lo !== 0 || score.hi !== 0);
+    return { r, c, score, scored, group: GROUP[r.decision.kind] ?? 3, mid: scored ? (score!.lo + score!.hi) / 2 : -1 };
+  };
+  const sorted = (list: Row[]): Ranked[] => list.map(rank).sort((a, b) => a.group - b.group || b.mid - a.mid || b.r.valueAtStake - a.r.valueAtStake);
+  const desk = sorted(rows.filter((r) => r.region !== "toronto"));
+  const consumer = sorted(rows.filter((r) => r.region === "toronto"));
+
+  return (
+    <div className="relative" style={{ height: (desk.length + consumer.length + 2) * C_ROW_H }}>
+      <p className="kicker absolute inset-x-0 px-1" style={{ top: 4 }}>
+        Open queue
+      </p>
+      <RailRows list={desk} top={0.6} selected={selected} flash={flash} onPick={onPick} />
+      {consumer.length > 0 && (
+        <>
+          <p className="kicker absolute inset-x-0 px-1" style={{ top: (desk.length + 0.7) * C_ROW_H }}>
+            Consumer referrals
+          </p>
+          <RailRows list={consumer} top={desk.length + 1.3} selected={selected} flash={flash} onPick={onPick} />
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Sweep view: one row per case, its events as a filling strip. Lanes are for one case at a time. */
+export function SweepBoard({ cases, onPick }: { cases: Record<string, CaseState>; onPick: (id: string) => void }) {
+  const list = Object.values(cases).sort((a, b) => b.events.length - a.events.length || a.row.caseId.localeCompare(b.row.caseId));
+  const ACTOR: Record<string, string> = {
+    lead: "bg-ink",
+    intake: "bg-moss",
+    appetite: "bg-ochre",
+    hazard: "bg-rust",
+    portfolio: "bg-water",
+    system: "bg-rule",
+    human: "bg-moss",
+  };
+  return (
+    <div className="flex min-h-0 flex-col px-4 pb-1 pt-1.5">
+      <p className="kicker mb-1">
+        Sweep · {list.length} cases at once · keys 1-6 jump beats, space runs the sweep
+      </p>
+      <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+        {list.map((c) => {
+          const last = c.events.filter((e) => e.kind !== "run_stats").at(-1);
+          return (
+            <li key={c.row.caseId}>
+              <button onClick={() => onPick(c.row.caseId)} className="flex w-full items-center gap-2 rounded-sm px-1 py-0.5 text-left hover:bg-land">
+                <span className="num w-[92px] shrink-0 truncate text-[11px]">#{c.row.caseId} {c.row.state}</span>
+                <span className="w-[130px] shrink-0 truncate text-[11.5px]">{c.row.insured}</span>
+                <span className="flex h-3 w-[180px] shrink-0 items-center gap-[2px]">
+                  {c.events.slice(-30).map((e) => (
+                    <span key={e.id} className={`lane-card h-2.5 w-1 rounded-[1px] ${ACTOR[e.actor] ?? "bg-rule"}`} />
+                  ))}
+                </span>
+                <span className="num w-[52px] shrink-0 text-[11px]">{c.score ? `${c.score.lo}–${c.score.hi}` : "—"}</span>
+                <span className="num w-[56px] shrink-0 text-[11px] text-dim">{c.costUsd ? `$${c.costUsd.toFixed(3)}` : c.codeOnly ? "code" : ""}</span>
+                <span className="min-w-0 flex-1 truncate text-[11px] text-dim">
+                  {c.status === "settled" ? ("because" in c.row.decision ? c.row.decision.because[0] : c.row.decision.kind) : (last?.body.text as string) ?? "queued"}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -77,16 +157,24 @@ export function QueueRail({
 
 const FACT_STATE = { missing: "text-rust", estimated: "text-ochre", known: "text-moss" } as const;
 
-export function CasePanel({ c, state, typed }: { c: CaseView | null; state?: CaseState; typed: boolean }) {
+export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; state?: CaseState; typed: boolean; onStart: () => void }) {
   const events = state?.events ?? [];
-  const score = state?.score ?? c?.score;
+  const score = state?.score ?? c?.score ?? null;
   const decided = events.find((e) => e.kind === "decision");
   const conflicts = events.filter((e) => e.kind === "conflict");
   const resolutions = events.filter((e) => e.kind === "resolution");
   const seen = new Set(events.filter((e) => e.kind === "finding" || e.kind === "estimate").map((e) => str(e.body.fact)));
   const explanation = decided ? prettyBands(str(decided.body.text)) : "";
 
-  if (!c) return <p className="p-4 text-[12.5px] text-dim">Pick a case from the rail or a pin on the map.</p>;
+  if (!c)
+    return (
+      <div className="p-4 text-[12.5px]">
+        <p className="text-dim">Pick a case from the queue on the left, or a pin on the map. The case and its decision appear here.</p>
+        <button onClick={onStart} className="mt-3 rounded-sm border border-ink bg-ink px-3 py-1 text-paper transition-colors duration-150 hover:bg-ink/85">
+          Run the demo
+        </button>
+      </div>
+    );
   return (
     <div className="flex min-h-0 flex-col gap-2 overflow-y-auto px-4 py-3">
       <div>
@@ -169,7 +257,7 @@ function Typed({ text, on }: { text: string; on: boolean }) {
 
 /* ----------------------------------- chatter ----------------------------------- */
 
-export function Chatter({ events, onPick, active }: { events: DeskEvent[]; onPick: (id: string) => void; active: string | null }) {
+export function Chatter({ events, onPick, active, onStart }: { events: DeskEvent[]; onPick: (id: string) => void; active: string | null; onStart: () => void }) {
   const box = useRef<HTMLUListElement>(null);
   const lines = events.map(chatLine).filter(Boolean) as Chat[];
   useEffect(() => {
@@ -184,7 +272,14 @@ export function Chatter({ events, onPick, active }: { events: DeskEvent[]; onPic
   };
   return (
     <ul ref={box} className="h-full overflow-y-auto pr-1 text-[11.5px] leading-snug" aria-live="polite" aria-label="Agent chatter">
-      {lines.length === 0 && <li className="text-dim">The agents talk here once a run starts.</li>}
+      {lines.length === 0 && (
+        <li className="text-dim">
+          The agents talk here: who asked whom, what came back, what they disagreed about.
+          <button onClick={onStart} className="mt-2 block rounded-sm border border-ink px-2 py-1 text-ink transition-colors duration-150 hover:bg-land">
+            Run the demo
+          </button>
+        </li>
+      )}
       {lines.map((l) => (
         <li key={l.id}>
           <button

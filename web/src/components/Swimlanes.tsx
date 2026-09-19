@@ -240,8 +240,8 @@ export function Swimlanes({
 
   return (
     <section aria-labelledby="lanes-h" className={`flex min-h-0 flex-col ${pad}`}>
-      <div className="mb-2 flex items-center gap-6">
-        <h2 id="lanes-h" className="kicker">{heading}</h2>
+      <div className="mb-2 flex shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap">
+        <h2 id="lanes-h" className="kicker shrink-0 truncate">{heading}</h2>
         {controls && (
         <div className="flex items-center gap-2" role="group" aria-label="Replay">
           <button className={btn} onClick={() => { setSpeed(1); setClock(0); }}>Replay 1×</button>
@@ -249,7 +249,7 @@ export function Swimlanes({
           {clock !== null && <button className={btn} onClick={() => setClock(null)}>Skip to end</button>}
         </div>
         )}
-        <span className="text-[11.5px] text-dim">
+        <span className="hidden shrink-0 truncate text-[11.5px] text-dim xl:inline">
           <span className="num">{cards.length}</span> steps, <span className="num">{sorted.length}</span> events. Columns are moments, not seconds.
         </span>
         <div className="ml-auto flex w-[360px] items-center gap-3">
@@ -261,7 +261,7 @@ export function Swimlanes({
           t+ <span className="num">{((clock === null ? end : Math.min(clock, end)) / 1000).toFixed(0)}</span> s
         </span>
       </div>
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 overflow-y-auto">
         <ul className="shrink-0" style={{ width: LABEL_W, paddingTop: TOP }} aria-hidden>
           {LANES.map((l) => (
             <li key={l} className="flex items-center border-b border-dashed border-rule text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ height: LANE_H }}>

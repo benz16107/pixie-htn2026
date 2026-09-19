@@ -1,5 +1,6 @@
-import type { CaseView, DeskEvent, Hex, QueueRow } from "@/contract";
+import type { CaseView, DeskEvent, Hex } from "@/contract";
 import { LiveDesk, type LiveProps } from "@/components/live/LiveDesk";
+import type { Row } from "@/lib/live";
 import { api } from "@/lib/api";
 import { API } from "@/lib/live";
 import mapBook from "@/fixtures/map-book.json";
@@ -32,17 +33,19 @@ type Backtest = {
 export default async function LivePage() {
   const health = await json<{ ok: boolean }>("/health");
   const apiUp = !!health?.ok;
-  const allRows = await api.queue("open");
-  // The desk view runs the commercial cases; tenant quotes live in the Toronto mode.
-  const rows = allRows.filter((r) => r.decision.kind !== "routed" && !r.caseId.startsWith("TQ-"));
+  const allRows = ((await json<Row[]>("/queue?view=open")) ?? ((await api.queue("open")) as unknown as Row[])).filter((r) => r.caseId);
+  // The desk works the commercial cases the guideline scores; routed lines and consumer
+  // referrals still show in the rail, so the queue on screen matches the API's.
+  const rows = allRows.filter((r) => r.region === "toronto" || (r.decision.kind !== "routed" && !r.caseId.startsWith("TQ-")));
+  const deskIds = rows.filter((r) => r.region !== "toronto").map((r) => r.caseId);
   const recordedPairs = await Promise.all(
-    rows.map(async (r) => [r.caseId, ((await json<DeskEvent[]>(`/cases/${r.caseId}/events`)) ?? []).length] as const),
+    deskIds.map(async (id) => [id, ((await json<DeskEvent[]>(`/cases/${id}/events`)) ?? []).length] as const),
   );
   const offlineEvents = { "138": events138 as unknown as DeskEvent[] };
   // With the API down, the bundled recording is the run.
   const recorded = apiUp
     ? Object.fromEntries(recordedPairs)
-    : Object.fromEntries(rows.map((r) => [r.caseId, offlineEvents[r.caseId as keyof typeof offlineEvents]?.length ?? 0]));
+    : Object.fromEntries(deskIds.map((id) => [id, offlineEvents[id as keyof typeof offlineEvents]?.length ?? 0]));
   const detailPairs = await Promise.all(
     recordedPairs.filter(([, n]) => n > 0).map(async ([id]) => [id, await api.case(id)] as const),
   );
@@ -53,9 +56,12 @@ export default async function LivePage() {
   ) as unknown as Record<string, CaseView>;
 
   const sites: LiveProps["sites"] = {};
-  for (const p of mapPins as { caseId: string; site: { lat: number; lng: number } }[]) sites[p.caseId] = p.site;
+  const livePins = await json<{ caseId: string; site: { lat: number; lng: number } }[]>("/map/pins");
+  for (const p of livePins ?? (mapPins as { caseId: string; site: { lat: number; lng: number } }[])) sites[p.caseId] = p.site;
   for (const [id, c] of Object.entries(details)) if (c.site) sites[id] = c.site;
 
+  const [book3, book5] = await Promise.all([json<Hex[]>("/map/book?res=3"), json<Hex[]>("/map/book?res=5")]);
+  const fixtureBook = mapBook as unknown as Record<string, Record<string, Hex[]>>;
   const bt = await json<Backtest>("/backtest");
   const backtest = bt
     ? {
@@ -72,14 +78,14 @@ export default async function LivePage() {
 
   return (
     <LiveDesk
-      rows={rows as QueueRow[]}
-      allRows={allRows as QueueRow[]}
+      rows={rows}
+      allRows={allRows}
       sites={sites}
       details={details}
       recorded={recorded}
       offlineEvents={offlineEvents}
-      bookHexes={(mapBook as unknown as Record<string, Record<string, Hex[]>>)["3"].all}
-      fineHexes={(mapBook as unknown as Record<string, Record<string, Hex[]>>)["5"].all}
+      bookHexes={book3 ?? fixtureBook["3"].all}
+      fineHexes={book5 ?? fixtureBook["5"].all}
       apiUp={apiUp}
       backtest={backtest}
     />

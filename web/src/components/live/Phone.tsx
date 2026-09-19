@@ -1,26 +1,26 @@
 "use client";
-import type { QueueRow } from "@/contract";
-import { digestText } from "@/lib/live";
-import { money } from "../bits";
 import type { Quote } from "./types";
+
+export type DigestState = { text: string; status: string; caseIds: string[] } | null;
 
 /** A phone-shaped mirror so the judge sees the phone side without picking one up. */
 export function Phone({
   tab,
   setTab,
-  rows,
-  quote,
+  digest,
+  onSend,
+  sending,
   reply,
-  onReply,
+  quote,
 }: {
   tab: "digest" | "quote";
   setTab: (t: "digest" | "quote") => void;
-  rows: QueueRow[];
+  digest: DigestState;
+  onSend: () => void;
+  sending: boolean;
+  reply: string | null;
   quote: Quote | null;
-  reply: boolean;
-  onReply: () => void;
 }) {
-  const d = digestText(rows);
   return (
     <div className="flex h-full flex-col gap-2">
       <div className="flex gap-1" role="tablist" aria-label="Phone mirror">
@@ -41,25 +41,25 @@ export function Phone({
         {tab === "digest" ? (
           <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto text-[10.5px] leading-snug">
             <p className="kicker text-[9px]">iMessage · Pixie desk</p>
-            <div className="rounded-lg rounded-bl-sm bg-land px-2 py-1.5">
-              <p className="font-semibold">{d.head}</p>
-              {d.lines.map((l) => (
-                <p key={l} className="num mt-0.5 text-[10px]">{l}</p>
-              ))}
-              <p className="mt-1 text-dim">{d.foot}</p>
-            </div>
-            {reply ? (
-              <>
-                <div className="ml-6 rounded-lg rounded-br-sm bg-ink px-2 py-1 text-paper">approve 1</div>
-                <div className="rounded-lg rounded-bl-sm bg-land px-2 py-1.5">
-                  Approved by the underwriter. Case 138 now reads <b>approved by underwriter over iMessage</b>.
-                </div>
-              </>
+            {digest ? (
+              <div className="whitespace-pre-line rounded-lg rounded-bl-sm bg-land px-2 py-1.5">{digest.text}</div>
             ) : (
-              <button onClick={onReply} className="mt-auto rounded-sm border border-ink px-2 py-1 text-[10px] hover:bg-land">
-                Show the reply
-              </button>
+              <p className="text-dim">No digest sent yet.</p>
             )}
+            {reply && (
+              <>
+                <div className="ml-6 rounded-lg rounded-br-sm bg-ink px-2 py-1 text-paper">{reply.replace(/^.*?:\s*/, "")}</div>
+                <div className="rounded-lg rounded-bl-sm bg-land px-2 py-1.5">{reply}</div>
+              </>
+            )}
+            <button
+              onClick={onSend}
+              disabled={sending}
+              className="mt-auto rounded-sm border border-ink px-2 py-1 text-[10px] transition-colors duration-150 hover:bg-land disabled:opacity-60"
+            >
+              {sending ? "Sending…" : digest ? "Send it again" : "Send the digest"}
+            </button>
+            {digest && <p className="text-center text-[9px] text-moss">{digest.status} to Ben&apos;s phone</p>}
           </div>
         ) : quote ? (
           <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto text-[10.5px] leading-snug">
@@ -95,10 +95,8 @@ export function Phone({
         )}
       </div>
       <p className="text-center text-[9.5px] text-dim">
-        {tab === "digest" ? "Mirror of the iMessage digest" : "Mirror of the renter app"} · same API as the phone
+        {tab === "digest" ? "Mirror of the iMessage thread" : "Mirror of the renter app"} · same API as the phone
       </p>
     </div>
   );
 }
-
-export const money_ = money;
