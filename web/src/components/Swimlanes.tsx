@@ -4,12 +4,12 @@ import type { Actor, DeskEvent, Interval } from "@/contract";
 import { humanize, parseHazard, parseSkip, prettyBands, signed } from "@/lib/format";
 import { IntervalBar } from "./bits";
 
-const LANES: Actor[] = ["lead", "intake", "appetite", "hazard", "portfolio", "system", "human"];
-const LANE_H = 60;
+const ALL_LANES: Actor[] = ["lead", "intake", "appetite", "hazard", "portfolio", "system", "human"];
+const DEFAULT_LANE_H = 60;
 const LABEL_W = 92;
 const COL_W = 200;
 const CARD_W = 188;
-const CARD_H = 52;
+const CARD_H = 46;
 const SAME_MOMENT_MS = 1000;
 const TOP = 16; // header row for the moment labels
 const GEO = new Set<Actor>(["hazard", "portfolio"]);
@@ -91,13 +91,13 @@ function attach(events: DeskEvent[]): { cards: DeskEvent[]; chips: Map<string, D
 }
 
 /** Ordinal columns: events in the same second share a column; a lane never overlaps itself. */
-function layout(events: DeskEvent[]): { cards: Card[]; cols: number; colTimes: number[] } {
+function layout(events: DeskEvent[], lanes: Actor[]): { cards: Card[]; cols: number; colTimes: number[] } {
   const { cards, chips } = attach(events);
   const last: Record<number, number> = {};
   const colTimes: number[] = [];
   let prev: { col: number; t: number } | null = null;
   const out = cards.map((e) => {
-    const lane = Math.max(0, LANES.indexOf(e.actor));
+    const lane = Math.max(0, lanes.indexOf(e.actor));
     const floor = prev ? (e.tMs - prev.t < SAME_MOMENT_MS ? prev.col : prev.col + 1) : 0;
     const col = Math.max(floor, (last[lane] ?? -1) + 1);
     last[lane] = col;
@@ -186,9 +186,29 @@ function Arrows({ cards, pos, height, width }: { cards: Card[]; pos: Map<string,
   );
 }
 
-export function Swimlanes({ events, initialScore }: { events: DeskEvent[]; initialScore: Interval }) {
+export function Swimlanes({
+  events,
+  initialScore,
+  lanes = ALL_LANES,
+  laneH = DEFAULT_LANE_H,
+  controls = true,
+  heading = "Agent lanes",
+  follow = false,
+  pad = "px-10 pb-5 pt-2.5",
+}: {
+  events: DeskEvent[];
+  initialScore: Interval;
+  lanes?: Actor[];
+  laneH?: number;
+  controls?: boolean;
+  heading?: string;
+  follow?: boolean;
+  pad?: string;
+}) {
+  const LANE_H = laneH;
+  const LANES = lanes;
   const sorted = useMemo(() => [...events].sort((a, b) => a.seq - b.seq), [events]);
-  const { cards, cols, colTimes } = useMemo(() => layout(sorted), [sorted]);
+  const { cards, cols, colTimes } = useMemo(() => layout(sorted, lanes), [sorted, lanes]);
   const scroller = useRef<HTMLDivElement>(null);
   const [clock, setClock] = useState<number | null>(null); // null = the whole run
   const [speed, setSpeed] = useState(1);
@@ -208,8 +228,8 @@ export function Swimlanes({ events, initialScore }: { events: DeskEvent[]; initi
     const el = scroller.current;
     if (!el) return;
     const target = Math.max(0, (latestCol + 1) * COL_W - el.clientWidth + 24);
-    el.scrollTo({ left: target, behavior: clock === null ? "auto" : "smooth" });
-  }, [latestCol, clock]);
+    el.scrollTo({ left: target, behavior: clock === null && !follow ? "auto" : "smooth" });
+  }, [latestCol, clock, follow]);
 
   const assessed = sorted.filter((e) => e.kind === "assessment" && e.body.score && (clock === null || e.tMs <= clock)).at(-1);
   const score = (assessed?.body.score as Interval | undefined) ?? initialScore;
@@ -219,14 +239,16 @@ export function Swimlanes({ events, initialScore }: { events: DeskEvent[]; initi
   const btn = "rounded-sm border border-ink px-2 py-px font-mono text-[11px] transition-colors duration-150 hover:bg-ink hover:text-paper";
 
   return (
-    <section aria-labelledby="lanes-h" className="px-10 pb-5 pt-2.5">
+    <section aria-labelledby="lanes-h" className={`flex min-h-0 flex-col ${pad}`}>
       <div className="mb-2 flex items-center gap-6">
-        <h2 id="lanes-h" className="kicker">Agent lanes</h2>
+        <h2 id="lanes-h" className="kicker">{heading}</h2>
+        {controls && (
         <div className="flex items-center gap-2" role="group" aria-label="Replay">
           <button className={btn} onClick={() => { setSpeed(1); setClock(0); }}>Replay 1×</button>
           <button className={btn} onClick={() => { setSpeed(4); setClock(0); }}>4×</button>
           {clock !== null && <button className={btn} onClick={() => setClock(null)}>Skip to end</button>}
         </div>
+        )}
         <span className="text-[11.5px] text-dim">
           <span className="num">{cards.length}</span> steps, <span className="num">{sorted.length}</span> events. Columns are moments, not seconds.
         </span>
@@ -239,7 +261,7 @@ export function Swimlanes({ events, initialScore }: { events: DeskEvent[]; initi
           t+ <span className="num">{((clock === null ? end : Math.min(clock, end)) / 1000).toFixed(0)}</span> s
         </span>
       </div>
-      <div className="flex">
+      <div className="flex min-h-0 flex-1">
         <ul className="shrink-0" style={{ width: LABEL_W, paddingTop: TOP }} aria-hidden>
           {LANES.map((l) => (
             <li key={l} className="flex items-center border-b border-dashed border-rule text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ height: LANE_H }}>

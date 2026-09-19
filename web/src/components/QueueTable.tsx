@@ -5,7 +5,10 @@ import type { QueueRow } from "@/contract";
 import { DecisionChip, IntervalBar, IssueTag, money } from "./bits";
 
 type Key = "rank" | "insured" | "line" | "state" | "score" | "delta" | "value";
-const mid = (r: QueueRow) => (r.decision.kind === "routed" ? -1 : (r.score.lo + r.score.hi) / 2);
+const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
+const group = (r: QueueRow) => GROUP[r.decision.kind] ?? 3;
+const scored = (r: QueueRow) => r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
+const mid = (r: QueueRow) => (scored(r) ? (r.score.lo + r.score.hi) / 2 : -1);
 
 const COLS: { key: Key; label: string; align?: "right" }[] = [
   { key: "rank", label: "#" },
@@ -21,7 +24,7 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
   const ranked = useMemo(
     () =>
       [...rows]
-        .sort((a, b) => mid(b) - mid(a) || b.valueAtStake - a.valueAtStake)
+        .sort((a, b) => group(a) - group(b) || mid(b) - mid(a) || b.valueAtStake - a.valueAtStake)
         .map((r, i) => ({ ...r, rank: i + 1 })),
     [rows],
   );
@@ -85,9 +88,10 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
             <td className="py-2 pr-4">{r.line.length <= 3 ? r.line.toUpperCase() : r.line[0].toUpperCase() + r.line.slice(1)}</td>
             <td className="num py-2 pr-4">{r.state}</td>
             <td className="py-2 pr-4">
-              {r.decision.kind === "routed" ? (
-                <span className="text-[11.5px] text-dim" title={r.decision.because}>
-                  routed to {r.decision.to}
+              {!scored(r) ? (
+                <span className="text-[11.5px] text-dim" title={r.decision.kind === "routed" ? r.decision.because : undefined}>
+                  <span aria-hidden className="num mr-2">—</span>
+                  {r.decision.kind === "routed" ? `routed to ${r.decision.to}` : "not scored"}
                 </span>
               ) : (
                 <div className="flex items-center gap-3">
