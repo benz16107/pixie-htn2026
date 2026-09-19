@@ -1,12 +1,18 @@
-"""T11: the outbox and the broker information request (Composio Gmail).
+"""T11 + A7: the outbox, the broker information request, and the Composio actions built on it
+(broker-reply watch, referral calendar hold, decision audit trail, data-quality tickets, and a
+small tool-calling agent).
 
-The outbox is the idempotency boundary: one row per (case, action, facts), so pressing the button twice
-sends one email. `ATLAS_ACTIONS=dry` (the default) writes the row and the events but calls nothing;
-`live` calls Composio's GMAIL_SEND_EMAIL with an explicit connected account id, because Composio
-silently falls back to the default account when it is left out.
+The outbox is the idempotency boundary: one row per (case, action, facts-or-message-id), so pressing
+the button twice, or polling twice, does the thing once. `ATLAS_ACTIONS=dry` (the default) writes the
+row and the events but calls nothing; `live` calls Composio with an explicit connected account id on
+every toolkit, because Composio silently falls back to the default account when it is left out (the
+multi-account gotcha docs/research/composio.md section 4 confirms is still undocumented behaviour).
 
-The email body is built from the case's own computed facts: only the flippers, each with the guideline
-band it has to clear. No model writes it.
+The email body, the calendar description, the sheet row and the ticket body are all built from the
+case's own computed facts and events. The one place a model reads free text (a broker's reply email)
+is `extract_broker_facts`, and even there it may only report a value it can quote verbatim from the
+email -- `apply_broker_reply` then re-verifies the quote before treating it as a fact. No number is
+invented; every number is either code-computed or copied out of a document with its source recorded.
 """
 
 from __future__ import annotations
@@ -15,14 +21,15 @@ import hashlib
 import json
 import os
 import time
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
 
-from .case import Case, Estimated, Known, Missing
+from .case import Case, DataIssue, Estimated, Known, Missing
 from .case_store import CaseStore
-from .engine import Assessment, Open, RulesFile
-from .events import ActionP, ActionResultP, DeskEvent
+from .engine import Assessment, Open, RulesFile, assess, explain
+from .events import ActionP, ActionResultP, AssessmentP, DeskEvent, FindingP, ScoreP
 
 COMPOSIO_URL = "https://backend.composio.dev/api/v3.1/tools/execute/{tool}"
 BROKER_INBOX = os.environ.get("ATLAS_BROKER_INBOX", "benz16107+broker@gmail.com")
@@ -159,3 +166,192 @@ def request_broker_info(store: CaseStore, case: Case, a: Assessment, rules: Rule
     append_after_run(store, case_id, run_id, "system", ActionResultP(
         text=f"Broker email {status}: {detail[:80]}", ok=status in ("sent", "dry"), detail=detail))
     return record
+
+
+# ================================================================================================
+# A7: Composio, beyond the one email.
+#
+# Every toolkit below is called the same way `send_gmail` already does it: an explicit
+# `connected_account_id` from an env var named `COMPOSIO_<TOOLKIT>_ACCOUNT`, never left to Composio's
+# default-account routing. `composio_execute` is that pattern factored out so new toolkits don't
+# repeat the user-id lookup.
+# ================================================================================================
+
+_user_id_cache: dict[str, str] = {}
+
+
+def _resolve_user_id(api_key: str, account: str) -> str:
+    if account not in _user_id_cache:
+        with httpx.Client(timeout=30) as http:
+            resp = http.get(f"https://backend.composio.dev/api/v3/connected_accounts/{account}",
+                            headers={"x-api-key": api_key})
+            resp.raise_for_status()
+            _user_id_cache[account] = resp.json().get("user_id", "")
+    return _user_id_cache[account]
+
+
+def _account_env(toolkit: str) -> str:
+    return f"COMPOSIO_{toolkit.upper()}_ACCOUNT"
+
+
+def connected(toolkit: str) -> bool:
+    """Whether Ben has connected this toolkit -- an env var naming the connected account id."""
+    return bool(os.environ.get(_account_env(toolkit)))
+
+
+def composio_execute(tool: str, toolkit: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    """A Composio tool call on the toolkit's explicit connected account. Raises if not connected or
+    on a transport error; callers decide dry/live and not_connected handling."""
+    api_key = os.environ["COMPOSIO_API_KEY"]
+    account = os.environ[_account_env(toolkit)]
+    user_id = os.environ.get("COMPOSIO_USER_ID") or _resolve_user_id(api_key, account)
+    with httpx.Client(timeout=60) as http:
+        resp = http.post(COMPOSIO_URL.format(tool=tool), headers={"x-api-key": api_key},
+                         json={"connected_account_id": account, "user_id": user_id, "arguments": arguments})
+    resp.raise_for_status()
+    return resp.json()
+
+
+FINAL_VERDICTS = {"accept_with_subjectivity", "decline", "refer_with_subjectivity"}
+
+
+def _money_or_numeric_fact(fact: str) -> bool:
+    return fact in ("tiv", "premium", "loss_5yr", "year_built")
+
+
+def _parse_fact_value(fact: str, raw: str) -> Any:
+    """Numeric facts are parsed with the same $/K/M-aware number reader the desk uses to verify a
+    Lead's prose (desk._numbers) -- reused, not reimplemented. Non-numeric facts stay a trimmed string."""
+    if not raw or not raw.strip():
+        return None
+    if _money_or_numeric_fact(fact):
+        from .desk import _numbers
+        nums = _numbers(raw)
+        return nums[0][1] if nums else None
+    return raw.strip()
+
+
+# ---- 1. Close the loop: the broker's reply becomes a fact, live -------------------------------
+
+def _broker_reply_query(case_no: str) -> str:
+    return f'from:{BROKER_INBOX} subject:"submission {case_no}"'
+
+
+def search_broker_replies(case_no: str, max_results: int = 5) -> list[dict[str, Any]]:
+    """GMAIL_FETCH_EMAILS scoped to the broker inbox and this case's subject line -- the same subject
+    `compose_request` used to send it, so a "Re: ..." reply still matches (Gmail's subject: operator
+    is a substring match, not exact)."""
+    res = composio_execute("GMAIL_FETCH_EMAILS", "gmail",
+                           {"query": _broker_reply_query(case_no), "max_results": max_results})
+    return (res.get("data") or {}).get("messages", []) or []
+
+
+async def extract_broker_facts(message_text: str, facts: list[str]) -> list[dict[str, Any]]:
+    """Strict structured-output read of the broker's reply: only the facts asked for, only a value the
+    model can quote verbatim from the email. `apply_broker_reply` re-checks the quote before trusting
+    it -- this is a document read, not a number the model computed (AGENTS.md invariant 1)."""
+    from agents import Agent, Runner
+    from pydantic import BaseModel
+
+    from .desk import ModelConfig
+
+    class _Finding(BaseModel):
+        fact: str
+        value: str | None
+        quote: str
+
+    class _Extraction(BaseModel):
+        findings: list[_Finding]
+
+    models = ModelConfig.from_env()
+    agent = Agent(name="broker_reply", model=models.specialist, output_type=_Extraction, instructions=(
+        "Read a broker's reply email and report ONLY the facts the underwriter asked for: "
+        f"{', '.join(facts)}. For each one, return value=null unless the email states it explicitly. "
+        "`quote` must be the exact substring of the email that states the value, verbatim -- it is "
+        "checked against the email afterwards, so do not paraphrase or compute anything. If the email "
+        "doesn't answer a fact, leave its value null rather than guessing."))
+    out = (await Runner.run(agent, json.dumps({"requested_facts": facts, "email": message_text}),
+                            max_turns=1)).final_output
+    return [f.model_dump() for f in out.findings]
+
+
+def apply_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: RulesFile,
+                       run_id: str | None, message_id: str, values: dict[str, str]) -> dict[str, Any]:
+    """Fold verified broker-reply values into the case as Known facts (provenance: "broker email,
+    <message_id>"), re-assess, and post the interval narrowing as an event. Idempotent per
+    (case, message_id): a second poll that finds the same email is a no-op.
+
+    `values` must already be extracted and quote-verified by the caller (`check_broker_reply` does
+    both) -- this function trusts them and does the deterministic part: parse, fold, re-score, log.
+    """
+    case_id = case.id.removeprefix("SUB-")
+    key = outbox_key(case_id, "broker_reply", [message_id])
+    existing = next((o for o in store.outbox_for(case_id) if o["id"] == key), None)
+    if existing:
+        return existing | {"deduped": True}
+
+    run_id = run_id or store.latest_run(case_id) or "actions"
+    parsed = {fact: _parse_fact_value(fact, raw) for fact, raw in values.items()}
+    parsed = {fact: v for fact, v in parsed.items() if v is not None}
+    if not parsed:
+        record = {"id": key, "channel": "gmail_poll", "status": "no_new_facts", "messageId": message_id, "facts": {}}
+        store.post_outbox(key, case_id, "gmail_poll", "no_new_facts",
+                          {k: v for k, v in record.items() if k not in ("id", "channel", "status")})
+        return record
+
+    before = a.score
+    updated = case
+    for fact, value in parsed.items():
+        source = f"broker email, message {message_id}"
+        updated = updated.with_fact(fact, Known(value, source=source), by="broker")
+        append_after_run(store, case_id, run_id, "system", FindingP(
+            text=f"Broker reply: {fact.replace('_', ' ')} = {value}", fact=fact, value=value,
+            provenance="known", source=source))
+    after = assess(updated, rules)
+    from .desk import _decision_kind
+    flippers = [f.fact for f in after.decision.flippers] if isinstance(after.decision, Open) else []
+    append_after_run(store, case_id, run_id, "system", AssessmentP(
+        text=(f"Broker reply narrowed the interval: {before.lo:.0f}-{before.hi:.0f} -> "
+              f"{after.score.lo:.0f}-{after.score.hi:.0f} ({_decision_kind(after)})"),
+        score=ScoreP(lo=round(after.score.lo), hi=round(after.score.hi)),
+        decision=_decision_kind(after), flippers=flippers))
+
+    record = {"id": key, "channel": "gmail_poll", "status": "applied", "messageId": message_id,
+              "facts": parsed, "before": {"lo": before.lo, "hi": before.hi},
+              "after": {"lo": after.score.lo, "hi": after.score.hi}}
+    store.post_outbox(key, case_id, "gmail_poll", "applied",
+                      {k: v for k, v in record.items() if k not in ("id", "channel", "status")})
+    return record
+
+
+async def check_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: RulesFile,
+                             run_id: str | None = None) -> dict[str, Any]:
+    """The orchestrator: figure out what was asked, poll the broker inbox (live only), extract and
+    verify, apply. `ATLAS_ACTIONS=dry` composes the search query and calls nothing, same as every
+    other action here."""
+    import asyncio
+
+    case_id = case.id.removeprefix("SUB-")
+    req = next((o for o in reversed(store.outbox_for(case_id))
+               if o.get("channel") == "gmail" and o.get("facts")), None)
+    facts = req["facts"] if req else (
+        [f.fact for f in a.decision.flippers] if isinstance(a.decision, Open) else ["premium"])
+    mode = os.environ.get("ATLAS_ACTIONS", "dry")
+    if mode != "live":
+        return {"status": "dry", "detail": f"ATLAS_ACTIONS=dry: would search {_broker_reply_query(case_id)!r}",
+                "facts": facts}
+    if not connected("gmail"):
+        return {"status": "not_connected", "detail": "gmail toolkit not connected", "facts": facts}
+    try:
+        messages = await asyncio.to_thread(search_broker_replies, case_id)
+    except Exception as exc:
+        return {"status": "failed", "detail": f"{type(exc).__name__}: {exc}"[:300], "facts": facts}
+    if not messages:
+        return {"status": "no_reply", "detail": "no matching message in the broker inbox yet", "facts": facts}
+
+    message = messages[0]  # newest first
+    message_id, text = message.get("messageId", ""), message.get("messageText") or ""
+    findings = await extract_broker_facts(text, facts)
+    values = {f["fact"]: f["value"] for f in findings
+             if f.get("value") and f.get("quote") and f["quote"] in text and f["fact"] in facts}
+    return apply_broker_reply(store, case, a, rules, run_id, message_id, values) | {"searched": len(messages)}

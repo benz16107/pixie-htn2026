@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from . import composio_routes
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
 from .engine import (
@@ -101,6 +102,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(composio_routes.router)  # A7: Composio actions beyond the one email
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------
