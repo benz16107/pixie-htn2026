@@ -1,56 +1,65 @@
+import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
+import { Newsreader_600SemiBold } from '@expo-google-fonts/newsreader';
+import { PublicSans_400Regular, PublicSans_500Medium, PublicSans_600SemiBold } from '@expo-google-fonts/public-sans';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { Pressable, Text } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { QuoteProvider } from '@/lib/store';
+import { C, F } from '@/lib/theme';
 
-import { useColorScheme } from '@/components/useColorScheme';
+export { ErrorBoundary } from 'expo-router';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Newsreader_600SemiBold,
+    PublicSans_400Regular,
+    PublicSans_500Medium,
+    PublicSans_600SemiBold,
+    DMMono_400Regular,
+    DMMono_500Medium,
   });
+  const reduced = useReducedMotion();
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
-  }, [error]);
+    if (loaded) SplashScreen.hideAsync();
+  }, [loaded, error]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  if (!loaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    <QuoteProvider>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: C.paper },
+          headerShadowVisible: false,
+          headerTintColor: C.ink,
+          headerTitleStyle: { fontFamily: F.sansBold, fontSize: 15 },
+          headerBackButtonDisplayMode: 'minimal',
+          contentStyle: { backgroundColor: C.paper },
+          animation: reduced ? 'fade' : 'default',
+          headerRight: () => (
+            <Link href="/about" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="About Pixie: sources, fairness and limits" hitSlop={12} style={{ minHeight: 44, justifyContent: 'center' }}>
+                <Text style={{ fontFamily: F.sansMedium, fontSize: 15, color: C.ink, textDecorationLine: 'underline' }}>About</Text>
+              </Pressable>
+            </Link>
+          ),
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: 'PIXIE' }} />
+        <Stack.Screen name="map" options={{ title: 'Your block' }} />
+        <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
+        <Stack.Screen name="quote" options={{ title: 'Your quote' }} />
+        <Stack.Screen name="about" options={{ title: 'About', headerRight: () => null }} />
       </Stack>
-    </ThemeProvider>
+    </QuoteProvider>
   );
 }
