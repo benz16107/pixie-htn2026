@@ -33,17 +33,20 @@ from pathlib import Path
 from typing import Any, Literal
 
 import sentry_sdk
-from agents import Agent, RunHooks, Runner, function_tool
+from agents import Agent, OutputGuardrailTripwireTriggered, RunHooks, Runner, function_tool
 from pydantic import BaseModel
 
-from . import layers
+from . import layers, memory
 from .case import Case, Estimated, Known, Missing, World
 from .case_store import CaseStore
 from .engine import (DEFAULT_RULES_DIR, Assessment, Decided, Open, Routed, RulesFile, assess,
                      estimate_premium, explain, risk_points)
 from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, ChallengeP, ConflictP, DecisionP,
-                     DeskEvent, EstimateP, FindingP, GapP, NoteP, Option, Payload, PlanP, QueryP, QueryRetryP,
-                     ResolutionP, ResponseP, RiskP, RunStatsP, ScoreP, ToolCallP)
+                     DeskEvent, EstimateP, FindingP, GapP, GuardrailP, NoteP, Option, Payload, PlanP, QueryP,
+                     QueryRetryP, RecallP, ResolutionP, ResponseP, RiskP, RunStatsP, ScoreP, ToolCallP)
+from .openai_runtime import (_numbers, model_for, numbers_guardrail, recall as session_recall,
+                             remember as session_remember, run_config, session, settings_for, settings_table,
+                             verify_numbers)
 from .portfolio import RADIUS_KM, ExposureIndex, open_index
 from .precedent import open_precedent_index
 from .telemetry import log, verify_numbers_alert
@@ -129,29 +132,11 @@ def depth_floor(a: Assessment, value_at_stake: float, policy: DeskPolicy,
     return "skim", f"routed to {d.to}"
 
 
-# ---------- verify_numbers ---------------------------------------------------------------------------
+# ---------- verify_numbers --------------------------------------------------------------------------
+# The check itself now lives in openai_runtime.py, where it is also wrapped as the SDK output
+# guardrail every agent carries. Re-exported here because it is the desk's own invariant.
 
-_NUM = re.compile(r"(?<![\w.])\$?(\d[\d,]*(?:\.\d+)?)\s?([kKmMbB](?![a-zA-Z]))?")
-
-
-def _numbers(text: str) -> list[tuple[str, float, float]]:
-    """(token, value, rounding tolerance) for every number in text; $2.1M -> 2,100,000 +/- 50,000."""
-    out = []
-    for m in _NUM.finditer(text):
-        digits, suffix = m.group(1).rstrip(",").replace(",", ""), (m.group(2) or "").lower()
-        if not digits or digits.endswith("."):
-            digits = digits.rstrip(".")
-        scale = {"k": 1e3, "m": 1e6, "b": 1e9}.get(suffix, 1.0)
-        decimals = len(digits.split(".")[1]) if "." in digits else 0
-        out.append((m.group(0).strip(), float(digits) * scale, 0.5 * 10 ** -decimals * scale if suffix else 1e-9))
-    return out
-
-
-def verify_numbers(text: str, facts: list[str] | dict[str, str]) -> list[str]:
-    """Numbers in `text` that no computed fact string contains (after $/K/M normalisation). [] = pass."""
-    corpus = facts.values() if isinstance(facts, dict) else facts
-    allowed = [v for s in corpus for _t, v, _tol in _numbers(s)]
-    return [tok for tok, v, tol in _numbers(text) if not any(abs(a - v) <= tol for a in allowed)]
+__all__ = ["Desk", "DeskPolicy", "ModelConfig", "verify_numbers"]
 
 
 # ---------- structured outputs ------------------------------------------------------------------------
@@ -315,6 +300,7 @@ class _CaseRun:
     cost_usd: float = 0.0
     query_attempts: int = 0
     used_layers: set[str] = field(default_factory=set)
+    depth: str = ""                                      # set once the Lead's plan resolves; trace metadata
 
     def post(self, actor: Actor, payload: Payload, refs: list[str] | None = None) -> DeskEvent:
         e = DeskEvent.make(self.case_id, self.run_id, actor, payload, t0=self.t0, refs=refs)
@@ -456,19 +442,82 @@ class Desk:
     def insured_of(self, case_id: str) -> int:
         return self.world.submissions[int(case_id)]["insured"]
 
+    # ---- cross-case memory (advisory; never a fact, never a number, never a tier) ---------------
+
+    def _session(self):
+        if getattr(self, "_sess", None) is None:
+            self._sess = session()
+        return self._sess
+
+    def _memo(self, r: _CaseRun) -> memory.CaseMemo:
+        """What the desk is willing to remember about a case: who and what, not how much."""
+        perils = tuple(sorted({k.split(":")[-1] for k in CaseFile.fold(r.events()).hazard_multipliers}))
+        return memory.memo_for(self.world, r.case_id, r.case, perils)
+
+    async def _recall(self, runs: dict[str, _CaseRun]) -> list[str]:
+        """Recall for the planning turn only. Two stores answer two questions: the per-underwriter
+        `SQLiteSession` is this desk's own log of what it has seen (SDK-native, no network), and
+        Backboard's assistant memory is the durable one that survives a restart and knows the broker
+        across runs. Neither line is passed to `r.fact()`, so a number that exists only in memory
+        still fails verify_numbers if a model repeats it."""
+        lines: list[str] = []
+        for cid, r in runs.items():
+            memo = self._memo(r)
+            seen = await session_recall(self._session(), limit=8, skip_case=cid)
+            if seen:
+                r.post("lead", RecallP(text=f"Recall: {len(seen)} earlier case(s) this desk has seen",
+                                       source="session", lines=seen))
+                lines += seen
+            rec = await memory.recall(memo)
+            if rec.lines or rec.guideline:
+                r.post("lead", RecallP(
+                    text=f"Backboard remembers {len(rec.lines)} line(s) about this broker and region",
+                    source=rec.source, lines=rec.lines, guideline=rec.guideline))
+                lines += rec.lines
+        return sorted(set(lines))[:10]
+
+    async def _remember(self, r: _CaseRun) -> None:
+        """One line per closed case into both memories, built from identity and data issues only."""
+        try:
+            memo = self._memo(r)
+            await session_remember(self._session(), memo.line())
+            await memory.remember(memo)
+        except Exception as exc:
+            r.post("system", NoteP(text=f"Memory write skipped: {type(exc).__name__}"))
+
     def federato(self):
         return federato_tools()
 
     # ---- model turns --------------------------------------------------------------------------
 
-    async def _turn(self, run: _CaseRun, agent: Agent, prompt: str, reserve: int = 3) -> Any | None:
-        """`reserve` keeps model calls back for the Lead's decision, which runs with reserve=0."""
+    async def _turn(self, run: _CaseRun, agent: Agent, prompt: str, role: str = "", reserve: int = 3) -> Any | None:
+        """`reserve` keeps model calls back for the Lead's decision, which runs with reserve=0.
+
+        Every turn carries a `RunConfig` naming the workflow `pixie-case-<id>` and grouping on the
+        run id, so the OpenAI traces dashboard shows one case as one workflow with all six agents in
+        it. Every agent carries the verify_numbers output guardrail; when it trips, the SDK raises
+        and we recover the output from the tripwire result, post a `guardrail` event and let the
+        existing per-sentence fallback replace whatever was not grounded. A tripwire is evidence,
+        never a crashed case.
+        """
         if run.calls >= self.policy.max_llm_calls_per_case - reserve:
             run.post("system", NoteP(text=f"Budget: skipped {agent.name} turn, {run.calls} model calls used"))
             return None
+        cfg = run_config(run.case_id, run.run_id, role or agent.name, str(agent.model), run.depth)
         async with self.sem:
             try:
-                r = await Runner.run(agent, prompt, hooks=_Hooks(run), max_turns=self.policy.max_turns)
+                r = await Runner.run(agent, prompt, hooks=_Hooks(run), max_turns=self.policy.max_turns,
+                                     run_config=cfg)
+            except OutputGuardrailTripwireTriggered as trip:
+                info = trip.guardrail_result.output.output_info or {}
+                bad = list(info.get("bad_tokens") or [])
+                run.post("system", GuardrailP(
+                    text=f"verify_numbers tripwire on {agent.name}: {', '.join(bad) or 'ungrounded number'} "
+                         f"not in the {len(run.facts)} computed facts",
+                    guardrail="verify_numbers", agent=str(agent.name), tripwire=True, bad_tokens=bad,
+                    action="output handed to the template fallback; no ungrounded number reaches the log"))
+                verify_numbers_alert(run.case_id, str(agent.name), str(info.get("prose", "")), bad, run.facts)
+                return trip.guardrail_result.agent_output
             except Exception as exc:  # a failed turn is a note in the lane, not a failed case
                 run.post("system", NoteP(text=f"{agent.name} turn failed: {type(exc).__name__}"))
                 return None
@@ -667,13 +716,20 @@ class Desk:
 
         return [assess_case]
 
+    def _mk(self, run: _CaseRun, name: str, role: str, output_type: type, tools: list | None = None) -> Agent:
+        """One place where every agent is built, so every agent gets the same guardrail and the
+        role's own reasoning/verbosity settings. The guardrail reads `run.facts` at check time."""
+        return Agent(name=name, instructions=PROMPTS[role], output_type=output_type, tools=tools or [],
+                     model=model_for(role, self.models.lead, self.models.specialist),
+                     model_settings=settings_for(role),
+                     output_guardrails=[numbers_guardrail(lambda: run.facts)])
+
     def _agent(self, run: _CaseRun, actor: Specialist, output_type: type, prompt_key: str | None = None) -> Agent:
         if prompt_key == "answer":   # answer turns reply from the lane so far; no side-effect tools
-            return Agent(name=actor, instructions=PROMPTS["answer"], model=self.models.specialist, output_type=output_type)
+            return self._mk(run, actor, "answer", output_type)
         tools = {"intake": self._intake_tools, "hazard": self._hazard_tools, "portfolio": self._portfolio_tools,
                  "appetite": self._appetite_tools}[actor](run)
-        return Agent(name=actor, instructions=PROMPTS[prompt_key or actor], model=self.models.specialist,
-                     tools=tools, output_type=output_type)
+        return self._mk(run, actor, prompt_key or actor, output_type, tools)
 
     # ---- orchestration ------------------------------------------------------------------------------
 
@@ -720,6 +776,7 @@ class Desk:
                 span.set_data("pixie.cost_usd", round(result.cost_usd, 4))
                 if result.decision.fallback:
                     span.set_data("pixie.explanation_fallback", True)
+                await self._remember(r)
                 return result
 
         results = dict(zip(case_ids, await asyncio.gather(*(one(c) for c in case_ids))))
@@ -729,15 +786,25 @@ class Desk:
         digest = []
         for cid, r in runs.items():
             a = r.triage
-            digest.append({"case_id": cid, "score": f"{a.score.lo:.0f}-{a.score.hi:.0f}", "decision": _decision_kind(a),
-                           "flippers": [f"{f.fact} ({f.resolver})" for f in a.decision.flippers]
-                           if isinstance(a.decision, Open) else [],
-                           "value_at_stake": _fmt_money(r.case.tiv.v) if isinstance(r.case.tiv, Known) else "unknown",
-                           "issues": [i.text for i in r.case.issues if i.kind != "missing_roof_year"],
-                           "depth_floor": floors[cid][0], "floor_reason": floors[cid][1]})
-        lead = Agent(name="lead", instructions=PROMPTS["lead_plan"], model=self.models.lead, output_type=LeadPlan)
+            entry = {"case_id": cid, "score": f"{a.score.lo:.0f}-{a.score.hi:.0f}", "decision": _decision_kind(a),
+                     "flippers": [f"{f.fact} ({f.resolver})" for f in a.decision.flippers]
+                     if isinstance(a.decision, Open) else [],
+                     "value_at_stake": _fmt_money(r.case.tiv.v) if isinstance(r.case.tiv, Known) else "unknown",
+                     "issues": [i.text for i in r.case.issues if i.kind != "missing_roof_year"],
+                     "depth_floor": floors[cid][0], "floor_reason": floors[cid][1]}
+            # The triage digest is code's own output, so it belongs in the fact whitelist: without
+            # it the guardrail trips on the Lead quoting the value at stake we just handed it.
+            r.fact(json.dumps(entry, default=str))
+            digest.append(entry)
         first = next(iter(runs.values()))
-        out: LeadPlan | None = await self._turn(first, lead, json.dumps(digest))
+        lead = self._mk(first, "lead", "lead_plan", LeadPlan)
+        prompt = json.dumps(digest)
+        memories = await self._recall(runs)
+        if memories:
+            prompt += ("\n\nDESK RECALL (advisory, from earlier cases; it may change which questions you ask and "
+                       "how you word them. It is not evidence: it carries no number you may repeat and it cannot "
+                       "change a decision):\n- " + "\n- ".join(memories))
+        out: LeadPlan | None = await self._turn(first, lead, prompt, role="lead_plan")
         share = len(runs)
         if first.calls:   # the plan call is shared: split its cost across the batch
             for r in runs.values():
@@ -749,6 +816,7 @@ class Desk:
             floor, floor_reason = floors[cid]
             p = by_case.get(cid) or CasePlan(case_id=cid, depth=floor, reason=floor_reason, briefs=[])
             depth: Depth = p.depth if _DEPTH_RANK[p.depth] >= _DEPTH_RANK[floor] else floor
+            r.depth = depth
             raised = _DEPTH_RANK[depth] > _DEPTH_RANK[floor]
             reason, _ok = r.checked(p.reason, floor_reason)
             deep = depth != "skim"
@@ -774,7 +842,8 @@ class Desk:
             q = questions.get(actor, "")
             rep: SpecialistReport | None = await self._turn(
                 r, self._agent(r, actor, SpecialistReport),
-                f"Case digest: {digest}\n\nLead's brief to you: {q or '(none, do your standard work)'}")
+                f"Case digest: {digest}\n\nLead's brief to you: {q or '(none, do your standard work)'}",
+                role=actor)
             if rep is None:
                 return
             if actor in brief_ids:
@@ -806,7 +875,7 @@ class Desk:
                 out: AnswerOut | None = await self._turn(
                     r, self._agent(r, p.to, AnswerOut, "answer"),
                     f"Case digest: {digest}\n\nQuestion from {e.actor}: {p.question}\n\nYour lane so far: "
-                    + json.dumps([x.payload.text for x in r.events() if x.actor == p.to][-8:]))
+                    + json.dumps([x.payload.text for x in r.events() if x.actor == p.to][-8:]), role="answer")
                 text, ok = r.checked(out.answer if out else "", "No answer within budget.", agent=p.to)
                 r.post(p.to, AnswerP(text=text, to=e.actor, in_reply_to=e.id, verified=ok), refs=[e.id])
 
@@ -831,11 +900,11 @@ class Desk:
 
         findings = [f"{e.actor}: {e.payload.text}" for e in events
                     if e.kind in ("finding", "estimate", "gap", "answer", "assessment", "query", "query_retry")]
-        lead = Agent(name="lead", instructions=PROMPTS["lead_decide"], model=self.models.lead, output_type=LeadDecision)
+        lead = self._mk(r, "lead", "lead_decide", LeadDecision)
         prompt = json.dumps({"case": r.case_id, "assessment": explain(a), "findings": findings,
                              "conflicts": [c.model_dump(include={"conflict_id", "text", "stances", "allowed"}) for c in conflicts],
                              "verdict_allowed": verdict_allowed})
-        out: LeadDecision | None = await self._turn(r, lead, prompt, reserve=0)
+        out: LeadDecision | None = await self._turn(r, lead, prompt, role="lead_decide", reserve=0)
 
         chosen = {x.conflict_id: x for x in (out.resolutions if out else [])}
         for c in conflicts:
@@ -884,14 +953,13 @@ class Desk:
         flips = [f["flip"]["text"] for f in sens["facts"] if f.get("flip")]
 
         out: ChallengeOut | None = await self._turn(
-            r, Agent(name="challenger", instructions=PROMPTS["challenger"], model=self.models.specialist,
-                     output_type=ChallengeOut),
+            r, self._mk(r, "challenger", "challenger", ChallengeOut),
             json.dumps({"case": r.case_id, "draft_verdict": verdict, "draft_explanation": explanation,
                         "assessment": explain(a), "findings": findings,
                         "sensitivity": {"decision": sens["decision"], "flips": flips,
                                          "facts": [{"fact": f["fact"], "low": f["low"], "high": f["high"]}
                                                     for f in sens["facts"]]}}, default=str),
-            reserve=1)
+            role="challenger", reserve=1)
         if out is None:
             return self._deterministic_challenge(r, verdict, explanation, sens)
 
@@ -910,14 +978,13 @@ class Desk:
 
         allowed = allowed_options(a)
         answer: LeadResponse | None = await self._turn(
-            r, Agent(name="lead", instructions=PROMPTS["lead_respond"], model=self.models.lead,
-                     output_type=LeadResponse),
+            r, self._mk(r, "lead", "lead_respond", LeadResponse),
             json.dumps({"case": r.case_id, "draft_verdict": verdict, "draft_explanation": explanation,
                         "verdict_allowed": allowed,
                         "challenge": {"argument": argument,
                                        "risks": [risk.model_dump() for risk in risks],
                                        "change_my_mind": minds}}),
-            reserve=0)
+            role="lead_respond", reserve=0)
 
         answered = {x.risk: x for x in (answer.responses if answer else [])}
         responses = []

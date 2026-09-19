@@ -222,19 +222,25 @@ _CONTEXT_PROMPT = {
 
 
 @router.get("/context", response_model=ContextNote)
-def context(lat: float, lng: float, kind: Literal["consumer", "commercial"] = "consumer") -> ContextNote:
+def context(lat: float, lng: float, address: str | None = None,
+            kind: Literal["consumer", "commercial"] = "consumer") -> ContextNote:
     # Round to ~11m so nearby requests for the same block share one cached, grounded note.
     key = f"ctx:{kind}:{round(lat, 4)}:{round(lng, 4)}"
     cached = _store().cache_get(key)
     if cached is not None:
         return ContextNote(**cached, cached=True)
+    # The retrieval_config lat_lng alone does not tell the model where it is looking: without the
+    # coordinates in the prompt it answers "no location was provided". Say the place out loud.
+    where = f"{address} ({lat:.5f}, {lng:.5f})" if address else f"the location at {lat:.5f}, {lng:.5f}"
+    prompt = _CONTEXT_PROMPT[kind].replace("this location", where).replace("this address", where)
+    prompt += " Write plain sentences with no dashes."
 
     from google.genai import types
 
     try:
         resp = _client().models.generate_content(
             model=CONTEXT_MODEL,
-            contents=_CONTEXT_PROMPT[kind],
+            contents=prompt,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_maps=types.GoogleMaps())],
                 tool_config=types.ToolConfig(

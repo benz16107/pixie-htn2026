@@ -350,54 +350,66 @@ export function LiveDesk(props: LiveProps) {
           <QueueRail rows={rows} cases={run.cases} selected={selected} flash={flash} onPick={(id) => startFocus(id)} />
         </aside>
 
-        <section className="relative min-h-0 border-r border-rule" aria-label={mode === "focus" ? "The case walking the desk" : "Map"}>
-          <div className={mode === "focus" && region === "desk" ? "absolute inset-0 opacity-45" : "absolute inset-0"}>
-            <DeskMap pins={region === "toronto" ? [] : pins} hexes={hexes} focus={focusPoint} pulses={pulses} onPick={(id) => startFocus(id)} reduced={reduced} />
-          </div>
-          {mode === "focus" && region === "desk" && focusCase && (
-            <>
+        <section className="flex min-h-0 flex-col overflow-hidden border-r border-rule" aria-label={mode === "focus" ? "The case walking the desk" : "Map"}>
+          <div className="relative min-h-0 flex-1">
+            <div className={mode === "focus" && region === "desk" ? "absolute inset-0 opacity-45" : "absolute inset-0"}>
+              <DeskMap pins={region === "toronto" ? [] : pins} hexes={hexes} focus={focusPoint} pulses={pulses} onPick={(id) => startFocus(id)} reduced={reduced} />
+            </div>
+            {mode === "focus" && region === "desk" && focusCase && (
               <div className="pointer-events-none absolute left-5 top-4 max-w-[420px]">
                 <p className="kicker">Case #{selected} · {focusCase.row.line} · {focusCase.row.state}</p>
                 <h2 className="font-serif text-[26px] font-semibold leading-tight">{focusCase.row.insured}</h2>
                 <p className="text-[12px] text-dim">{money(focusCase.row.valueAtStake)} at stake. Watch what the desk had to find out.</p>
               </div>
-              <StationLine events={focusCase.events} caseTitle={`Case ${selected}`} />
-            </>
-          )}
-          {region === "toronto" && quote && (
-            <div className="absolute bottom-3 left-3 max-w-[420px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12px]">
-              <p className="kicker">Same engine, Toronto pack</p>
-              <p>
-                {quote.address}: break-ins, fire protection and basement flooding priced per hex, then capped. Quote{" "}
-                <b className="num">${quote.annual.toFixed(2)}</b> a year.
-              </p>
-            </div>
-          )}
-          {showEmail && (
-            <div className="absolute right-3 top-3 w-[330px] rounded-sm border border-ink bg-paper p-3 text-[11.5px] shadow-[0_10px_30px_-12px_rgba(47,42,34,0.5)]">
-              <p className="kicker mb-1 flex justify-between">
-                <span>Broker email</span>
-                <button onClick={() => setShowEmail(false)} aria-label="Close the email preview">✕</button>
-              </p>
-              <p className="text-dim">To: {sent?.to ?? email.to}</p>
-              <p className="font-semibold">{sent?.subject ?? email.subject}</p>
-              <p className="mt-1 max-h-[190px] overflow-y-auto whitespace-pre-line">{sent?.body ?? email.body.join("\n\n")}</p>
-              <div className="mt-2 flex items-center gap-2">
-                <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className={`${btn} bg-ink text-paper hover:bg-ink/85 disabled:opacity-50`}>
-                  {sent ? "Send again" : "Send it"}
-                </button>
-                <span className="num text-[10.5px] text-moss">{emailStatus || (sent ? `gmail: ${sent.status}` : "")}</span>
+            )}
+            {region === "toronto" && quote && (
+              <div className="absolute left-5 top-4 max-w-[420px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12px]">
+                <p className="kicker">Same engine, Toronto pack</p>
+                <p>
+                  {quote.address}: break-ins, fire protection and basement flooding priced per hex, then capped. Quote{" "}
+                  <b className="num">${quote.annual.toFixed(2)}</b> a year.
+                </p>
               </div>
-              {sent && <p className="mt-1 text-[10px] text-dim">Outbox entry {sent.key ?? ""} · Composio Gmail</p>}
-            </div>
+            )}
+          </div>
+          {mode === "focus" && region === "desk" && focusCase && (
+            <StationLine
+              events={focusCase.events}
+              caseTitle={`Case ${selected}`}
+              takeover={
+                showEmail ? (
+                  <article className="lane-card flex h-full gap-3 overflow-hidden rounded-sm border border-ink bg-paper px-3 py-2 text-[11.5px] leading-snug">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <p className="kicker mb-0.5">Broker email · to {sent?.to ?? email.to}</p>
+                      <b className="block truncate font-semibold" title={sent?.subject ?? email.subject}>
+                        {sent?.subject ?? email.subject}
+                      </b>
+                      <p className="mt-0.5 line-clamp-3 text-dim" title={sent?.body ?? email.body.join("\n\n")}>
+                        {(sent?.body ?? email.body.join("\n\n")).replace(/^Hi[^\n]*\n+/, "")}
+                      </p>
+                    </div>
+                    <div className="flex w-[132px] shrink-0 flex-col items-start gap-1 border-l border-rule pl-3">
+                      <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className={`${btn} bg-ink text-paper hover:bg-ink/85 disabled:opacity-50`}>
+                        {sent ? "Send again" : "Send it"}
+                      </button>
+                      <span className="num text-[10px] text-moss">{emailStatus || (sent ? `gmail: ${sent.status}` : "")}</span>
+                      {sent && <span className="text-[9.5px] text-dim">Outbox {sent.key ?? ""} · Composio Gmail</span>}
+                      <button onClick={() => setShowEmail(false)} className="num mt-auto text-[10px] text-dim underline-offset-2 hover:underline">
+                        Back to the desk
+                      </button>
+                    </div>
+                  </article>
+                ) : undefined
+              }
+            />
           )}
         </section>
 
-        <section className="min-h-0 border-r border-rule" aria-label="Case">
+        <section className="min-h-0 overflow-y-auto border-r border-rule" aria-label="Case">
           <CasePanel c={selected ? (details[selected] ?? null) : null} state={focusCase} typed={!reduced} onStart={runDemo} />
         </section>
 
-        <aside className="min-h-0 px-2.5 py-2" aria-label="Phone mirror">
+        <aside className="min-h-0 overflow-hidden px-2.5 py-2" aria-label="Phone mirror">
           <Phone tab={phoneTab} setTab={setPhoneTab} digest={digest} onSend={sendDigest} sending={sendingDigest} reply={reply} quote={quote} />
         </aside>
       </div>
@@ -410,7 +422,7 @@ export function LiveDesk(props: LiveProps) {
           ) : (
             <>
               {focusCase?.status === "settled" && focusCase.events.length > 0 && !hasSpecialist && (
-                <p className="absolute inset-x-0 top-9 z-10 px-5 text-[12.5px]">
+                <p className="shrink-0 px-4 pt-1 text-[12.5px]">
                   <b className="font-semibold">No specialist time spent: decided at triage.</b> <span className="text-dim">{triageReason}</span>
                 </p>
               )}

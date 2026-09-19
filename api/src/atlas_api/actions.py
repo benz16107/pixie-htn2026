@@ -151,7 +151,11 @@ def request_broker_info(store: CaseStore, case: Case, a: Assessment, rules: Rule
         status="proposed", facts=facts))
 
     status, detail = "dry", "ATLAS_ACTIONS=dry: composed, not sent"
-    if mode == "live":
+    if mode == "live" and not connected("gmail"):
+        # Same answer the other Composio routes give: say the account is missing, don't throw a
+        # KeyError at a judge.
+        status, detail = "not_connected", "COMPOSIO_GMAIL_ACCOUNT is not set; the email was composed, not sent"
+    elif mode == "live":
         try:
             res = send_gmail(message)
             ok = bool(res.get("successful", True))

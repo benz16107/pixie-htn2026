@@ -57,7 +57,10 @@ export function Challenger({ c, deskVerdict, rulesDecision }: { c: Challenge; de
 /** What happened last time we wrote risks like this one. */
 export function PrecedentPanel({ p }: { p: Precedent }) {
   if (!p.hits.length) return null;
-  const worst = p.hits.reduce((a, b) => (b.lossRatio > a.lossRatio ? b : a));
+  // A declined precedent never became a policy, so it has no premium, no incurred loss and no
+  // loss ratio. Those hits still belong in the list: they say what the desk turned away.
+  const written = p.hits.filter((h): h is typeof h & { lossRatio: number; premium: number } => typeof h.lossRatio === "number");
+  const worst = written.length ? written.reduce((a, b) => (b.lossRatio > a.lossRatio ? b : a)) : null;
   return (
     <section aria-labelledby="pr-h" className="px-4 py-3">
       <div className="flex items-baseline gap-2">
@@ -73,18 +76,29 @@ export function PrecedentPanel({ p }: { p: Precedent }) {
             <p className="flex items-baseline gap-2">
               <b className="min-w-0 flex-1 truncate text-[12px] font-medium">{h.insured}</b>
               <span className="num text-[11px] text-dim">{h.state}</span>
-              <span className={`num text-[11.5px] ${h.lossRatio >= 1 ? "text-rust" : "text-moss"}`}>{h.lossRatio.toFixed(2)}</span>
+              {typeof h.lossRatio === "number" ? (
+                <span className={`num text-[11.5px] ${h.lossRatio >= 1 ? "text-rust" : "text-moss"}`}>{h.lossRatio.toFixed(2)}</span>
+              ) : (
+                <span className="font-mono text-[10.5px] text-dim">declined</span>
+              )}
             </p>
             <p className="num text-[10.5px] text-dim">
-              {money(h.tiv)} TIV · premium {money(h.premium)} · incurred {money(h.incurred)} · {h.status}
+              {money(h.tiv)} TIV ·{" "}
+              {typeof h.premium === "number"
+                ? `premium ${money(h.premium)} · incurred ${money(h.incurred ?? 0)} · ${h.status}`
+                : h.outcome}
             </p>
           </li>
         ))}
       </ul>
-      <p className="mt-1.5 text-[11.5px] leading-snug">
-        The worst of them, {worst.insured}, ran a loss ratio of <b className="num font-semibold">{worst.lossRatio.toFixed(2)}</b> on {money(worst.premium)} of
-        premium.
-      </p>
+      {worst ? (
+        <p className="mt-1.5 text-[11.5px] leading-snug">
+          The worst of them, {worst.insured}, ran a loss ratio of <b className="num font-semibold">{worst.lossRatio.toFixed(2)}</b> on{" "}
+          {money(worst.premium)} of premium.
+        </p>
+      ) : (
+        <p className="mt-1.5 text-[11.5px] leading-snug">Every one of them was declined, so none of them ran a loss.</p>
+      )}
     </section>
   );
 }

@@ -96,25 +96,26 @@ cost, top to bottom.
 
 ## 3. Alert rules and monitors: what actually got created
 
-Ran `scripts/sentry_setup.py` against the real `SENTRY_AUTH_TOKEN` in `.env`. Result, verbatim:
+Updated 2026-09-19 23:55, after Ben issued a user token with `org:read`, `project:read`,
+`project:write` and `alerts:write`. Everything in this section now exists in the org.
 
-```
-alert rule: FAILED 403: {'detail': 'You do not have permission to perform this action.'}
-uptime monitor: skipped, ATLAS_PUBLIC_URL not set (no deployed /health to point at)
-Cron monitor: created by running the job itself -- ...
-```
+**A stale DSN was the real problem.** `SENTRY_DSN_API` pointed at project `4512115040845824`,
+which is not a project in this org (`atlas-api` is `4512115041370112`). Every API trace, log and
+error had been going nowhere. `.env` now carries the DSN read back from
+`GET /projects/benzhou/atlas-api/keys/`, and one desk run put **53 transactions** into `atlas-api`,
+which is the first data that project has ever received.
 
-**Root cause, confirmed by hand**: that token (`sntrys_...`, an "org auth token") only carries the
-`project:releases` scope. Probed `organizations/benzhou/` (403), `.../teams/` (403),
-`.../members/me/` (403), `.../monitors/` (403), `.../projects/` (403); only
-`.../releases/` returned 200. It cannot list projects, read issues, write alert rules, or manage
-monitors -- by design, not a bug in the script.
-
-- **verify_numbers alert rule**: not created. `scripts/sentry_setup.py::verify_numbers_alert_rule()`
-  is ready to run (POSTs a `TaggedEventCondition` on `pixie.alert=verify_numbers`, notifies
-  `IssueOwners`) the moment a token with `alerts:write` + `project:write` exists.
-- **Uptime monitor on `/health`**: not created (also needs `project:read`/`write`, and there's
-  no deployed URL yet -- set `ATLAS_PUBLIC_URL` first).
+- **verify_numbers alert rule: created** (workflow `6034549`, "Pixie: an agent stated a number the
+  engine did not compute"). Sentry retired the per-project `/rules/` API, which now answers
+  `410 This API no longer exists`. Issue alerts live in the workflow engine instead:
+  `POST /organizations/{org}/workflows/` with a trigger (`first_seen_event`, `regression_event`),
+  an action filter on the tag `pixie.alert=verify_numbers`, and an email action.
+  `scripts/sentry_setup.py` was rewritten to use it and is idempotent by workflow name.
+- **Uptime monitor: created** (`10388850`), checking the tunnel's `/health` every 300 s with a
+  10 s timeout in the `hackathon` environment. `POST /projects/{org}/{project}/uptime/`; do not
+  send `mode`, only superusers may set it. The script skips this when no `PUBLIC_URL` is set.
+- **If the tunnel restarts**, the monitor points at a dead URL. Delete it or re-run the script
+  after updating `PUBLIC_URL`.
 - **Cron monitor on the nightly backtest**: this one doesn't need the API at all. Sentry
   auto-creates a monitor from its first check-in. Running `eval/backtest.py` once (confirmed
   locally -- it sent an in-progress check-in, then an error check-in when it hit an unrelated
@@ -138,9 +139,9 @@ monitors -- by design, not a bug in the script.
 2. "We don't just alert when the process crashes -- we alert when an agent's own words don't match
    the numbers our engine computed." -- true today in code:
    `telemetry.py::verify_numbers_alert()`, wired from every `checked()` call site in `desk.py`.
-   **Not yet true end-to-end**: the Sentry *alert rule* that turns that error event into a
-   notification isn't created (section 3) -- say "the guard fires and lands in Sentry today; the
-   notification rule is one scope upgrade away."
+   True end-to-end since 2026-09-19: the alert workflow that turns that tagged error into an email
+   exists (section 3), so the sentence to say is "the guard fires, the event lands, and the
+   workflow emails us."
 3. "We use four distinct Sentry products beyond error monitoring on the API alone: AI Agent
    Monitoring, Tracing, structured Logs, and a cron monitor on our nightly precompute job." -- true:
    `app.py::_init_sentry()` (AI monitoring + tracing), `telemetry.py::log()` (Logs),
@@ -152,9 +153,8 @@ monitors -- by design, not a bug in the script.
 5. "Pixie's own agent can query Sentry as a tool, so it can eventually answer 'what broke in the
    last hour' itself instead of a human opening a dashboard." -- true in code
    (`ops.py::ask_ops()`, `POST /ops/ask`, gated behind `ATLAS_SENTRY_MCP=1`); **honest caveat**: the
-   current `SENTRY_AUTH_TOKEN` can't read issues (section 3), so the tool is wired but would return
-   a permission error if actually asked something today. Say "the wiring is real, the token needs
-   one more scope."
+   current token now carries `org:read` and `project:read`, so the tool can read issues; it has not
+   been exercised end to end, so say "the wiring is real" and show the code, not a live answer.
 
 ## 5. Gaps, in one place
 
@@ -163,8 +163,8 @@ monitors -- by design, not a bug in the script.
   from there for this work but were never copied into this branch (lane A4 only touches its own
   worktree). Ben: `git add` them in `atlas` if they should ship.
 - `SENTRY_DSN_WEB` doesn't exist; web reuses `SENTRY_DSN_APP` (section 1).
-- The current `SENTRY_AUTH_TOKEN` only has `project:releases` scope: no alert rule, no uptime
-  monitor, and `/ops/ask` can't actually read Sentry data yet (section 3).
+- `/ops/ask` has never been run against the live Sentry MCP server, though the token now has the
+  scopes for it.
 - Continuous profiling (research item 6) and the issue-fingerprint rule for Federato errors
   (research item 12) were both judged lower-leverage than the rest of the plan for the time
   available and were skipped, not attempted.

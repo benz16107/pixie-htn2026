@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "backboard-sdk>=1.5.19",
     "elasticsearch>=9.1.0,<10",
     "fastapi>=0.141.1",
     "google-genai>=1.33.0",

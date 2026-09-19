@@ -20,13 +20,14 @@ from typing import Any, AsyncIterator, Literal
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from . import composio_routes
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
 from . import insights_routes
+from . import openai_routes
 from .engine import (
     DEFAULT_RULES_DIR,
     Assessment,
@@ -91,6 +92,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _index = open_index(world)
     from .precedent import open_precedent_index
     insights_routes.init(world, open_precedent_index(world))
+    openai_routes.init(world, _store)
     rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
     for sub in world.submissions.values():
         case = world.case(f"SUB-{sub['id']}")
@@ -117,6 +119,7 @@ app.include_router(insights_routes.router)
 app.include_router(composio_routes.router)  # A7: Composio actions beyond the one email
 app.include_router(linq_router)  # A5: tapbacks, typing, receipt images, in-thread quotes
 app.include_router(gemini_router)  # A6: photo inventory, Maps grounding, TTS, code-execution check
+app.include_router(openai_routes.router)  # A1: OpenAI runtime settings, Backboard memory and judgements
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------
@@ -804,3 +807,39 @@ def case_surface(case_id: str, req: SurfaceRequest) -> dict[str, Any]:
 
 # `/cases/{id}/precedent` lives in insights_routes.py (Elastic hybrid + reranker over
 # pixie-precedent); it accepts both `size` and `k`.
+
+
+# ---------- the spoken briefing (ElevenLabs), with timing the screen can follow ---------------
+
+@app.get("/cases/{case_id}/briefing")
+def case_briefing(case_id: str) -> dict[str, Any]:
+    """The case read aloud, plus one timed mark per sentence so the waterfall can follow along."""
+    from . import briefing
+
+    case_id = case_id.removeprefix("SUB-")
+    data = get_store().get_case(case_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    sens = None
+    if _tenant_view(case_id) is None:
+        from .explain import sensitivity
+
+        case, _a, hazard, impact, _events, rules = _enriched(case_id)
+        sens = sensitivity(case, rules, hazard, impact)
+    try:
+        out = briefing.build(case_id, data["case"], sens)
+    except RuntimeError as exc:                       # no key configured: the page stays silent
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {**out, "audioUrl": f"/briefings/{out['audio']}"}
+
+
+@app.get("/briefings/{filename}")
+def briefing_audio(filename: str) -> FileResponse:
+    from . import briefing
+
+    if "/" in filename or ".." in filename:
+        raise HTTPException(status_code=404, detail="not found")
+    path = briefing.AUDIO_DIR / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(path, media_type="audio/mpeg")

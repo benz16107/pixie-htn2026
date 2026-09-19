@@ -227,8 +227,14 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
             const fix = resolutions.find((r) => r.body.conflict_id === e.body.conflict_id);
             return (
               <div key={e.id} className="lane-card mb-1 rounded-sm border border-rust px-2 py-1 text-[11.5px]">
-                {prettyBands(str(e.body.text))}
-                {fix && <span className="mt-0.5 block text-[11px] text-moss">→ {prettyBands(str(fix.body.text)).replace(/^[a-z_:]+\s*->\s*/i, "")}</span>}
+                <span className="line-clamp-3" title={prettyBands(str(e.body.text))}>
+                  {prettyBands(str(e.body.text))}
+                </span>
+                {fix && (
+                  <span className="mt-0.5 line-clamp-2 text-[11px] text-moss" title={prettyBands(str(fix.body.text))}>
+                    → {prettyBands(str(fix.body.text)).replace(/^[a-z_:]+\s*->\s*/i, "")}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -247,8 +253,10 @@ function Typed({ text, on }: { text: string; on: boolean }) {
     const id = setInterval(() => setN((k) => (k >= text.length ? (clearInterval(id), k) : k + 3)), 16);
     return () => clearInterval(id);
   }, [text.length, on]);
+  // Nine lines is what the column holds at 900px. The rest is one hover away, and the same
+  // sentence is in the chatter log.
   return (
-    <p className="font-serif text-[13.5px] leading-snug">
+    <p className="line-clamp-8 font-serif text-[13.5px] leading-snug" title={text}>
       {text.slice(0, n)}
       {n < text.length && <span className="animate-pulse">▍</span>}
     </p>
