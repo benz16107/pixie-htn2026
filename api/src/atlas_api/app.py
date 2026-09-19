@@ -39,6 +39,7 @@ from .engine import (
     explain,
     verify_numbers,
 )
+from .gemini_routes import router as gemini_router
 from .linq_routes import router as linq_router
 from .portfolio import ExposureIndex, open_index
 from .tenant import TenantAnswers, TorontoPack, quote_tenant
@@ -115,6 +116,7 @@ app.add_middleware(
 app.include_router(insights_routes.router)
 app.include_router(composio_routes.router)  # A7: Composio actions beyond the one email
 app.include_router(linq_router)  # A5: tapbacks, typing, receipt images, in-thread quotes
+app.include_router(gemini_router)  # A6: photo inventory, Maps grounding, TTS, code-execution check
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------
