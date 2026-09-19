@@ -2,6 +2,20 @@ import type { DecisionView, Interval } from "@/contract";
 import { API, PROXY } from "./live";
 
 export type StepKind = "factor" | "cap" | "hazard" | "portfolio" | "clamp";
+export type PriceKind = "base" | "multiplier" | "flat";
+
+/** Tenant cases price in dollars rather than points, so their waterfall is a running total. */
+export type PriceStep = {
+  key: string;
+  label: string;
+  kind: PriceKind;
+  multiplier?: number;
+  dollars: number;
+  runningDollars: number;
+  capped: boolean;
+  source?: string;
+  percentile?: number;
+};
 
 export type Step = {
   key: string;
@@ -33,7 +47,14 @@ export type Explain = {
   rulesId: string;
   reconciles: boolean;
   steps: Step[];
+  /** tenant only */
+  annual?: number;
+  label?: string;
+  percentiles?: Record<string, number>;
 };
+
+export const isTenantExplain = (x: Explain | null): x is Explain & { steps: PriceStep[]; annual: number } =>
+  !!x && x.kind === "tenant" && typeof x.annual === "number";
 
 export type Flip = { at: number; display: string; from: string; to: string; text: string };
 export type Sensitivity = {

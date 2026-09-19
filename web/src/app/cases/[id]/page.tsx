@@ -2,14 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Band } from "@/contract";
 import { api, type CaseWithReceipt } from "@/lib/api";
-import { explainCase, precedentFor, sensitivityOf, type Challenge } from "@/lib/explain";
+import { explainCase, isTenantExplain, precedentFor, sensitivityOf, type Challenge, type PriceStep } from "@/lib/explain";
 import { bandPhrase, factorValue, whenLabel } from "@/lib/format";
 import { Actions } from "@/components/Actions";
 import { CaseMap } from "@/components/LiveMap";
 import { HazardCard, PortfolioCallout, portfolioSentence } from "@/components/CaseParts";
 import { Receipt } from "@/components/Receipt";
 import { Swimlanes } from "@/components/Swimlanes";
-import { Waterfall } from "@/components/case/Waterfall";
+import { PriceWaterfall, Waterfall } from "@/components/case/Waterfall";
 import { WhatIf } from "@/components/case/WhatIf";
 import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
@@ -23,7 +23,7 @@ const BANDS: { band: Band; label: string }[] = [
 /** A collapsed summary that opens in place. Native details, so it works without JavaScript. */
 function Fold({ title, count, summary, children }: { title: string; count?: string; summary: string; children?: React.ReactNode }) {
   return (
-    <details className="group min-w-0 border-r border-rule px-5 py-2.5 last:border-r-0 open:bg-land/40">
+    <details className="group min-w-0 border-r border-rule px-5 py-2.5 last:border-r-0 open:col-span-4 open:border-r-0 open:bg-land/40">
       <summary className="flex cursor-pointer list-none items-baseline gap-2 [&::-webkit-details-marker]:hidden">
         <span className="kicker">{title}</span>
         {count && <span className="num text-[11px] text-dim">{count}</span>}
@@ -32,7 +32,7 @@ function Fold({ title, count, summary, children }: { title: string; count?: stri
         </span>
       </summary>
       <p className="mt-1 text-[11.5px] leading-snug text-dim group-open:hidden">{summary}</p>
-      <div className="mt-2 hidden group-open:block">{children}</div>
+      <div className="mt-2 hidden max-h-[300px] overflow-auto group-open:block">{children}</div>
     </details>
   );
 }
@@ -91,16 +91,20 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_356px]">
         <section className="flex min-h-0 flex-col border-r border-rule px-6 pb-4 pt-3" aria-label="How the score was built">
           <div className="flex items-baseline gap-3">
-            <h2 className="font-serif text-[19px] font-semibold">How the score was built</h2>
+            <h2 className="font-serif text-[19px] font-semibold">{isTenantExplain(explain) ? "How the price was built" : "How the score was built"}</h2>
             <p className="min-w-0 flex-1 truncate text-[11.5px] text-dim">
-              {explain?.score
-                ? `Every step under ${explain.rulesId}, ending at ${explain.score.lo}-${explain.score.hi}. Hover a bar for its rule and source.`
-                : "This line has no guideline, so there is no interval to build."}
+              {isTenantExplain(explain)
+                ? `Every line of the price, ending at $${explain.annual.toFixed(2)} a year. Hover a bar for its source.`
+                : explain?.score
+                  ? `Every step under ${explain.rulesId}, ending at ${explain.score.lo}-${explain.score.hi}. Hover a bar for its rule and source.`
+                  : "This line has no guideline, so there is no interval to build."}
             </p>
             {explain?.reconciles && <span className="shrink-0 font-mono text-[10px] text-moss">✓ steps reconcile with the score</span>}
           </div>
 
-          {explain && explain.steps.length > 0 ? (
+          {isTenantExplain(explain) ? (
+            <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
+          ) : explain && explain.steps.length > 0 ? (
             <Waterfall x={explain} />
           ) : (
             <div className="flex flex-1 items-center justify-center text-[12.5px] text-dim">
@@ -140,7 +144,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       </div>
 
       {/* --------------------------------- folds -------------------------------- */}
-      <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] border-t border-ink">
+      <div className="grid auto-rows-min grid-cols-[repeat(4,minmax(0,1fr))] border-t border-ink">
         <Fold
           title="Facts"
           count={`${view.facts.length}`}
