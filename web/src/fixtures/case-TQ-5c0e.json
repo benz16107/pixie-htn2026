@@ -1,26 +1,26 @@
 {
- "caseId": "TQ-7f3a",
+ "caseId": "TQ-5c0e",
  "kind": "tenant",
- "title": "180 Queen St W, Toronto",
+ "title": "565 McRoberts Ave, basement, Toronto",
  "facts": [
   {
    "id": "address",
    "label": "Address",
-   "display": "180 Queen St W",
+   "display": "565 McRoberts Ave, basement",
    "provenance": "known",
-   "source": "Nominatim geocode, 43.6506, -79.3882"
+   "source": "Nominatim geocode, 43.6904, -79.4595"
   },
   {
    "id": "unit_level",
    "label": "Unit level",
-   "display": "Upper floor",
+   "display": "Basement",
    "provenance": "known",
    "source": "applicant answer"
   },
   {
    "id": "contents",
    "label": "Contents value",
-   "display": "$30,000",
+   "display": "$20,000",
    "provenance": "known",
    "source": "applicant answer"
   },
@@ -48,7 +48,7 @@
   {
    "id": "hex",
    "label": "H3 cell",
-   "display": "892b9bc46cfffff",
+   "display": "892b9bc09dbffff",
    "provenance": "known",
    "source": "res 9 cell of the geocoded point"
   }
@@ -57,9 +57,9 @@
   {
    "fact": "unit_level",
    "possible": [
-    "target"
+    "not_acceptable"
    ],
-   "valueText": "upper",
+   "valueText": "basement",
    "provenance": "known"
   },
   {
@@ -72,18 +72,17 @@
   }
  ],
  "score": {
-  "lo": 76,
-  "hi": 84
+  "lo": 38,
+  "hi": 52
  },
  "scoreWithoutEnrichment": {
-  "lo": 78,
-  "hi": 86
+  "lo": 40,
+  "hi": 54
  },
  "decision": {
-  "kind": "approve",
+  "kind": "refer",
   "because": [
-   "Upper unit, so the basement flooding area BFA42 does not apply",
-   "No claims in the last 3 years"
+   "Basement unit inside flooding study area BFA3"
   ],
   "by": "desk"
  },
@@ -92,66 +91,66 @@
    {
     "peril": "break-ins_near_you",
     "line": "Break-ins near you",
-    "applied": 1.1,
-    "capped": true,
+    "applied": 0.979,
+    "capped": false,
     "source": "TPS Break and Enter 2023-2026",
-    "citation": "TPS Break and Enter 2023-2026: 321 within one cell ring of 892b9bc46cfffff, top 1% of Toronto cells"
+    "citation": "TPS Break and Enter 2023-2026: 18 within one cell ring of 892b9bc09dbffff, percentile 33 of Toronto cells"
+   },
+   {
+    "peril": "fire_protection",
+    "line": "Fire protection",
+    "applied": 1.03,
+    "capped": false,
+    "source": "Toronto Fire Stations",
+    "citation": "Toronto Fire Stations: nearest 1.5 km; hydrant within 150 m: yes"
+   },
+   {
+    "peril": "basement_flooding",
+    "line": "Basement flooding",
+    "applied": 1.1,
+    "capped": false,
+    "source": "Toronto basement flooding study area BFA3",
+    "citation": "Toronto basement flooding study area BFA3"
    }
   ],
-  "total": 1.1,
+  "total": 1.109,
   "totalCapped": false,
-  "skipped": [
-   [
-    "fire_protection",
-    "Toronto Fire Stations: nearest 0.3 km; hydrant within 150 m: yes"
-   ],
-   [
-    "basement_flooding",
-    "Toronto basement flooding study area BFA42; upper unit, not applied"
-   ]
-  ]
+  "skipped": []
  },
  "contradictions": [],
- "explanation": "Upper unit, so the basement flooding area BFA42 does not apply No claims in the last 3 years. Estimate $209.00 a year. Send this summary to a licensed advisor to turn it into a real quote.",
+ "explanation": "Basement unit inside flooding study area BFA3. Estimate $166.39 a year. A licensed advisor reviews the water risk and a backwater valve before this can be offered. We send them this summary.",
  "explanationVerified": true,
  "issues": [],
  "actions": [],
  "site": {
-  "lat": 43.6506351,
-  "lng": -79.388204
+  "lat": 43.6903801,
+  "lng": -79.4594893
  },
  "receipt": {
   "base": 150.0,
-  "annual": 209.0,
+  "annual": 166.39,
   "label": "Illustrative. Our documented model, not an Intact price or offer.",
   "lines": [
    {
-    "label": "Contents $30,000",
-    "multiplier": 1.267,
-    "dollars": 40.0,
-    "capped": false,
-    "source": "your answer; +$4 per $1,000 over $20,000 (invented constant)"
-   },
-   {
     "label": "Break-ins near you",
-    "multiplier": 1.1,
-    "dollars": 19.0,
-    "capped": true,
-    "source": "TPS Break and Enter 2023-2026: 321 within one cell ring of 892b9bc46cfffff, top 1% of Toronto cells"
+    "multiplier": 0.979,
+    "dollars": -3.15,
+    "capped": false,
+    "source": "TPS Break and Enter 2023-2026: 18 within one cell ring of 892b9bc09dbffff, percentile 33 of Toronto cells"
    },
    {
     "label": "Fire protection",
-    "multiplier": 1.0,
-    "dollars": 0.0,
+    "multiplier": 1.03,
+    "dollars": 4.41,
     "capped": false,
-    "source": "Toronto Fire Stations: nearest 0.3 km; hydrant within 150 m: yes"
+    "source": "Toronto Fire Stations: nearest 1.5 km; hydrant within 150 m: yes"
    },
    {
     "label": "Basement flooding",
-    "multiplier": 1.0,
-    "dollars": 0.0,
+    "multiplier": 1.1,
+    "dollars": 15.13,
     "capped": false,
-    "source": "Toronto basement flooding study area BFA42; upper unit, not applied"
+    "source": "Toronto basement flooding study area BFA3"
    }
   ]
  }

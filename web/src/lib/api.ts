@@ -9,6 +9,8 @@ import case126 from "@/fixtures/case-126.json";
 import case138 from "@/fixtures/case-138.json";
 import case143 from "@/fixtures/case-143.json";
 import caseTQ from "@/fixtures/case-TQ-7f3a.json";
+import caseTQ2 from "@/fixtures/case-TQ-2b91.json";
+import caseTQ3 from "@/fixtures/case-TQ-5c0e.json";
 import events138 from "@/fixtures/events-138.json";
 
 // contract.ts leaves BacktestView open; this is the shape the page reads (mirrors proof.BacktestReport).
@@ -24,7 +26,7 @@ export const PERILS = ["all", "flood", "wildfire", "wind", "quake"] as const;
 export type Peril = (typeof PERILS)[number];
 const OPEN = new Set(["cleared", "received", "quoted"]);
 
-const cases: Record<string, unknown> = { "126": case126, "138": case138, "143": case143, "TQ-7f3a": caseTQ };
+const cases: Record<string, unknown> = { "126": case126, "138": case138, "143": case143, "TQ-7f3a": caseTQ, "TQ-2b91": caseTQ2, "TQ-5c0e": caseTQ3 };
 const events: Record<string, unknown> = { "138": events138 };
 
 // Fixtures stand in when the API is down, so the demo never shows a blank page.
