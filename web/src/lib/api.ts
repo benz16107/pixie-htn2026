@@ -1,4 +1,7 @@
-import type { CaseView, DeskEvent, QueueRow } from "@/contract";
+import type { CaseView, DeskEvent, Hex, QueueRow } from "@/contract";
+import type { Pin } from "@/components/BookMap";
+import mapBook from "@/fixtures/map-book.json";
+import mapPins from "@/fixtures/map-pins.json";
 import queue from "@/fixtures/queue.json";
 import case126 from "@/fixtures/case-126.json";
 import case138 from "@/fixtures/case-138.json";
@@ -7,6 +10,8 @@ import events138 from "@/fixtures/events-138.json";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const FIXTURES_ONLY = process.env.NEXT_PUBLIC_FIXTURES === "1";
+export const PERILS = ["all", "flood", "wildfire", "wind", "quake"] as const;
+export type Peril = (typeof PERILS)[number];
 const OPEN = new Set(["cleared", "received", "quoted"]);
 
 const cases: Record<string, unknown> = { "126": case126, "138": case138, "143": case143 };
@@ -47,6 +52,12 @@ export const api = {
   case: (id: string) => get<CaseView>(`/cases/${id}`, () => cases[id] as CaseView | undefined),
   events: async (id: string) =>
     (await get<DeskEvent[]>(`/cases/${id}/events?replay=0`, () => events[id] as DeskEvent[] | undefined)) ?? [],
+  mapBook: async (peril: Peril, res: 3 | 5 = 5) =>
+    (await get<Hex[]>(`/map/book?res=${res}&peril=${peril === "all" ? "" : peril}`, () =>
+      (mapBook as unknown as Record<string, Record<Peril, Hex[]>>)[res][peril],
+    )) ?? [],
+  // Not in contract.ts yet: case sites for the map. Backend can serve it as GET /map/pins.
+  mapPins: async () => (await get<Pin[]>(`/map/pins`, () => mapPins as Pin[])) ?? [],
   requestInfo: (caseId: string) => post(`/actions/${caseId}/request-info`, {}),
   digest: (n: number) => post(`/actions/digest`, { n }),
 };

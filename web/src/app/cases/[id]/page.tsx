@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Band, CaseView } from "@/contract";
 import { api } from "@/lib/api";
 import { Actions } from "@/components/Actions";
-import { HexMap } from "@/components/HexMap";
+import { LiveMap } from "@/components/LiveMap";
 import { Swimlanes } from "@/components/Swimlanes";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, money } from "@/components/bits";
 
@@ -45,8 +45,9 @@ function Facts({ c }: { c: CaseView }) {
 
 export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const { id } = await params;
-  const [c, events] = await Promise.all([api.case(id), api.events(id)]);
+  const [c, events, hexes, pins] = await Promise.all([api.case(id), api.events(id), api.mapBook("all"), api.mapPins()]);
   if (!c) notFound();
+  const pin = pins.find((p) => p.caseId === c.caseId);
   const flippers = c.decision.kind === "open" ? c.decision.flippers : [];
   const place = c.facts.find((f) => f.id === "state")?.display;
   const delta = (c.score.lo + c.score.hi - c.scoreWithoutEnrichment.lo - c.scoreWithoutEnrichment.hi) / 2;
@@ -54,8 +55,16 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   return (
     <main>
       <div className="grid grid-cols-[640px_1fr] border-b border-rule">
-        <div className="relative overflow-hidden border-r border-rule">
-          <HexMap c={c} />
+        <div className="relative h-[550px] overflow-hidden border-r border-rule">
+          <LiveMap
+            compact
+            hexes={hexes}
+            pins={pin ? [pin] : [{ caseId: c.caseId, insured: c.title, decision: c.decision.kind, site: c.site, cell: "" }]}
+            center={[c.site.lng, c.site.lat]}
+            zoom={8.2}
+            highlight={pin?.cell}
+          />
+          <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
           {c.portfolio && (
             <p className="absolute left-[330px] top-[64px] w-[290px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12.5px]">
               <b className="float-right ml-2.5 font-mono text-[20px] font-medium text-rust">{c.portfolio.points}</b>
@@ -87,9 +96,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               ))}
             </ul>
           </section>
-          <p className="absolute bottom-[18px] right-5 text-right font-mono text-[10px] text-dim">
-            static preview, live map in W5<br />{c.site.lat.toFixed(3)}° N, {Math.abs(c.site.lng).toFixed(3)}° W
-          </p>
         </div>
 
         <div className="px-8 pb-4 pt-4">

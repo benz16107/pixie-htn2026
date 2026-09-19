@@ -1,0 +1,324 @@
+[
+{
+"caseId": "114",
+"insured": "Lakeside Medical Group LLC",
+"line": "auto",
+"decision": "routed",
+"site": {
+"lat": 25.828,
+"lng": -80.135
+},
+"cell": "8544a113fffffff",
+"perils": [
+"wind",
+"flood"
+]
+},
+{
+"caseId": "115",
+"insured": "Halcyon Metalworks Corp",
+"line": "property",
+"decision": "decline",
+"site": {
+"lat": 37.9,
+"lng": -122.132
+},
+"cell": "8528308bfffffff",
+"perils": [
+"wildfire",
+"earthquake"
+]
+},
+{
+"caseId": "123",
+"insured": "Harrow & Finch PC",
+"line": "cgl",
+"decision": "routed",
+"site": {
+"lat": 38.694,
+"lng": -121.602
+},
+"cell": "852832a3fffffff",
+"perils": [
+"earthquake",
+"flood"
+]
+},
+{
+"caseId": "126",
+"insured": "Lakeside Medical Group Group",
+"line": "property",
+"decision": "decline",
+"site": {
+"lat": 29.761,
+"lng": -95.252
+},
+"cell": "85446c07fffffff",
+"perils": [
+"flood"
+]
+},
+{
+"caseId": "128",
+"insured": "Vance & Reyes PC",
+"line": "lpl",
+"decision": "routed",
+"site": {
+"lat": 30.213,
+"lng": -97.702
+},
+"cell": "85489e33fffffff",
+"perils": [
+"tornado",
+"hail"
+]
+},
+{
+"caseId": "133",
+"insured": "Merrin Hale LLP",
+"line": "property",
+"decision": "decline",
+"site": {
+"lat": 42.018,
+"lng": -87.636
+},
+"cell": "852664dbfffffff",
+"perils": [
+"hail",
+"winter_storm"
+]
+},
+{
+"caseId": "134",
+"insured": "Willowbrook Stores Inc",
+"line": "property",
+"decision": "decline",
+"site": {
+"lat": 30.126,
+"lng": -97.637
+},
+"cell": "85489e33fffffff",
+"perils": [
+"hail",
+"tornado"
+]
+},
+{
+"caseId": "135",
+"insured": "Vance & Reyes PC",
+"line": "health",
+"decision": "routed",
+"site": {
+"lat": 30.254,
+"lng": -97.766
+},
+"cell": "85489e37fffffff",
+"perils": [
+"tornado",
+"hail"
+]
+},
+{
+"caseId": "137",
+"insured": "Coastal Freight Systems LLC",
+"line": "health",
+"decision": "routed",
+"site": {
+"lat": 38.623,
+"lng": -121.38
+},
+"cell": "852832bbfffffff",
+"perils": [
+"wildfire",
+"flood"
+]
+},
+{
+"caseId": "138",
+"insured": "Lumen Data Works Inc",
+"line": "property",
+"decision": "open",
+"site": {
+"lat": 25.644000000000002,
+"lng": -80.20700000000001
+},
+"cell": "8544a18bfffffff",
+"perils": [
+"hurricane",
+"flood",
+"wind"
+]
+},
+{
+"caseId": "140",
+"insured": "Torvald Precision Inc",
+"line": "health",
+"decision": "routed",
+"site": {
+"lat": 40.832,
+"lng": -74.217
+},
+"cell": "852a1047fffffff",
+"perils": [
+"flood",
+"winter_storm"
+]
+},
+{
+"caseId": "141",
+"insured": "Lakeside Medical Group Group",
+"line": "property",
+"decision": "decline",
+"site": {
+"lat": 29.761,
+"lng": -95.252
+},
+"cell": "85446c07fffffff",
+"perils": [
+"flood"
+]
+},
+{
+"caseId": "142",
+"insured": "Vance & Reyes PC",
+"line": "health",
+"decision": "routed",
+"site": {
+"lat": 30.213,
+"lng": -97.702
+},
+"cell": "85489e33fffffff",
+"perils": [
+"tornado",
+"hail"
+]
+},
+{
+"caseId": "143",
+"insured": "Aperture Cloud Corp",
+"line": "property",
+"decision": "decline",
+"site": {
+"lat": 47.548,
+"lng": -122.32000000000001
+},
+"cell": "8528d553fffffff",
+"perils": [
+"earthquake"
+]
+},
+{
+"caseId": "144",
+"insured": "Brightwater Partners LLP",
+"line": "cgl",
+"decision": "routed",
+"site": {
+"lat": 37.84,
+"lng": -122.41
+},
+"cell": "85283083fffffff",
+"perils": [
+"wildfire"
+]
+},
+{
+"caseId": "145",
+"insured": "Aperture Cloud Corp",
+"line": "cyber",
+"decision": "routed",
+"site": {
+"lat": 47.548,
+"lng": -122.32000000000001
+},
+"cell": "8528d553fffffff",
+"perils": [
+"earthquake"
+]
+},
+{
+"caseId": "146",
+"insured": "Redline Logistics Inc",
+"line": "cgl",
+"decision": "routed",
+"site": {
+"lat": 41.734,
+"lng": -87.623
+},
+"cell": "852664cffffffff",
+"perils": [
+"hail"
+]
+},
+{
+"caseId": "148",
+"insured": "Lakeside Medical Group LLC",
+"line": "cgl",
+"decision": "routed",
+"site": {
+"lat": 25.828,
+"lng": -80.135
+},
+"cell": "8544a113fffffff",
+"perils": [
+"wind",
+"flood"
+]
+},
+{
+"caseId": "151",
+"insured": "Verdant Systems Corp",
+"line": "cgl",
+"decision": "routed",
+"site": {
+"lat": 38.45,
+"lng": -121.55
+},
+"cell": "8528304bfffffff",
+"perils": [
+"flood"
+]
+},
+{
+"caseId": "155",
+"insured": "Ironline Builders Corp",
+"line": "health",
+"decision": "routed",
+"site": {
+"lat": 37.811,
+"lng": -122.24900000000001
+},
+"cell": "85283083fffffff",
+"perils": [
+"wildfire"
+]
+},
+{
+"caseId": "157",
+"insured": "Cedar Valley Health LLC",
+"line": "auto",
+"decision": "routed",
+"site": {
+"lat": 38.532000000000004,
+"lng": -121.437
+},
+"cell": "852832b3fffffff",
+"perils": [
+"wildfire",
+"flood"
+]
+},
+{
+"caseId": "158",
+"insured": "Pellier Industrial Inc",
+"line": "auto",
+"decision": "routed",
+"site": {
+"lat": 36.08,
+"lng": -86.72800000000001
+},
+"cell": "85264d13fffffff",
+"perils": [
+"tornado"
+]
+}
+]
