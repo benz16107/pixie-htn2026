@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from typing import Any, AsyncIterator, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
@@ -31,6 +33,7 @@ from .engine import (
     explain,
     verify_numbers,
 )
+from .tenant import TenantAnswers, TorontoPack, quote_tenant
 
 load_dotenv()
 
@@ -210,7 +213,7 @@ def health() -> dict[str, Any]:
 def queue(view: Literal["open", "all"] = "open") -> list[dict[str, Any]]:
     rows = [c["queue"] for c in get_store().list_cases()]
     if view == "open":
-        rows = [r for r in rows if r["status"] in OPEN_STATUSES]
+        rows = [r for r in rows if r["status"] in OPEN_STATUSES or r["status"] == "referred"]
     rows.sort(key=lambda r: (-(r["score"]["lo"] + r["score"]["hi"]) / 2, -r["valueAtStake"]))
     return rows
 
@@ -221,3 +224,55 @@ def get_case(case_id: str) -> dict[str, Any]:
     if data is None:
         raise HTTPException(status_code=404, detail=f"no case {case_id}")
     return data["case"]
+
+
+# ---------- consumer quote ----------------------------------------------------------------------
+
+class TenantAnswersRequest(BaseModel):
+    contents_value: int = Field(alias="contentsValue", ge=10_000, le=250_000, multiple_of=1000)
+    unit_level: Literal["basement", "ground", "upper"] = Field(alias="unitLevel")
+    claims_3yr: int = Field(default=0, alias="claims3yr", ge=0)
+    claims_5yr: int | None = Field(default=None, alias="claims5yr", ge=0)
+    deductible: Literal[500, 1000, 2500] = 1000
+    liability: Literal[1_000_000, 2_000_000] = 1_000_000
+    sewer_backup: bool = Field(default=False, alias="sewerBackup")
+    bundle_auto: bool = Field(default=False, alias="bundleAuto")
+
+
+class TenantQuoteRequest(BaseModel):
+    address: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    answers: TenantAnswersRequest
+
+
+@lru_cache(maxsize=1)
+def _tenant_pack() -> TorontoPack:
+    return TorontoPack()
+
+
+@app.post("/quote/tenant")
+def tenant_quote(req: TenantQuoteRequest) -> dict[str, Any]:
+    if (req.lat is None) != (req.lng is None):
+        raise HTTPException(status_code=422, detail="lat and lng must be supplied together")
+    a = req.answers
+    try:
+        return quote_tenant(
+            address=req.address, lat=req.lat, lng=req.lng,
+            answers=TenantAnswers(
+                contents_value=a.contents_value, unit_level=a.unit_level,
+                claims_5yr=a.claims_5yr if a.claims_5yr is not None else a.claims_3yr,
+                deductible=a.deductible, liability=a.liability,
+                sewer_backup=a.sewer_backup, bundle_auto=a.bundle_auto,
+            ),
+            store=get_store(), pack=_tenant_pack(),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/map/toronto")
+def map_toronto(lat: float, lng: float, k: int = 3) -> list[dict[str, Any]]:
+    if not 0 <= k <= 6:
+        raise HTTPException(status_code=422, detail="k must be between 0 and 6")
+    return _tenant_pack().map_hexes(lat, lng, k)

@@ -24,7 +24,8 @@ def test_queue_open_returns_21_rows_under_500ms(client):
     elapsed_ms = (time.monotonic() - t0) * 1000
     assert resp.status_code == 200
     rows = resp.json()
-    assert len(rows) == 21
+    commercial = [row for row in rows if row["line"] != "tenant"]
+    assert len(commercial) == 21
     assert elapsed_ms < 500
 
     row = rows[0]
@@ -35,7 +36,8 @@ def test_queue_open_returns_21_rows_under_500ms(client):
 
 
 def test_queue_all_returns_158_rows(client):
-    assert len(client.get("/queue?view=all").json()) == 158
+    rows = client.get("/queue?view=all").json()
+    assert len([row for row in rows if row["line"] != "tenant"]) == 158
 
 
 def test_queue_decision_variants_match_contract_shape(client):
