@@ -1,26 +1,38 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Cartographic tokens, from mockups/direction-cartographic.html */
+@theme {
+  --color-land: #ece6d6;
+  --color-paper: #f3efe4;
+  --color-ink: #2f2a22;
+  --color-dim: #6f6453;
+  --color-rule: #d4cab4;
+  --color-water: #c8d2cb;
+  --color-ochre: #8f6327;
+  --color-ochre-soft: #e4d9bf;
+  --color-rust: #a2492f;
+  --color-moss: #5e6f4a;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+  --radius-sm: 4px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html { background: var(--color-paper); color: var(--color-ink); }
+body { font: 13px/1.45 var(--font-sans); font-variant-numeric: tabular-nums; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.kicker {
+  font: 600 10.5px var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-dim);
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+/* the contour texture behind the shell header: a map is the subject here */
+.contours {
+  background-image: url("/contours.svg");
+  background-size: 640px 400px;
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
