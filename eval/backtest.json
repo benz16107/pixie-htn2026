@@ -1,0 +1,436 @@
+{
+  "b1": {
+    "all": {
+      "incurred": 12626300.0,
+      "lossRatio": 1.887,
+      "n": 27,
+      "premium": 6690900.0
+    },
+    "n": 27,
+    "policies": [
+      {
+        "incurred": 1624400.0,
+        "policy": "PR-2025-1001",
+        "premium": 619900,
+        "tier": "decline"
+      },
+      {
+        "incurred": 52800.0,
+        "policy": "PR-2025-1004",
+        "premium": 377300,
+        "tier": "decline"
+      },
+      {
+        "incurred": 0,
+        "policy": "PR-2026-1007",
+        "premium": 79200,
+        "tier": "decline"
+      },
+      {
+        "incurred": 349200.0,
+        "policy": "PR-2026-1014",
+        "premium": 703500,
+        "tier": "decline"
+      },
+      {
+        "incurred": 0,
+        "policy": "PR-2026-1025",
+        "premium": 339700,
+        "tier": "decline"
+      },
+      {
+        "incurred": 0,
+        "policy": "PR-2026-1028",
+        "premium": 177500,
+        "tier": "decline"
+      },
+      {
+        "incurred": 1031200.0,
+        "policy": "PR-2026-1031",
+        "premium": 88600,
+        "tier": "decline"
+      },
+      {
+        "incurred": 1615700.0,
+        "policy": "PR-2025-1033",
+        "premium": 314000,
+        "tier": "decline"
+      },
+      {
+        "incurred": 0,
+        "policy": "PR-2026-1038",
+        "premium": 82300,
+        "tier": "decline"
+      },
+      {
+        "incurred": 548500.0,
+        "policy": "PR-2025-1042",
+        "premium": 127500,
+        "tier": "decline"
+      },
+      {
+        "incurred": 34600.0,
+        "policy": "PR-2026-1043",
+        "premium": 112100,
+        "tier": "decline"
+      },
+      {
+        "incurred": 1204800.0,
+        "policy": "PR-2026-1047",
+        "premium": 262000,
+        "tier": "decline"
+      },
+      {
+        "incurred": 144900.0,
+        "policy": "PR-2025-1052",
+        "premium": 471700,
+        "tier": "decline"
+      },
+      {
+        "incurred": 609800.0,
+        "policy": "PR-2025-1054",
+        "premium": 378100,
+        "tier": "decline"
+      },
+      {
+        "incurred": 701300.0,
+        "policy": "PR-2025-1061",
+        "premium": 411000,
+        "tier": "decline"
+      },
+      {
+        "incurred": 746500.0,
+        "policy": "PR-2024-1065",
+        "premium": 172000,
+        "tier": "decline"
+      },
+      {
+        "incurred": 164900.0,
+        "policy": "PR-2025-1066",
+        "premium": 274500,
+        "tier": "decline"
+      },
+      {
+        "incurred": 525200.0,
+        "policy": "PR-2025-1070",
+        "premium": 321300,
+        "tier": "decline"
+      },
+      {
+        "incurred": 464300.0,
+        "policy": "PR-2025-1074",
+        "premium": 61500,
+        "tier": "decline"
+      },
+      {
+        "incurred": 147400.0,
+        "policy": "PR-2024-1076",
+        "premium": 45900,
+        "tier": "decline"
+      },
+      {
+        "incurred": 614600.0,
+        "policy": "PR-2025-1077",
+        "premium": 46700,
+        "tier": "decline"
+      },
+      {
+        "incurred": 629200.0,
+        "policy": "PR-2026-1081",
+        "premium": 58800,
+        "tier": "accept"
+      },
+      {
+        "incurred": 621700.0,
+        "policy": "PR-2025-1083",
+        "premium": 266700,
+        "tier": "decline"
+      },
+      {
+        "incurred": 9700.0,
+        "policy": "PR-2024-1090",
+        "premium": 188400,
+        "tier": "decline"
+      },
+      {
+        "incurred": 17600.0,
+        "policy": "PR-2025-1091",
+        "premium": 269200,
+        "tier": "decline"
+      },
+      {
+        "incurred": 108000.0,
+        "policy": "PR-2025-1092",
+        "premium": 266400,
+        "tier": "decline"
+      },
+      {
+        "incurred": 660000.0,
+        "policy": "PR-2026-1098",
+        "premium": 175100,
+        "tier": "decline"
+      }
+    ],
+    "statuses": {
+      "active": 15,
+      "expired": 9,
+      "non_renewed": 3
+    },
+    "tiers": [
+      {
+        "incurred": 629200.0,
+        "lossRatio": 10.701,
+        "n": 1,
+        "premium": 58800.0,
+        "tier": "accept"
+      },
+      {
+        "incurred": 0,
+        "lossRatio": null,
+        "n": 0,
+        "premium": 0,
+        "tier": "open"
+      },
+      {
+        "incurred": 11997100.0,
+        "lossRatio": 1.809,
+        "n": 26,
+        "premium": 6632100.0,
+        "tier": "decline"
+      }
+    ]
+  },
+  "b2": {
+    "cases": [
+      {
+        "alsoDeclines": true,
+        "caseId": "115",
+        "deskDecision": "decline",
+        "deskTopReason": "loss_history",
+        "humanReason": "loss_history",
+        "lane": "Appetite",
+        "line": "property",
+        "matchingReason": true
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "117",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "insufficient_controls",
+        "lane": "Intake",
+        "line": "health",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "119",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "insufficient_controls",
+        "lane": "Intake",
+        "line": "cgl",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "121",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "outside_appetite",
+        "lane": "Appetite",
+        "line": "health",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "122",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "loss_history",
+        "lane": "Appetite",
+        "line": "health",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "124",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "outside_appetite",
+        "lane": "Appetite",
+        "line": "health",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "125",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "insufficient_controls",
+        "lane": "Intake",
+        "line": "cgl",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "129",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "cat_exposure_aggregation",
+        "lane": "Portfolio",
+        "line": "health",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "130",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "insufficient_controls",
+        "lane": "Intake",
+        "line": "auto",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "154",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "cat_exposure_aggregation",
+        "lane": "Portfolio",
+        "line": "auto",
+        "matchingReason": false
+      },
+      {
+        "alsoDeclines": false,
+        "caseId": "156",
+        "deskDecision": "routed",
+        "deskTopReason": "outside_appetite",
+        "humanReason": "loss_history",
+        "lane": "Appetite",
+        "line": "cyber",
+        "matchingReason": false
+      }
+    ],
+    "deskDeclines": 1,
+    "excluded": 3,
+    "matchingReason": 1,
+    "n": 11,
+    "rows": [
+      {
+        "deskAgrees": 1,
+        "excluded": false,
+        "factor": "loss factor",
+        "lane": "Appetite",
+        "lines": {
+          "cyber": 1,
+          "health": 1,
+          "property": 1
+        },
+        "n": 3,
+        "reason": "loss_history"
+      },
+      {
+        "deskAgrees": 0,
+        "excluded": false,
+        "factor": "portfolio concentration",
+        "lane": "Portfolio",
+        "lines": {
+          "auto": 1,
+          "health": 1
+        },
+        "n": 2,
+        "reason": "cat_exposure_aggregation"
+      },
+      {
+        "deskAgrees": 0,
+        "excluded": false,
+        "factor": "line or state",
+        "lane": "Appetite",
+        "lines": {
+          "health": 2
+        },
+        "n": 2,
+        "reason": "outside_appetite"
+      },
+      {
+        "deskAgrees": 0,
+        "excluded": false,
+        "factor": "controls gaps in ExposureUnit data",
+        "lane": "Intake",
+        "lines": {
+          "auto": 1,
+          "cgl": 2,
+          "health": 1
+        },
+        "n": 4,
+        "reason": "insufficient_controls"
+      },
+      {
+        "deskAgrees": null,
+        "excluded": true,
+        "factor": null,
+        "lane": null,
+        "lines": {
+          "cgl": 1,
+          "cyber": 1,
+          "lpl": 1
+        },
+        "n": 3,
+        "reason": "broker_withdrew"
+      }
+    ]
+  },
+  "b3": {
+    "cases": [],
+    "changed": 0,
+    "n": 38
+  },
+  "b4": {
+    "factors": [
+      {
+        "declines": 17,
+        "factor": "premium above $175,000"
+      },
+      {
+        "declines": 2,
+        "factor": "premium below $50,000"
+      },
+      {
+        "declines": 13,
+        "factor": "state outside 2025 list"
+      },
+      {
+        "declines": 0,
+        "factor": "TIV above $150,000,000"
+      },
+      {
+        "declines": 11,
+        "factor": "building age"
+      },
+      {
+        "declines": 12,
+        "factor": "construction"
+      },
+      {
+        "declines": 13,
+        "factor": "prior loss history"
+      },
+      {
+        "declines": 7,
+        "factor": "renewal business"
+      }
+    ],
+    "n": 27
+  },
+  "knownMisses": [
+    {
+      "incurred": 629200.0,
+      "policy": "PR-2026-1081",
+      "premium": 58800,
+      "tier": "accept"
+    }
+  ],
+  "preregistration": "5351f2340c0009d42e5a68c8d8eb41738f6ffa18"
+}

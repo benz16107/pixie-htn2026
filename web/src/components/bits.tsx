@@ -93,9 +93,9 @@ const SEVERITY: Record<string, string> = {
   info: "border-dashed border-dim text-dim",
 };
 
-export function IssueTag({ kind, severity, text }: { kind: string; severity: string; text?: string }) {
-  const label = ISSUE_LABEL[kind] ?? kind.slice(0, 5).toUpperCase();
-  const title = `${kind.replaceAll("_", " ")} (${severity})${text ? `: ${text}` : ""}`;
+export function IssueTag({ kind, severity, text, count = 1 }: { kind: string; severity: string; text?: string; count?: number }) {
+  const label = (ISSUE_LABEL[kind] ?? kind.slice(0, 5).toUpperCase()) + (count > 1 ? `×${count}` : "");
+  const title = `${kind.replaceAll("_", " ")}${count > 1 ? `, ${count} times` : ""} (${severity})${text ? `: ${text}` : ""}`;
   return (
     <span title={title} className={`inline-block rounded-sm border px-1 font-mono text-[9.5px] ${SEVERITY[severity] ?? SEVERITY.info}`}>
       {label}
@@ -105,4 +105,4 @@ export function IssueTag({ kind, severity, text }: { kind: string; severity: str
 }
 
 export const money = (n: number) =>
-  n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : `$${n}`;
+  n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : `$${n}`;

@@ -86,7 +86,9 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
             <td className="num py-2 pr-4">{r.state}</td>
             <td className="py-2 pr-4">
               {r.decision.kind === "routed" ? (
-                <span className="text-[11.5px] text-dim">routed, {r.decision.because}</span>
+                <span className="text-[11.5px] text-dim" title={r.decision.because}>
+                  routed to {r.decision.to}
+                </span>
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="flex-1"><IntervalBar score={r.score} compact /></div>
@@ -114,7 +116,15 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
             </td>
             <td className="py-2">
               <span className="flex flex-wrap gap-1">
-                {r.issues.map((i) => <IssueTag key={i.kind} {...i} />)}
+                {/* The engine can report the same issue once per building; show it once with a count. */}
+                {Object.values(
+                  r.issues.reduce<Record<string, { kind: string; severity: string; n: number }>>((m, i) => {
+                    m[i.kind] = { ...i, n: (m[i.kind]?.n ?? 0) + 1 };
+                    return m;
+                  }, {}),
+                ).map((i) => (
+                  <IssueTag key={i.kind} kind={i.kind} severity={i.severity} count={i.n} />
+                ))}
               </span>
             </td>
           </tr>

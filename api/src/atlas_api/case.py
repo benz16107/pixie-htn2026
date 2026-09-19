@@ -218,7 +218,7 @@ class World:
         primary_admin: Value = (Known(sites[0].admin, source=f"Location {sites[0].id}")
                                  if sites else Missing(reason="no site resolved", resolver="broker"))
         year_built, construction_share = self._year_and_construction(sites)
-        loss_5yr = self._loss_5yr(sub["insured"], as_of)
+        loss_5yr = self._loss_5yr(sub["insured"], as_of, exclude_policy_id=policy["id"] if policy else None)
 
         issues: list[DataIssue] = []
         issues.extend(self._duplicate_and_stale_issues(sub))
@@ -317,7 +317,7 @@ class World:
         return (Known(round(year, 1), source=f"TIV-weighted over {len(buildings)} buildings"),
                 Known(share, source=f"TIV share over {len(buildings)} buildings"))
 
-    def _loss_5yr(self, insured_id: int, as_of: str) -> Value:
+    def _loss_5yr(self, insured_id: int, as_of: str, exclude_policy_id: int | None = None) -> Value:
         """Loss history from the insured's OTHER policies' claims before as_of (DESIGN.md)."""
         policies = self.policies_by_insured.get(insured_id, [])
         if not policies:
@@ -330,12 +330,15 @@ class World:
         total = 0.0
         n = 0
         for p in policies:
+            if p["id"] == exclude_policy_id:
+                continue
             for c in self.claims_by_policy.get(p["id"], []):
                 dol = date.fromisoformat(c["date_of_loss"])
                 if start <= dol < as_of_date:
                     total += c["paid_indemnity"] + c["paid_expense"] + c["reserve_indemnity"] + c["reserve_expense"]
                     n += 1
-        return Known(total, source=f"{n} claims across {len(policies)} policies of the insured, {start} to {as_of_date}")
+        eligible_policies = len(policies) - (1 if exclude_policy_id is not None else 0)
+        return Known(total, source=f"{n} claims across {eligible_policies} other policies of the insured, {start} to {as_of_date}")
 
     # ---- business type: Estimated for every open submission, never silently "new" ----------------
 
