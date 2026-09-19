@@ -46,6 +46,10 @@ BACKTEST_PATH = Path(__file__).resolve().parents[3] / "eval" / "backtest.json"
 
 
 def _init_sentry() -> None:
+    """AI Agent Monitoring + Tracing + Logs, one init (docs/research/sentry.md item 1). PII (full
+    LLM prompts/completions, tool args) only ships when ATLAS_SENTRY_PII=1 -- off by default since
+    fixtures could someday carry real broker text; span/log data (timings, tokens, cost, case ids)
+    flows either way."""
     dsn = os.environ.get("SENTRY_DSN_API")
     if not dsn:
         return
@@ -57,7 +61,9 @@ def _init_sentry() -> None:
         integrations.append(OpenAIAgentsIntegration())
     except (ImportError, sentry_sdk.integrations.DidNotEnable):
         pass  # openai-agents isn't installed until T7; the integration slots in without a code change
-    sentry_sdk.init(dsn=dsn, traces_sample_rate=1.0, enable_logs=True, integrations=integrations)
+    sentry_sdk.init(dsn=dsn, traces_sample_rate=1.0, enable_logs=True, integrations=integrations,
+                    send_default_pii=os.environ.get("ATLAS_SENTRY_PII") == "1",
+                    environment=os.environ.get("ATLAS_ENV", "hackathon"), release="pixie-api@1.0.0")
 
 
 _init_sentry()
@@ -440,6 +446,16 @@ async def ask_route(req: AskRequest) -> dict[str, Any]:
     return await ask(req.question.strip(), get_store())
 
 
+@app.post("/ops/ask")
+async def ops_ask_route(req: AskRequest) -> dict[str, Any]:
+    """"What broke in the last hour?" -- Pixie's own agent queries Sentry via MCP (item 13). Gated
+    behind ATLAS_SENTRY_MCP so it never spins up npx by accident."""
+    from .ops import ask_ops, enabled
+    if not enabled():
+        raise HTTPException(status_code=503, detail="ATLAS_SENTRY_MCP is not set; the Sentry ops tool is disabled")
+    return {"question": req.question, "answer": await ask_ops(req.question.strip())}
+
+
 # ---------- actions (T11) and the queue event bus (T13) -------------------------------------------
 
 _bus: set[asyncio.Queue] = set()
@@ -479,6 +495,8 @@ def action_request_info(case_id: str) -> dict[str, Any]:
     out = request_broker_info(store, case, a, rules, store.get_case(case_id)["case"]["title"], facts)
     apply_desk_run(store, _world, case_id) if run else None
     publish("action", {"caseId": case_id, "status": out["status"], "channel": "gmail", "key": out["id"]})
+    from .telemetry import log
+    log("action.send", case_id=case_id, action="request_broker_info", channel="gmail", status=out["status"])
     return out
 
 
@@ -518,7 +536,10 @@ class DigestRequest(BaseModel):
 @app.post("/actions/digest")
 def actions_digest(req: DigestRequest) -> dict[str, Any]:
     from .linq import send_digest
-    return send_digest(get_store(), req.n)
+    from .telemetry import log
+    out = send_digest(get_store(), req.n)
+    log("action.send", action="digest", channel="linq", status=out["status"], case_ids=",".join(out["caseIds"]))
+    return out
 
 
 def apply_command(case_id: str, command: str) -> str:
@@ -553,6 +574,7 @@ def apply_command(case_id: str, command: str) -> str:
 async def linq_webhook(request: Request) -> dict[str, Any]:
     """Always 200: log the raw payload first, then parse tolerantly (T12)."""
     from .linq import CLARIFY, DIGEST_KEY, extract_text, is_inbound, log_raw, parse_command, send_text, verify
+    from .telemetry import log
 
     raw = await request.body()
     headers = dict(request.headers)
@@ -564,6 +586,7 @@ async def linq_webhook(request: Request) -> dict[str, Any]:
         payload = {}
     text = extract_text(payload)
     parsed = parse_command(text)
+    log("webhook.inbound", channel="linq", signature_valid=signature, text=text[:200], command=str(parsed))
     reply = None
     if parsed and signature is not False and is_inbound(payload):
         command, index = parsed
@@ -572,6 +595,7 @@ async def linq_webhook(request: Request) -> dict[str, Any]:
             reply = f"Which one? Reply approve 1, refer 2, or why 1 (numbers from the last {len(case_ids)})."
         elif 1 <= index <= len(case_ids):
             reply = apply_command(case_ids[index - 1], command)
+            log("action.send", case_id=case_ids[index - 1], action=f"linq.{command}", channel="linq")
         else:
             reply = f"I only sent {len(case_ids)} cases; reply with a number up to {len(case_ids)}."
         if os.environ.get("ATLAS_ACTIONS") == "live":

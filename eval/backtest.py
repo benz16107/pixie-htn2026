@@ -245,6 +245,24 @@ def write_backtest(path: Path = OUTPUT) -> bytes:
     return payload
 
 
+def _write_backtest_monitored() -> bytes:
+    """The nightly/precompute job (docs/research/sentry.md item 8): re-run the pre-registered
+    backtest and refresh eval/backtest.json, the /backtest endpoint's source. Wrapped in a Sentry
+    cron check-in so a missed or overrun run shows up as a Sentry issue; see docs/SENTRY.md for
+    the OS-level schedule this still needs (the check-in alone does not schedule anything)."""
+    from atlas_api import app as _app  # noqa: F401  Sentry init when SENTRY_DSN_API is set
+    import sentry_sdk.crons as crons
+
+    monitor_config = {"schedule": {"type": "crontab", "value": "0 3 * * *"}, "checkin_margin": 10,
+                      "max_runtime": 10, "timezone": "UTC"}
+
+    @crons.monitor(monitor_slug="pixie-backtest", monitor_config=monitor_config)
+    def _run() -> bytes:
+        return write_backtest()
+
+    return _run()
+
+
 if __name__ == "__main__":
-    data = write_backtest()
+    data = _write_backtest_monitored()
     print(f"wrote {OUTPUT.relative_to(ROOT)} ({len(data)} bytes)")

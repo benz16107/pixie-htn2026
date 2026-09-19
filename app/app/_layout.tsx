@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, Text } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
+import * as Sentry from '@sentry/react-native';
 import { QuoteProvider } from '@/lib/store';
 import { C, F } from '@/lib/theme';
 
@@ -15,7 +16,17 @@ export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+// JS errors + tracing (docs/research/sentry.md item 5, and docs/SENTRY.md for what Expo Go can't
+// do here: no native crash reporting and no mobileReplayIntegration, both need a compiled dev/EAS
+// build; app.json's @sentry/react-native/expo plugin only runs its native step on that build too).
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 1.0,
+  enableLogs: true,
+  environment: process.env.EXPO_PUBLIC_ATLAS_ENV || 'hackathon',
+});
+
+function RootLayout() {
   const [loaded, error] = useFonts({
     Newsreader_600SemiBold,
     PublicSans_400Regular,
@@ -63,3 +74,5 @@ export default function RootLayout() {
     </QuoteProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
