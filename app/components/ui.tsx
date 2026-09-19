@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { BlurView } from 'expo-blur';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextProps, type ViewStyle } from 'react-native';
 import Animated, { cubicBezier } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -120,15 +121,26 @@ export function Contours({ height = 180 }: { height?: number }) {
   );
 }
 
-// Scrollable content with a bottom bar that stays above the home indicator.
+// Scrollable content with a frosted, floating bottom bar (expo-blur) that content scrolls under,
+// staying above the home indicator. The bar's own height reserves matching scroll padding so the
+// last line of content is never hidden behind it.
 export function Screen({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
   const inset = useSafeAreaInsets();
+  const [footerH, setFooterH] = useState(0);
   return (
     <View style={{ flex: 1, backgroundColor: C.paper }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled">
         {children}
       </ScrollView>
-      {footer ? <View style={[s.footer, { paddingBottom: Math.max(inset.bottom, 12) }]}>{footer}</View> : null}
+      {footer ? (
+        <View
+          onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
+          style={[s.footer, { paddingBottom: Math.max(inset.bottom, 12) }]}
+        >
+          <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
+          <View style={{ gap: 6 }}>{footer}</View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -151,5 +163,5 @@ export const s = StyleSheet.create({
   choiceTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.ink, marginBottom: 2 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: C.dim, marginTop: 2 },
   radioOn: { borderColor: C.ink, borderWidth: 6 },
-  footer: { borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: C.paper, paddingHorizontal: 20, paddingTop: 12, gap: 6 },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: 1, borderTopColor: C.rule, paddingHorizontal: 20, paddingTop: 12, gap: 6 },
 });

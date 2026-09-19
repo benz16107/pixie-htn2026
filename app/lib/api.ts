@@ -30,6 +30,35 @@ export interface QuoteView {
 }
 export interface Place { address: string; lat: number; lng: number }
 
+// ---------- Gemini (docs/EXPO-GEMINI.md): photo inventory, Maps-grounded context, quote speech ----
+
+export interface InventoryLine {
+  id: number;
+  category: string;
+  item: string;
+  quantity: number;
+  low: number;
+  high: number;
+  confidence: number;
+  source: string;
+}
+export interface InventoryResult {
+  lines: InventoryLine[];
+  totalLow: number;
+  totalHigh: number;
+  suggestedContentsValue: number;
+  cached: boolean;
+  model: string;
+}
+export interface ContextCitation { title: string; uri: string }
+export interface ContextNote {
+  note: string;
+  citations: ContextCitation[];
+  grounded: boolean;
+  label: string;
+  cached: boolean;
+}
+
 const API = process.env.EXPO_PUBLIC_API_URL;
 export const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3100';
 const FIXTURES = quotes as unknown as QuoteView[];
@@ -75,4 +104,39 @@ export async function quoteTenant(p: Place, answers: Answers): Promise<QuoteResu
   return q
     ? { quote: q, offline: true }
     : { error: 'We could not reach the quote service, and only the three example addresses work offline.' };
+}
+
+export type InventoryOutcome = { result: InventoryResult } | { error: string };
+
+// Photograph your apartment: uploads one or more picked/captured photos to Gemini vision.
+// Gemini only identifies items and value ranges; the app decides what to do with the total.
+export async function scanInventory(photoUris: string[]): Promise<InventoryOutcome> {
+  if (!API) return { error: 'The photo scan needs a live connection to the quote service.' };
+  const form = new FormData();
+  photoUris.forEach((uri, i) => {
+    const name = uri.split('/').pop() || `photo-${i}.jpg`;
+    const ext = name.split('.').pop()?.toLowerCase();
+    const type = ext === 'png' ? 'image/png' : ext === 'heic' ? 'image/heic' : 'image/jpeg';
+    // React Native's fetch FormData accepts this {uri,name,type} shape in place of a Blob.
+    form.append('photos', { uri, name, type } as unknown as Blob);
+  });
+  try {
+    const res = await fetch(API + '/gemini/inventory', { method: 'POST', body: form, signal: AbortSignal.timeout(30000) });
+    if (!res.ok) return { error: (await res.json().catch(() => null))?.detail ?? 'Gemini could not read that photo. Try a brighter, wider shot.' };
+    return { result: (await res.json()) as InventoryResult };
+  } catch {
+    return { error: 'We could not reach the quote service to scan your photo.' };
+  }
+}
+
+// "What's around you" (consumer) / underwriting note (commercial): Gemini Maps grounding.
+// Advisory only -- the caller must never fold this into a price.
+export async function nearbyContext(p: Place, kind: 'consumer' | 'commercial' = 'consumer'): Promise<ContextNote | undefined> {
+  return call<ContextNote>(`/gemini/context?lat=${p.lat}&lng=${p.lng}&kind=${kind}`);
+}
+
+// URL for the cached Gemini TTS reading of `text`; undefined when no API is configured (the
+// caller should fall back to on-device expo-speech, which needs no URL at all).
+export function speechUrl(text: string): string | undefined {
+  return API ? `${API}/gemini/speech?text=${encodeURIComponent(text)}` : undefined;
 }

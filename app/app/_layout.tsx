@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, Text } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 import { QuoteProvider } from '@/lib/store';
 import { C, F } from '@/lib/theme';
@@ -34,6 +35,7 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <QuoteProvider>
       <StatusBar style="dark" />
       <Stack
@@ -57,9 +59,11 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: 'PIXIE' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
+        <Stack.Screen name="inventory" options={{ title: 'Photograph your apartment' }} />
         <Stack.Screen name="quote" options={{ title: 'Your quote' }} />
         <Stack.Screen name="about" options={{ title: 'About', headerRight: () => null }} />
       </Stack>
     </QuoteProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,14 +1,13 @@
 import Slider from '@react-native-community/slider';
+import * as Haptics from 'expo-haptics';
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Choice, Dim, Kicker, Screen, Title } from '@/components/ui';
 import type { Answers } from '@/lib/api';
 import { useQuote } from '@/lib/store';
-import { C, F } from '@/lib/theme';
+import { C, CONTENTS_MAX as MAX, CONTENTS_MIN as MIN, CONTENTS_STEP as STEP, F } from '@/lib/theme';
 
-const STEP = 5000;
-const MIN = 5000;
-const MAX = 100000;
 const usd = (n: number) => `$${n.toLocaleString('en-US')}`;
 
 function Unit({ a, set }: { a: Answers; set: (p: Partial<Answers>) => void }) {
@@ -42,32 +41,50 @@ function Stepper({ label, onPress, disabled }: { label: string; onPress: () => v
 function Contents({ a, set }: { a: Answers; set: (p: Partial<Answers>) => void }) {
   const v = a.contentsValue;
   const clamp = (n: number) => Math.min(MAX, Math.max(MIN, n));
+  const lastDetent = useRef(v);
+  const tick = (n: number) => {
+    if (n !== lastDetent.current && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+    lastDetent.current = n;
+    set({ contentsValue: n });
+  };
   return (
     <View>
       <Text style={st.big} accessibilityLiveRegion="polite" accessibilityLabel={`Contents value ${usd(v)}`}>
         {usd(v)}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
-        <Stepper label="−" disabled={v <= MIN} onPress={() => set({ contentsValue: clamp(v - STEP) })} />
+        <Stepper label="−" disabled={v <= MIN} onPress={() => tick(clamp(v - STEP))} />
         <Slider
           style={{ flex: 1, height: 44 }}
           minimumValue={MIN}
           maximumValue={MAX}
           step={STEP}
           value={v}
-          onValueChange={(n) => set({ contentsValue: clamp(Math.round(n / STEP) * STEP) })}
+          onValueChange={(n) => tick(clamp(Math.round(n / STEP) * STEP))}
           minimumTrackTintColor={C.moss}
           maximumTrackTintColor={C.rule}
           thumbTintColor={C.ink}
           accessibilityLabel="Contents value"
           accessibilityValue={{ min: MIN, max: MAX, now: v, text: usd(v) }}
         />
-        <Stepper label="+" disabled={v >= MAX} onPress={() => set({ contentsValue: clamp(v + STEP) })} />
+        <Stepper label="+" disabled={v >= MAX} onPress={() => tick(clamp(v + STEP))} />
       </View>
       <Dim style={{ fontSize: 14, marginTop: 12 }}>
         A rough guess is fine. Most one-bedroom renters land between $20,000 and $40,000: furniture, clothes, laptop,
         phone, kitchen things. Each $1,000 above $20,000 adds $4 a year.
       </Dim>
+      <Pressable
+        onPress={() => {
+          if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          router.push('/inventory');
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Or photograph your apartment to estimate this number"
+        accessibilityHint="Opens the camera so Gemini can list what it sees and add up a starting value"
+        style={({ pressed }) => [st.scanLink, pressed && { backgroundColor: C.land }]}
+      >
+        <Text style={st.scanLinkText}>Or photograph your apartment instead</Text>
+      </Pressable>
     </View>
   );
 }
@@ -122,4 +139,6 @@ const st = StyleSheet.create({
   big: { fontFamily: F.monoMedium, fontSize: 40, color: C.ink, fontVariant: ['tabular-nums'] },
   step: { width: 48, height: 48, borderRadius: 4, borderWidth: 1, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   stepText: { fontFamily: F.monoMedium, fontSize: 24, color: C.ink },
+  scanLink: { marginTop: 18, minHeight: 44, justifyContent: 'center', borderRadius: 4, borderWidth: 1, borderColor: C.rule, borderStyle: 'dashed', paddingHorizontal: 12 },
+  scanLinkText: { fontFamily: F.sansMedium, fontSize: 15, color: C.ink, textDecorationLine: 'underline' },
 });

@@ -11,6 +11,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Pixie uses your location once to fill in your address for a tenant quote.",
+        "NSCameraUsageDescription": "Pixie uses your camera to photograph your apartment and estimate your contents value.",
+        "NSPhotoLibraryUsageDescription": "Pixie reads a photo you pick to estimate your contents value.",
         "CADisableMinimumFrameDurationOnPhone": true
       }
     },
@@ -43,7 +45,18 @@
         {
           "locationWhenInUsePermission": "Pixie uses your location once to fill in your address for a tenant quote."
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pixie reads a photo you pick to estimate your contents value.",
+          "cameraPermission": "Pixie uses your camera to photograph your apartment and estimate your contents value.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-sharing",
+      "expo-audio",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": false
