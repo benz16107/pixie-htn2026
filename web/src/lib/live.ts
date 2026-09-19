@@ -5,11 +5,16 @@ export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 /** The browser talks to the API through the same-origin proxy in app/api/atlas. */
 export const PROXY = "/api/atlas";
 
+/** The live queue carries a region and may have no interval at all (routed or tenant). */
+export type Row = Omit<QueueRow, "score"> & { score: Interval | null; region?: "us" | "toronto"; label?: string };
+
+export type OutboxItem = { key?: string; channel?: string; status?: string; to?: string; subject?: string; body?: string; at?: string };
+
 export type CaseState = {
-  row: QueueRow;
+  row: Row;
   status: "waiting" | "working" | "settled";
   events: DeskEvent[];
-  score: Interval;
+  score: Interval | null;
   modelSteps: number;
   costUsd?: number;
   ms?: number;
@@ -25,7 +30,7 @@ export const isModelStep = (e: DeskEvent) => e.actor !== "system" && e.kind !== 
 /** Bookkeeping the desk writes for itself: useful as numbers, noise as cards. */
 export const isPlumbing = (e: DeskEvent) => e.kind === "run_stats";
 
-export function foldScore(events: DeskEvent[], fallback: Interval): Interval {
+export function foldScore(events: DeskEvent[], fallback: Interval | null): Interval | null {
   const last = [...events].reverse().find((e) => e.kind === "assessment" && e.body.score);
   return (last?.body.score as Interval | undefined) ?? fallback;
 }
@@ -106,15 +111,39 @@ export function brokerEmail(c: CaseView | null, events: DeskEvent[]) {
   };
 }
 
-/** The iMessage digest, built from the live queue. */
-export function digestText(rows: QueueRow[]) {
-  const open = rows.filter((r) => r.decision.kind === "open").slice(0, 3);
-  const lines = open.map(
-    (r, i) => `${i + 1}. ${r.insured} · ${r.line} ${r.state} · ${r.score.lo}-${r.score.hi} · $${(r.valueAtStake / 1e6).toFixed(1)}M`,
-  );
-  return {
-    lines: lines.length ? lines : ["Nothing open on the desk right now."],
-    head: `Pixie desk · ${rows.length} submissions, ${rows.filter((r) => r.decision.kind === "open").length} open`,
-    foot: "Reply approve 1, refer 1, or why 1.",
-  };
+/** A human decision arriving over /events/queue. */
+export const humanVerdict = (e: DeskEvent) =>
+  e.actor === "human" && e.kind === "decision" ? String(e.body.text ?? "Underwriter replied") : null;
+
+/** One plain line for the caption strip: what the desk is doing right now. */
+export function nowLine(e: DeskEvent | undefined, running: boolean): string {
+  if (!e) return running ? "Starting the desk…" : "Press Run the demo, or pick a case from the queue.";
+  const who = e.actor.charAt(0).toUpperCase() + e.actor.slice(1);
+  const text = prettyBands(str(e.body.text));
+  switch (e.kind) {
+    case "plan":
+      return `${who} is planning: ${text.replace(/^Deep dive \((\w+)\):\s*/i, "")}`;
+    case "ask":
+      return `${who} is asking ${e.to}: ${str(e.body.question) || text}`;
+    case "answer":
+      return `${who} is answering ${e.to}`;
+    case "estimate":
+      return `${who} is estimating ${text}`;
+    case "finding":
+      return `${who} found ${text}`;
+    case "tool_call":
+      return `${who} is running ${str(e.body.tool).replaceAll("_", " ")}`;
+    case "assessment":
+      return `${who} re-scored the case: ${text}`;
+    case "conflict":
+      return `The desk hit a conflict: ${text}`;
+    case "resolution":
+      return `${who} resolved it: ${text}`;
+    case "decision":
+      return `${who} decided: ${text}`;
+    case "action":
+      return `${who} is sending: ${text}`;
+    default:
+      return text || `${who} is working`;
+  }
 }
