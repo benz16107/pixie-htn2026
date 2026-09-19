@@ -82,11 +82,11 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
                 </span>
               )}
             </td>
-            <td className="py-2 pr-4 capitalize">{r.line}</td>
+            <td className="py-2 pr-4">{r.line.length <= 3 ? r.line.toUpperCase() : r.line[0].toUpperCase() + r.line.slice(1)}</td>
             <td className="num py-2 pr-4">{r.state}</td>
             <td className="py-2 pr-4">
               {r.decision.kind === "routed" ? (
-                <span className="text-[11.5px] text-dim">not scored: {r.decision.because}</span>
+                <span className="text-[11.5px] text-dim">routed, {r.decision.because}</span>
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="flex-1"><IntervalBar score={r.score} compact /></div>

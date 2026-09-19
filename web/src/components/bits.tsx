@@ -13,8 +13,12 @@ export function IntervalBar({ score, compact = false }: { score: Interval; compa
     >
       <div className="absolute inset-x-0 rounded-sm border border-rule bg-land" style={{ top: h / 2 - 3, height: 6 }} />
       <div
-        className="absolute rounded-sm bg-moss transition-[left,width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-        style={{ left: `${score.lo}%`, width: `${Math.max(score.hi - score.lo, 1)}%`, top: h / 2 - 7, height: 14 }}
+        className="iv absolute inset-x-0 origin-left rounded-sm bg-moss"
+        style={{
+          transform: `translateX(${score.lo}%) scaleX(${Math.max(score.hi - score.lo, 1) / 100})`,
+          top: h / 2 - 7,
+          height: 14,
+        }}
       />
       {THRESHOLDS.map((t) => (
         <div key={t} className="absolute top-0 border-l-[1.5px] border-rust" style={{ left: `${t}%`, height: h }}>

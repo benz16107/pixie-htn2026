@@ -4,7 +4,7 @@
   "title": "Lumen Data Works Inc",
   "facts": [
     { "id": "tiv", "label": "TIV", "display": "$2,073,000", "provenance": "known", "source": "Insured.hq → Location 19 → 1 building (Plant A)" },
-    { "id": "premium", "label": "Premium", "display": "est. $6,020–$10,317", "provenance": "missing", "source": "p25–p75 of technical_premium / TIV over 27 bound property comparables", "resolver": "broker" },
+    { "id": "premium", "label": "Premium", "display": "est. $6,020–$10,317", "provenance": "missing", "source": "p25–p75 rate × TIV, 27 bound property comps", "resolver": "broker" },
     { "id": "year_built", "label": "Year built", "display": "2023", "provenance": "known", "source": "Building 35 via Insured.hq" },
     { "id": "construction", "label": "Construction", "display": "Masonry non-combustible", "provenance": "known", "source": "Building 35 via Insured.hq" },
     { "id": "state", "label": "State", "display": "FL", "provenance": "known", "source": "Location 19, Miami-Dade" },
