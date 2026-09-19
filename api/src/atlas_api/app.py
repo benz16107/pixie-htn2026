@@ -428,6 +428,16 @@ async def ask_route(req: AskRequest) -> dict[str, Any]:
     return await ask(req.question.strip(), get_store())
 
 
+@app.post("/ops/ask")
+async def ops_ask_route(req: AskRequest) -> dict[str, Any]:
+    """"What broke in the last hour?" -- Pixie's own agent queries Sentry via MCP (item 13). Gated
+    behind ATLAS_SENTRY_MCP so it never spins up npx by accident."""
+    from .ops import ask_ops, enabled
+    if not enabled():
+        raise HTTPException(status_code=503, detail="ATLAS_SENTRY_MCP is not set; the Sentry ops tool is disabled")
+    return {"question": req.question, "answer": await ask_ops(req.question.strip())}
+
+
 # ---------- actions (T11) and the queue event bus (T13) -------------------------------------------
 
 _bus: set[asyncio.Queue] = set()
