@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { QueueTable } from "@/components/QueueTable";
+import { DeclinesPanel } from "@/components/BookInsights";
 
 export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
   const view = (await searchParams).view === "all" ? "all" : "open";
-  const rows = await api.queue(view);
+  const [rows, declines] = await Promise.all([api.queue(view), api.declines()]);
   const open = rows.filter((r) => r.decision.kind === "open").length;
   return (
     <main className="px-10 pb-12 pt-7">
@@ -33,6 +34,11 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
         </div>
       </div>
       <QueueTable rows={rows} />
+      {declines && (
+        <div className="mt-8">
+          <DeclinesPanel d={declines} />
+        </div>
+      )}
     </main>
   );
 }

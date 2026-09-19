@@ -16,6 +16,21 @@ import events138 from "@/fixtures/events-138.json";
 // contract.ts leaves BacktestView open; this is the shape the page reads (mirrors proof.BacktestReport).
 export type Backtest = typeof backtestFixture;
 
+// A3/Elastic lane: precedent search, declines significant_terms, TIV/premium percentile rank.
+// No fixture -- these panels just don't render when the API (or Elastic) is unreachable.
+export type PrecedentHit = {
+  policy_number: string | null; case_id: string; insured: string; decision: "bound" | "declined";
+  state: string; line: string; construction: string; broker: string; tiv: number; premium: number | null;
+  incurred: number | null; loss_ratio: number | null; perils: string[]; outcome: string;
+};
+export type PrecedentResult = { backend: "elastic" | "memory"; query: string; n: number; nLossMaking: number; hits: PrecedentHit[] };
+export type SignificantTerm = { field: string; value: string; doc_count: number; background_count: number; score: number };
+export type DeclinesInsight = {
+  backend: "elastic" | "memory"; nBook: number; nDeclined: number; nLossMaking: number;
+  declined: SignificantTerm[]; lossMaking: SignificantTerm[];
+};
+export type Percentile = { backend: "elastic" | "memory"; n: number; tiv: number; tivPercentile: number; premium?: number; premiumPercentile?: number };
+
 // Tenant cases carry the quote receipt; contract.ts has it on QuoteView only, so the case view extends it here.
 export type Receipt = Omit<QuoteView["receipt"], "base"> & { base: number; annual: number; label: string };
 export type CaseWithReceipt = CaseView & { receipt?: Receipt };
@@ -94,4 +109,7 @@ export const api = {
   backtest: async () => (await get<Backtest>(`/backtest`, () => backtestFixture)) as Backtest,
   requestInfo: (caseId: string) => post(`/actions/${caseId}/request-info`, {}),
   digest: (n: number) => post(`/actions/digest`, { n }),
+  precedent: (id: string) => get<PrecedentResult>(`/cases/${id}/precedent`, () => undefined),
+  declines: () => get<DeclinesInsight>(`/insights/declines`, () => undefined),
+  percentile: (id: string) => get<Percentile>(`/cases/${id}/percentile`, () => undefined),
 };
