@@ -26,7 +26,8 @@ def test_queue_open_returns_21_rows_under_500ms(client):
     elapsed_ms = (time.monotonic() - t0) * 1000
     assert resp.status_code == 200
     rows = resp.json()
-    assert len(rows) == 21
+    commercial = [row for row in rows if row["line"] != "tenant"]
+    assert len(commercial) == 21
     assert elapsed_ms < 500
 
     row = rows[0]
@@ -37,7 +38,8 @@ def test_queue_open_returns_21_rows_under_500ms(client):
 
 
 def test_queue_all_returns_158_rows(client):
-    assert len(client.get("/queue?view=all").json()) == 158
+    rows = client.get("/queue?view=all").json()
+    assert len([row for row in rows if row["line"] != "tenant"]) == 158
 
 
 def test_queue_decision_variants_match_contract_shape(client):
@@ -71,6 +73,12 @@ def test_case_138_view(client):
 
 def test_case_not_found_is_404(client):
     assert client.get("/cases/999999").status_code == 404
+
+
+def test_backtest_route_serves_generated_report(client):
+    report = client.get("/backtest")
+    assert report.status_code == 200
+    assert report.json()["b4"]["factors"][0]["declines"] == 17
 
 
 def test_cors_allows_web_localhost(client):

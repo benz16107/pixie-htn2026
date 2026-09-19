@@ -30,7 +30,7 @@ Band = Literal["target", "acceptable", "not_acceptable"]
 _BANDS: tuple[Band, ...] = ("target", "acceptable", "not_acceptable")
 _KNOWN_PREDICATES = {"in", "eq", "between", "lte", "lt", "gte", "gt", "share_gt", "else"}
 _KNOWN_FACTS = {"line", "business_type", "primary_admin", "tiv", "premium", "year_built",
-                "construction_share", "loss_5yr"}
+                "construction_share", "loss_5yr", "water_referral", "claims_5yr"}
 
 
 # ---------- rules file -----------------------------------------------------------------------------
@@ -288,11 +288,11 @@ def assess(case: Case, rules: RulesFile, pack: Any | None = None, portfolio: Any
     decline_t, accept_t = rules.thresholds["decline"], rules.thresholds["accept"]
     if hi < decline_t:
         because = tuple(f"{f.fact}:not_acceptable" for f in factors if f.possible == frozenset({"not_acceptable"}))
-        decision: Decision = Decided(kind="decline", because=because)
+        decision: Decision = Decided(kind="refer" if rules.kind == "tenant" else "decline", because=because)
     elif lo >= accept_t:
         because = tuple(f"{f.fact}:{next(iter(f.possible))}" for f in factors
                          if len(f.possible) == 1 and next(iter(f.possible)) != "not_acceptable")
-        decision = Decided(kind="accept", because=because)
+        decision = Decided(kind="approve" if rules.kind == "tenant" else "accept", because=because)
     else:
         straddles = decline_t if lo < decline_t <= hi else accept_t
         value_at_stake = _value_at_stake(case)
