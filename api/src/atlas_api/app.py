@@ -438,3 +438,74 @@ async def queue_events(request: Request):
         finally:
             _bus.discard(q)
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+# ---------- Linq: digest out, commands in (T12) ---------------------------------------------------
+
+_HUMAN_KIND = {"accept_with_subjectivity": "approve", "refer_with_subjectivity": "refer", "decline": "decline"}
+
+
+class DigestRequest(BaseModel):
+    n: int = 3
+
+
+@app.post("/actions/digest")
+def actions_digest(req: DigestRequest) -> dict[str, Any]:
+    from .linq import send_digest
+    return send_digest(get_store(), req.n)
+
+
+def apply_command(case_id: str, command: str) -> str:
+    """Write the underwriter's phone reply onto the case. Returns the text to reply with."""
+    from .actions import append_after_run
+    from .events import DecisionP
+
+    store = get_store()
+    data = store.get_case(case_id)
+    if data is None:
+        return f"No case {case_id} on the desk."
+    if command == "why":
+        return f"{case_id}: {data['case']['explanation']}"
+    verdict, kind = command, _HUMAN_KIND[command]
+    run = store.latest_run(case_id) or "human"
+    append_after_run(store, case_id, run, "human", DecisionP(
+        text=f"Underwriter replied by iMessage: {kind}", verdict=verdict,
+        explanation=f"{kind} by the underwriter over Linq, on the desk's {data['case']['decision']['kind']} assessment.",
+        verified=True))
+    decision = {"kind": kind, "because": ["underwriter reply over Linq"], "by": "human"}
+    data["case"]["decision"] = decision
+    data["queue"]["decision"] = decision
+    store.put_case(case_id, data)
+    publish("decision", {"caseId": case_id, "decision": decision})
+    return f"{kind.capitalize()}d {case_id}. Written to the case with the audit trail." if kind != "refer" \
+        else f"Referred {case_id}. Written to the case with the audit trail."
+
+
+@app.post("/webhooks/linq")
+async def linq_webhook(request: Request) -> dict[str, Any]:
+    """Always 200: log the raw payload first, then parse tolerantly (T12)."""
+    from .linq import DIGEST_KEY, extract_text, log_raw, parse_command, send_text, verify
+
+    raw = await request.body()
+    headers = dict(request.headers)
+    logged = log_raw(raw, headers)
+    signature = verify(raw, headers)
+    try:
+        payload = json.loads(raw or b"{}")
+    except json.JSONDecodeError:
+        payload = {}
+    text = extract_text(payload)
+    parsed = parse_command(text)
+    reply = None
+    if parsed and signature is not False:
+        command, index = parsed
+        case_ids = get_store().cache_get(DIGEST_KEY) or []
+        reply = (apply_command(case_ids[index - 1], command) if 1 <= index <= len(case_ids)
+                 else f"I only sent {len(case_ids)} cases; reply with a number up to {len(case_ids)}.")
+        if os.environ.get("ATLAS_ACTIONS") == "live":
+            try:
+                send_text(get_store(), reply)
+            except Exception as exc:   # a failed reply must not fail the webhook
+                reply += f" (reply send failed: {type(exc).__name__})"
+    return {"ok": True, "logged": logged.name, "signatureValid": signature, "text": text,
+            "command": parsed, "reply": reply}
