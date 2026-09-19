@@ -176,6 +176,23 @@ class InboundP(_P):
     raw: dict[str, Any] = {}
 
 
+class GuardrailP(_P):
+    kind: Literal["guardrail"] = "guardrail"
+    guardrail: str                             # "verify_numbers"
+    agent: str
+    tripwire: bool                             # True = the SDK raised; the output went to the fallback
+    bad_tokens: list[str] = []                 # the numbers no computed fact contains
+    action: str = ""
+
+
+class RecallP(_P):
+    kind: Literal["recall"] = "recall"
+    source: Literal["session", "backboard", "cache", "off", "error"]
+    lines: list[str] = []
+    guideline: str = ""                        # the appetite paragraph Backboard's doc search cited
+    advisory: bool = True                      # recall never supplies a number or a decision tier
+
+
 class ToolCallP(_P):
     kind: Literal["tool_call"] = "tool_call"
     tool: str
@@ -205,13 +222,13 @@ class NoteP(_P):
 
 Payload = Annotated[Union[
     PlanP, QueryP, QueryRetryP, FindingP, EstimateP, GapP, AskP, AnswerP, ConflictP, ResolutionP,
-    AssessmentP, DecisionP, ChallengeP, ResponseP, ActionP, ActionResultP, InboundP, ToolCallP,
-    RunStatsP, NoteP,
+    AssessmentP, DecisionP, ChallengeP, ResponseP, ActionP, ActionResultP, InboundP, GuardrailP,
+    RecallP, ToolCallP, RunStatsP, NoteP,
 ], Field(discriminator="kind")]
 
 Kind = Literal["plan", "query", "query_retry", "finding", "estimate", "gap", "ask", "answer", "conflict",
                "resolution", "assessment", "challenge", "response", "decision", "action", "action_result",
-               "inbound", "tool_call", "run_stats", "note"]
+               "inbound", "guardrail", "recall", "tool_call", "run_stats", "note"]
 
 
 class DeskEvent(BaseModel):
