@@ -1,4 +1,5 @@
-import type { CaseView, DeskEvent, Hex, QueueRow } from "@/contract";
+import type { AskResult, CaseView, DeskEvent, Hex, QueueRow } from "@/contract";
+import askFixture from "@/fixtures/ask.json";
 import type { Pin } from "@/components/BookMap";
 import mapBook from "@/fixtures/map-book.json";
 import mapPins from "@/fixtures/map-pins.json";
@@ -26,6 +27,21 @@ async function get<T>(path: string, fixture: () => T | undefined): Promise<T | u
     } catch {}
   }
   return fixture();
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T | undefined> {
+  if (FIXTURES_ONLY) return undefined;
+  try {
+    const res = await fetch(BASE + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(20000),
+    });
+    return res.ok ? ((await res.json()) as T) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function post(path: string, body: unknown): Promise<{ ok: boolean; status: string }> {
@@ -58,6 +74,10 @@ export const api = {
     )) ?? [],
   // Not in contract.ts yet: case sites for the map. Backend can serve it as GET /map/pins.
   mapPins: async () => (await get<Pin[]>(`/map/pins`, () => mapPins as Pin[])) ?? [],
+  askCanned: Object.keys(askFixture),
+  ask: async (question: string) =>
+    (await postJson<AskResult>(`/ask`, { question })) ??
+    ((askFixture as unknown as Record<string, AskResult>)[question] as AskResult | undefined),
   requestInfo: (caseId: string) => post(`/actions/${caseId}/request-info`, {}),
   digest: (n: number) => post(`/actions/digest`, { n }),
 };
