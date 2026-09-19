@@ -91,7 +91,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="Atlas API", lifespan=_lifespan)
+app = FastAPI(title="Pixie API", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:3100"],
