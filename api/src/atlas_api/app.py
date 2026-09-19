@@ -228,15 +228,30 @@ def health() -> dict[str, Any]:
 
 
 @app.get("/queue")
-def queue(view: Literal["open", "all"] = "open") -> list[dict[str, Any]]:
-    rows = [c["queue"] for c in get_store().list_cases()]
-    if view == "open":
-        rows = [r for r in rows if r["status"] in OPEN_STATUSES or r["status"] == "referred"]
+def queue(view: Literal["open", "all", "consumer"] = "open") -> list[dict[str, Any]]:
+    """Commercial submissions, plus the consumer referrals the desk is asked to review.
+
+    A tenant quote is a different product scored on its own scale, so it joins the underwriter's queue
+    only when it was referred; approved quotes live in `view=consumer`. Referrals sort last and carry
+    region="toronto" and a label, so the web can group them under "Consumer referrals".
+    """
+    all_rows = [c["queue"] for c in get_store().list_cases()]
+    tenant = [r for r in all_rows if r.get("region") == "toronto" or r.get("line") == "tenant"]
+    commercial = [r for r in all_rows if r not in tenant]
+    for r in commercial:
+        r.setdefault("region", "us")
+    for r in tenant:
+        r.setdefault("region", "toronto")
+        r.setdefault("label", "Consumer referral")
+    if view == "consumer":
+        return sorted(tenant, key=lambda r: r["caseId"])
+    rows = commercial if view == "all" else [r for r in commercial if r["status"] in OPEN_STATUSES]
     # routed rows have no interval; they rank below every scored case, by value at stake
     rows.sort(key=lambda r: (0 if r["score"] else 1,
                               -((r["score"]["lo"] + r["score"]["hi"]) / 2 if r["score"] else 0),
                               -r["valueAtStake"]))
-    return rows
+    referrals = [r for r in tenant if r["decision"]["kind"] == "refer"]
+    return rows + sorted(referrals, key=lambda r: -r["valueAtStake"])
 
 
 @app.get("/cases/{case_id}")

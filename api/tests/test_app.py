@@ -31,10 +31,34 @@ def test_queue_open_returns_21_rows_under_500ms(client):
     assert elapsed_ms < 500
 
     row = rows[0]
-    assert set(row) == {"caseId", "insured", "line", "state", "status", "valueAtStake",
+    assert set(row) == {"caseId", "insured", "line", "state", "status", "valueAtStake", "region",
                          "score", "decision", "issues", "deepDived", "enrichmentDelta"}
-    assert set(row["score"]) == {"lo", "hi"}
+    assert row["region"] == "us" and set(row["score"]) == {"lo", "hi"}
     assert row["decision"]["kind"] in {"accept", "refer", "decline", "approve", "open", "routed"}
+
+
+def test_queue_is_region_aware(client):
+    """Tenant quotes join the underwriter queue only as referrals, at the bottom, labelled."""
+    quote = {"address": "180 Queen St W", "answers": {"contentsValue": 30000, "unitLevel": "upper",
+                                                       "claims3yr": 0, "deductible": 1000}}
+    approved = client.post("/quote/tenant", json=quote).json()
+    referred = client.post("/quote/tenant", json={**quote, "answers": {**quote["answers"],
+                                                                        "unitLevel": "basement",
+                                                                        "claims3yr": 3}}).json()
+    open_rows = client.get("/queue?view=open").json()
+    ids = [r["caseId"] for r in open_rows]
+    assert approved["caseId"] not in ids                      # an approved quote never enters the queue
+    if referred["decision"]["kind"] == "refer":
+        assert ids[-1] == referred["caseId"]                  # referrals sort last
+        row = open_rows[-1]
+        assert row["region"] == "toronto" and row["label"] == "Consumer referral" and row["score"] is None
+    assert all(r["region"] == "us" for r in open_rows if r["line"] != "tenant")
+
+    consumer = client.get("/queue?view=consumer").json()
+    assert {r["caseId"] for r in consumer} >= {approved["caseId"], referred["caseId"]}
+    assert all(r["region"] == "toronto" for r in consumer)
+    view = client.get(f"/cases/{approved['caseId']}").json()   # both kinds still resolve
+    assert view["kind"] == "tenant" and view["score"] is None and view["region"] == "toronto"
 
 
 def test_queue_all_returns_158_rows(client):

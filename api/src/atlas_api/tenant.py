@@ -182,9 +182,10 @@ def _case_view(
     ]
     reasons = quote["decision"]["reasons"]
     return {
-        "caseId": case.id, "kind": "tenant", "title": address, "facts": facts, "factors": factors,
-        "score": {"lo": round(assessment.score.lo), "hi": round(assessment.score.hi)},
-        "scoreWithoutEnrichment": {"lo": round(assessment.score.lo), "hi": round(assessment.score.hi)},
+        "caseId": case.id, "kind": "tenant", "title": address, "region": "toronto",
+        "facts": facts, "factors": factors,
+        # No interval: the tenant rules score on their own scale, and the receipt is what the reader checks.
+        "score": None, "scoreWithoutEnrichment": None,
         "decision": {"kind": assessment.decision.kind, "because": reasons, "by": "desk"},
         "risk": {
             "factors": [
@@ -255,7 +256,7 @@ def quote_tenant(
         queue = {
             "caseId": case_id, "insured": resolved_address, "line": "tenant", "state": "Toronto",
             "status": case.status, "valueAtStake": answers.contents_value,
-            "score": {"lo": round(assessment.score.lo), "hi": round(assessment.score.hi)},
+            "score": None, "region": "toronto", "label": "Consumer referral",
             "decision": {"kind": assessment.decision.kind, "because": reasons, "by": "desk"},
             "issues": [], "deepDived": False, "enrichmentDelta": 0,
         }
