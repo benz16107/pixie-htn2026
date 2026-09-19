@@ -65,6 +65,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | T11 | Outbox + `request_broker_info` through Composio with an **explicit connected account**; `ATLAS_ACTIONS=dry\|live`; emails go to the demo broker inbox and name the real contact | Two clicks send one email; the email lists only the flipper facts |
 | T12 | `LinqClient` (base path and auth from config, per the setup test), `send_digest`, `/webhooks/linq` (raw log first, signature check, tolerant parse), `apply_command` for approve, refer, and why | On a real phone the digest arrives; "approve 1" writes a human decision; "why 2" replies with the explanation |
 | T13 | SSE `/events/queue` for human decisions and action status | The web row updates within 3 s of the iMessage reply |
+| T14 | `atlas demo-reset`: clears demo actions (outbox sends, human decisions) back to the precomputed state, so every sponsor pitch can re-send the email and re-approve | Running it twice leaves the same state; the 138 email can be sent again after a reset |
 
 ### A2 web (Claude Code)
 
