@@ -20,7 +20,7 @@ from typing import Any, AsyncIterator, Literal
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from . import composio_routes
@@ -768,3 +768,39 @@ def case_sensitivity(case_id: str) -> dict[str, Any]:
 
 # `/cases/{id}/precedent` lives in insights_routes.py (Elastic hybrid + reranker over
 # pixie-precedent); it accepts both `size` and `k`.
+
+
+# ---------- the spoken briefing (ElevenLabs), with timing the screen can follow ---------------
+
+@app.get("/cases/{case_id}/briefing")
+def case_briefing(case_id: str) -> dict[str, Any]:
+    """The case read aloud, plus one timed mark per sentence so the waterfall can follow along."""
+    from . import briefing
+
+    case_id = case_id.removeprefix("SUB-")
+    data = get_store().get_case(case_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    sens = None
+    if _tenant_view(case_id) is None:
+        from .explain import sensitivity
+
+        case, _a, hazard, impact, _events, rules = _enriched(case_id)
+        sens = sensitivity(case, rules, hazard, impact)
+    try:
+        out = briefing.build(case_id, data["case"], sens)
+    except RuntimeError as exc:                       # no key configured: the page stays silent
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {**out, "audioUrl": f"/briefings/{out['audio']}"}
+
+
+@app.get("/briefings/{filename}")
+def briefing_audio(filename: str) -> FileResponse:
+    from . import briefing
+
+    if "/" in filename or ".." in filename:
+        raise HTTPException(status_code=404, detail="not found")
+    path = briefing.AUDIO_DIR / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(path, media_type="audio/mpeg")
