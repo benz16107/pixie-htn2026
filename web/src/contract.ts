@@ -26,9 +26,9 @@ export type DecisionView =
 
 export interface QueueRow {
   caseId: string; insured: string; line: string; state: string; status: string;
-  score: Interval; decision: DecisionView; valueAtStake: number;
+  score: Interval | null; decision: DecisionView; valueAtStake: number;   // null when no guideline scores this row
   issues: { kind: string; severity: "info" | "warn" | "block" }[];
-  deepDived: boolean; enrichmentDelta: number;   // midpoint with minus without external layers
+  deepDived: boolean; enrichmentDelta: number | null;   // midpoint with minus without external layers
 }
 
 export interface RiskFactorView { peril: string; line: string; applied: number; capped: boolean; source: string; citation: string }
@@ -36,7 +36,7 @@ export interface RiskFactorView { peril: string; line: string; applied: number; 
 export interface CaseView {
   caseId: string; kind: "commercial" | "tenant"; title: string;
   facts: FactView[]; factors: FactorView[];
-  score: Interval; scoreWithoutEnrichment: Interval; decision: DecisionView;
+  score: Interval | null; scoreWithoutEnrichment: Interval | null; decision: DecisionView;
   risk: { factors: RiskFactorView[]; total: number; totalCapped: boolean; skipped: [string, string][] };
   portfolio?: { line: string; points: number; neighbourhoodTiv: number; threshold: number };
   contradictions: { good: string[]; bad: string[]; resolve: string[] }[];

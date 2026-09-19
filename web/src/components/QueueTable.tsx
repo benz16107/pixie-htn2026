@@ -7,8 +7,8 @@ import { DecisionChip, IntervalBar, IssueTag, money } from "./bits";
 type Key = "rank" | "insured" | "line" | "state" | "score" | "delta" | "value";
 const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
 const group = (r: QueueRow) => GROUP[r.decision.kind] ?? 3;
-const scored = (r: QueueRow) => r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
-const mid = (r: QueueRow) => (scored(r) ? (r.score.lo + r.score.hi) / 2 : -1);
+const scored = (r: QueueRow) => !!r.score && r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
+const mid = (r: QueueRow) => (scored(r) ? (r.score!.lo + r.score!.hi) / 2 : -1);
 
 const COLS: { key: Key; label: string; align?: "right" }[] = [
   { key: "rank", label: "#" },
@@ -31,7 +31,7 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: "rank", dir: 1 });
   const sorted = useMemo(() => {
     const val = (r: (typeof ranked)[number]): string | number =>
-      ({ rank: r.rank, insured: r.insured, line: r.line, state: r.state, score: mid(r), delta: r.enrichmentDelta, value: r.valueAtStake })[
+      ({ rank: r.rank, insured: r.insured, line: r.line, state: r.state, score: mid(r), delta: r.enrichmentDelta ?? 0, value: r.valueAtStake })[
         sort.key
       ];
     return [...ranked].sort((a, b) => {
@@ -96,13 +96,12 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="flex-1"><IntervalBar score={r.score} compact /></div>
-                  <span className="num w-[42px] text-[11.5px]">{r.score.lo}–{r.score.hi}</span>
+                  <span className="num w-[42px] text-[11.5px]">{r.score!.lo}–{r.score!.hi}</span>
                 </div>
               )}
             </td>
             <td className={`num py-2 pr-4 text-right ${r.enrichmentDelta ? "" : "text-dim"}`}>
-              {r.enrichmentDelta > 0 ? "+" : r.enrichmentDelta < 0 ? "−" : "±"}
-              {Math.abs(r.enrichmentDelta)}
+              {r.enrichmentDelta == null ? "—" : `${r.enrichmentDelta > 0 ? "+" : r.enrichmentDelta < 0 ? "−" : "±"}${Math.abs(r.enrichmentDelta)}`}
             </td>
             <td className="num py-2 pr-4 text-right">{money(r.valueAtStake)}</td>
             <td className="py-2 pr-4">

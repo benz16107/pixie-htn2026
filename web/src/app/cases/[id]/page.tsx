@@ -54,7 +54,10 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const pin = pins.find((p) => p.caseId === c.caseId);
   const flippers = c.decision.kind === "open" ? c.decision.flippers : [];
   const place = c.facts.find((f) => f.id === "state")?.display;
-  const delta = (c.score.lo + c.score.hi - c.scoreWithoutEnrichment.lo - c.scoreWithoutEnrichment.hi) / 2;
+  const delta =
+    c.score && c.scoreWithoutEnrichment
+      ? (c.score.lo + c.score.hi - c.scoreWithoutEnrichment.lo - c.scoreWithoutEnrichment.hi) / 2
+      : null;
 
   return (
     <main>
@@ -85,12 +88,23 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
 
           <div className="my-3">
             <Kicker right="refer band 45–70">
-              Score interval <span className="num text-ink">{c.score.lo}–{c.score.hi}</span>
-              <span className="ml-3 normal-case tracking-normal" title={`Without external layers: ${c.scoreWithoutEnrichment.lo}–${c.scoreWithoutEnrichment.hi}`}>
-                enrichment <span className="num text-ink">{delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)}</span>
-              </span>
+              Score interval <span className="num text-ink">{c.score ? `${c.score.lo}–${c.score.hi}` : "—"}</span>
+              {delta !== null && (
+                <span className="ml-3 normal-case tracking-normal" title={`Without external layers: ${c.scoreWithoutEnrichment!.lo}–${c.scoreWithoutEnrichment!.hi}`}>
+                  enrichment <span className="num text-ink">{delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)}</span>
+                </span>
+              )}
             </Kicker>
-            <IntervalBar score={c.score} />
+            {c.score ? (
+              <IntervalBar score={c.score} />
+            ) : (
+              <p className="text-[12px] text-dim">
+                No interval:{" "}
+                <span className="text-ink">
+                  {c.decision.kind === "routed" ? c.decision.because : "no guideline scores this case; the decision comes from its own rules"}
+                </span>
+              </p>
+            )}
             {flippers.length > 0 && (
               <p className="mt-1 text-[12px]">
                 <span aria-hidden>⇅ </span>Straddles {c.decision.kind === "open" && c.decision.straddles}. Could flip on{" "}
@@ -120,7 +134,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         </div>
       )}
       {events.length ? (
-        <Swimlanes events={events} initialScore={c.scoreWithoutEnrichment} />
+        <Swimlanes events={events} initialScore={c.scoreWithoutEnrichment ?? c.score} />
       ) : (
         <p className="px-10 py-4 text-[12.5px] text-dim">
           {c.kind === "tenant"

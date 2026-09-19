@@ -2,7 +2,8 @@ import type { DecisionView, Interval, Provenance } from "@/contract";
 
 export const THRESHOLDS = [45, 70] as const;
 
-export function IntervalBar({ score, compact = false }: { score: Interval; compact?: boolean }) {
+export function IntervalBar({ score, compact = false }: { score: Interval | null; compact?: boolean }) {
+  if (!score) return <span className="num text-dim">—</span>;
   const h = compact ? 18 : 26;
   return (
     <div

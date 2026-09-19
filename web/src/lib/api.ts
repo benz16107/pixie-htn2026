@@ -20,7 +20,9 @@ export type Backtest = typeof backtestFixture;
 export type Receipt = Omit<QuoteView["receipt"], "base"> & { base: number; annual: number; label: string };
 export type CaseWithReceipt = CaseView & { receipt?: Receipt };
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// On the server we call the API directly; in the browser we go through the same-origin proxy,
+// so the page works from another machine (the API sends no CORS headers).
+const BASE = typeof window === "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "/api/atlas";
 const FIXTURES_ONLY = process.env.NEXT_PUBLIC_FIXTURES === "1";
 export const PERILS = ["all", "flood", "wildfire", "wind", "quake"] as const;
 export type Peril = (typeof PERILS)[number];

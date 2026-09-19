@@ -31,6 +31,7 @@ export function useRun({ rows, recorded, offlineEvents, apiUp }: Options) {
   const streams = useRef<EventSource[]>([]);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const started = useRef(0);
+  const current = useRef<{ ids: string[]; mode: "replay" | "live" } | null>(null);
   const loaded = useRef<Record<string, DeskEvent[]>>({});
 
   const stop = useCallback(() => {
@@ -78,6 +79,7 @@ export function useRun({ rows, recorded, offlineEvents, apiUp }: Options) {
       started.current = Date.now();
       setElapsed(0);
       setRunning(true);
+      current.current = { ids, mode };
       setCases(Object.fromEntries(ids.map((id) => [id, blank(rows.find((r) => r.caseId === id)!, recorded[id] ?? 0)])));
 
       const streamed = ids.filter((id) => recorded[id]);
@@ -186,5 +188,15 @@ export function useRun({ rows, recorded, offlineEvents, apiUp }: Options) {
     };
   }, [cases]);
 
-  return { cases, setCases, start, stop, seek, running, elapsed, speed, setSpeed, totals };
+  /** Changing speed mid-run restarts it at the new pace, rather than waiting for the next run. */
+  const changeSpeed = useCallback(
+    (s: Speed) => {
+      setSpeed(s);
+      const c = current.current;
+      if (c && running) start(c.ids, c.mode, s);
+    },
+    [running, start],
+  );
+
+  return { cases, setCases, start, stop, seek, running, elapsed, speed, setSpeed: changeSpeed, totals };
 }

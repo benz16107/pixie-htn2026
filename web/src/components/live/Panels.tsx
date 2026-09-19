@@ -83,7 +83,7 @@ export function QueueRail({
   const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
   const rank = (r: Row) => {
     const c = cases[r.caseId];
-    const score = c?.score ?? r.score;
+    const score = c?.score ?? r.score ?? null;
     const scored = !!score && (score.lo !== 0 || score.hi !== 0);
     return { r, c, score, scored, group: GROUP[r.decision.kind] ?? 3, mid: scored ? (score!.lo + score!.hi) / 2 : -1 };
   };

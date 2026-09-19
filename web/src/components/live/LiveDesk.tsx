@@ -341,7 +341,7 @@ export function LiveDesk(props: LiveProps) {
         <p className="min-w-0 flex-1 truncate" aria-live="polite">
           {caption}
         </p>
-        <nav className="flex shrink-0 gap-1" aria-label="Demo beats">
+        <nav className="relative z-30 flex shrink-0 gap-1" aria-label="Demo beats">
         {BEATS.map((b, i) => (
           <button
             key={b}
@@ -449,7 +449,7 @@ export function LiveDesk(props: LiveProps) {
       </div>
 
       {overlay && (
-        <div className="absolute inset-0 grid place-items-center bg-ink/35 p-10" onClick={() => setOverlay(null)}>
+        <div className="absolute inset-x-0 bottom-0 top-[70px] z-20 grid place-items-center bg-ink/35 p-10" onClick={() => setOverlay(null)}>
           <div className="w-[720px] rounded-sm border border-ink bg-paper p-6" onClick={(e) => e.stopPropagation()}>
             {overlay === "backtest" && backtest && (
               <>

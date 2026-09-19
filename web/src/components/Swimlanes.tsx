@@ -197,7 +197,7 @@ export function Swimlanes({
   pad = "px-10 pb-5 pt-2.5",
 }: {
   events: DeskEvent[];
-  initialScore: Interval;
+  initialScore: Interval | null;
   lanes?: Actor[];
   laneH?: number;
   controls?: boolean;
@@ -255,7 +255,7 @@ export function Swimlanes({
         <div className="ml-auto flex w-[360px] items-center gap-3">
           <span className="kicker whitespace-nowrap">Interval</span>
           <div className="flex-1"><IntervalBar score={score} compact /></div>
-          <span className="num w-[44px] text-[11.5px]" aria-live="polite">{score.lo}–{score.hi}</span>
+          <span className="num w-[44px] text-[11.5px]" aria-live="polite">{score ? `${score.lo}–${score.hi}` : "—"}</span>
         </div>
         <span className="kicker font-mono">
           t+ <span className="num">{((clock === null ? end : Math.min(clock, end)) / 1000).toFixed(0)}</span> s
