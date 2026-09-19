@@ -76,3 +76,12 @@ def test_case_not_found_is_404(client):
 def test_cors_allows_web_localhost(client):
     resp = client.get("/health", headers={"Origin": "http://localhost:3000"})
     assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_map_endpoints(client):
+    pins = client.get("/map/pins").json()
+    assert len(pins) == 21 and {"caseId", "decision", "site", "cell", "perils"} <= set(pins[0])
+    hexes = client.get("/map/book?res=5").json()
+    assert hexes and len(hexes[0]["ring"]) >= 5 and 0 <= hexes[0]["level"] <= 4
+    flood = client.get("/map/book?res=3&peril=flood").json()
+    assert sum(h["value"] for h in flood) < sum(h["value"] for h in client.get("/map/book?res=3").json())

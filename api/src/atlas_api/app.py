@@ -344,3 +344,19 @@ async def case_events(case_id: str, request: Request, after: int = 0, replay: in
         return StreamingResponse(tail(), media_type="text/event-stream")
     run_id = store.latest_run(case_id)
     return [e.wire() for e in store.tail(case_id, after_seq=after, run_id=run_id)] if run_id else []
+
+
+# ---------- maps --------------------------------------------------------------------------------
+
+@app.get("/map/pins")
+def map_pins() -> list[dict[str, Any]]:
+    from .maps import pins
+    return pins(_world, {c["queue"]["caseId"]: c["queue"]["decision"]["kind"] for c in get_store().list_cases()})
+
+
+@app.get("/map/book")
+def map_book(res: int = 5, peril: str = "") -> list[dict[str, Any]]:
+    from .maps import book
+    if res not in (3, 5, 7):
+        raise HTTPException(status_code=400, detail="res must be 3, 5 or 7")
+    return book(_world, res, peril)
