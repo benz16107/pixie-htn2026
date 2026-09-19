@@ -1,9 +1,6 @@
-import type { AskResult, CaseView, DeskEvent, Hex, QueueRow } from "@/contract";
+import type { AskResult, CaseView, DeskEvent, Hex, QueueRow, QuoteView } from "@/contract";
 import askFixture from "@/fixtures/ask.json";
 import backtestFixture from "@/fixtures/backtest.json";
-
-// contract.ts leaves BacktestView open; this is the shape the page reads (mirrors proof.BacktestReport).
-export type Backtest = typeof backtestFixture;
 import type { Pin } from "@/components/BookMap";
 import mapBook from "@/fixtures/map-book.json";
 import mapPins from "@/fixtures/map-pins.json";
@@ -11,7 +8,15 @@ import queue from "@/fixtures/queue.json";
 import case126 from "@/fixtures/case-126.json";
 import case138 from "@/fixtures/case-138.json";
 import case143 from "@/fixtures/case-143.json";
+import caseTQ from "@/fixtures/case-TQ-7f3a.json";
 import events138 from "@/fixtures/events-138.json";
+
+// contract.ts leaves BacktestView open; this is the shape the page reads (mirrors proof.BacktestReport).
+export type Backtest = typeof backtestFixture;
+
+// Tenant cases carry the quote receipt; contract.ts has it on QuoteView only, so the case view extends it here.
+export type Receipt = Omit<QuoteView["receipt"], "base"> & { base: number; annual: number; label: string };
+export type CaseWithReceipt = CaseView & { receipt?: Receipt };
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const FIXTURES_ONLY = process.env.NEXT_PUBLIC_FIXTURES === "1";
@@ -19,7 +24,7 @@ export const PERILS = ["all", "flood", "wildfire", "wind", "quake"] as const;
 export type Peril = (typeof PERILS)[number];
 const OPEN = new Set(["cleared", "received", "quoted"]);
 
-const cases: Record<string, unknown> = { "126": case126, "138": case138, "143": case143 };
+const cases: Record<string, unknown> = { "126": case126, "138": case138, "143": case143, "TQ-7f3a": caseTQ };
 const events: Record<string, unknown> = { "138": events138 };
 
 // Fixtures stand in when the API is down, so the demo never shows a blank page.
@@ -69,7 +74,7 @@ export const api = {
       const rows = queue as unknown as QueueRow[];
       return view === "open" ? rows.filter((r) => OPEN.has(r.status)) : rows;
     })) ?? [],
-  case: (id: string) => get<CaseView>(`/cases/${id}`, () => cases[id] as CaseView | undefined),
+  case: (id: string) => get<CaseWithReceipt>(`/cases/${id}`, () => cases[id] as CaseWithReceipt | undefined),
   events: async (id: string) =>
     (await get<DeskEvent[]>(`/cases/${id}/events?replay=0`, () => events[id] as DeskEvent[] | undefined)) ?? [],
   mapBook: async (peril: Peril, res: 3 | 5 = 5) =>

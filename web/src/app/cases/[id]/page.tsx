@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Band, CaseView } from "@/contract";
+import type { Band } from "@/contract";
+import type { CaseWithReceipt as CaseView } from "@/lib/api";
 import { api } from "@/lib/api";
 import { Actions } from "@/components/Actions";
 import { LiveMap } from "@/components/LiveMap";
+import { Receipt } from "@/components/Receipt";
 import { Swimlanes } from "@/components/Swimlanes";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, money } from "@/components/bits";
 
@@ -61,7 +63,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             hexes={hexes}
             pins={pin ? [pin] : [{ caseId: c.caseId, insured: c.title, decision: c.decision.kind, site: c.site, cell: "" }]}
             center={[c.site.lng, c.site.lat]}
-            zoom={8.2}
+            zoom={c.kind === "tenant" ? 13.5 : 8.2}
             highlight={pin?.cell}
           />
           <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
@@ -106,7 +108,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <h1 className="mt-0.5 font-serif text-[32px] font-semibold leading-[1.1] text-balance">
               {c.title} <span className="align-[6px]"><DecisionChip decision={c.decision} large /></span>
             </h1>
-            <Actions caseId={c.caseId} flippers={flippers.map((f) => f.fact)} />
+            {c.kind === "commercial" && <Actions caseId={c.caseId} flippers={flippers.map((f) => f.fact)} />}
           </div>
 
           <div className="my-3">
@@ -140,7 +142,20 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         </div>
       </div>
 
-      <Swimlanes events={events} initialScore={c.scoreWithoutEnrichment} />
+      {c.receipt && (
+        <div className="border-b border-rule px-10 py-5">
+          <Receipt r={c.receipt} />
+        </div>
+      )}
+      {events.length ? (
+        <Swimlanes events={events} initialScore={c.scoreWithoutEnrichment} />
+      ) : (
+        <p className="px-10 py-4 text-[12.5px] text-dim">
+          {c.kind === "tenant"
+            ? "No desk run. Tenant quotes are decided in code in under a second; the desk only reviews referrals."
+            : "The desk has not run on this case yet."}
+        </p>
+      )}
 
       <div className="grid grid-cols-3 gap-10 border-t border-rule px-10 py-6">
         <section aria-labelledby="fb">

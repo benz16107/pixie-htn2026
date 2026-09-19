@@ -1,0 +1,48 @@
+{
+  "caseId": "TQ-7f3a",
+  "kind": "tenant",
+  "title": "180 Queen St W, Toronto",
+  "facts": [
+    { "id": "address", "label": "Address", "display": "180 Queen St W", "provenance": "known", "source": "Nominatim geocode, 43.6503, -79.3869" },
+    { "id": "unit_level", "label": "Unit level", "display": "Upper floor", "provenance": "known", "source": "applicant answer" },
+    { "id": "contents", "label": "Contents value", "display": "$30,000", "provenance": "known", "source": "applicant answer" },
+    { "id": "claims_3yr", "label": "Claims, 3 yr", "display": "0", "provenance": "known", "source": "applicant answer" },
+    { "id": "deductible", "label": "Deductible", "display": "$1,000", "provenance": "known", "source": "applicant choice" },
+    { "id": "hex", "label": "H3 cell", "display": "892b9bc461bffff", "provenance": "known", "source": "res 9 cell of the geocoded point" }
+  ],
+  "factors": [
+    { "fact": "unit_level", "possible": ["target"], "valueText": "upper", "provenance": "known" },
+    { "fact": "claims_3yr", "possible": ["target"], "valueText": "0", "provenance": "known" },
+    { "fact": "break_ins", "possible": ["acceptable"], "valueText": "×1.10 (capped)", "provenance": "known" }
+  ],
+  "score": { "lo": 78, "hi": 84 },
+  "scoreWithoutEnrichment": { "lo": 80, "hi": 86 },
+  "decision": { "kind": "approve", "because": ["upper unit outside the flooding study area's basement rule", "no claims in 3 years"], "by": "desk" },
+  "risk": {
+    "factors": [
+      { "peril": "break_ins", "line": "Break-ins near you, raw ×1.14", "applied": 1.1, "capped": true, "source": "TPS B&E 2023-2026", "citation": "https://data.torontopolice.on.ca/" },
+      { "peril": "fire", "line": "Fire station 0.6 km away", "applied": 0.96, "capped": false, "source": "Toronto Fire Stations", "citation": "https://open.toronto.ca/dataset/fire-station-locations/" },
+      { "peril": "claims", "line": "No claims in 3 years", "applied": 0.97, "capped": false, "source": "applicant answer", "citation": "applicant" }
+    ],
+    "total": 1.03,
+    "totalCapped": false,
+    "skipped": [["basement_flooding", "upper unit: basement flooding study area does not apply"]]
+  },
+  "contradictions": [],
+  "explanation": "Upper-floor unit at 180 Queen St W with $30,000 of contents and no claims in 3 years. Break-ins nearby raise the price by the capped ×1.10; the fire station 0.6 km away lowers it. Approved at $271.92 a year.",
+  "explanationVerified": true,
+  "issues": [],
+  "actions": [],
+  "site": { "lat": 43.6503, "lng": -79.3869 },
+  "receipt": {
+    "base": 264.0,
+    "annual": 271.92,
+    "label": "Illustrative. Our documented model, not an Intact price or offer.",
+    "lines": [
+      { "label": "Break-ins near you", "multiplier": 1.1, "dollars": 26.4, "capped": true, "source": "TPS B&E 2023-2026, cell 892b9bc461bffff, raw ×1.14" },
+      { "label": "Basement flooding study area", "multiplier": 1.0, "dollars": 0.0, "capped": false, "source": "Toronto basement flooding study areas; upper unit, not applied" },
+      { "label": "Fire station distance", "multiplier": 0.96, "dollars": -10.56, "capped": false, "source": "Toronto Fire Stations, 0.6 km" },
+      { "label": "No claims in 3 years", "multiplier": 0.97, "dollars": -7.92, "capped": false, "source": "applicant answer" }
+    ]
+  }
+}
