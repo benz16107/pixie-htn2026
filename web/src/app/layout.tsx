@@ -16,8 +16,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
       <body className="min-h-screen bg-paper text-ink antialiased">
+        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-sm focus:bg-ink focus:px-3 focus:py-1 focus:text-paper">
+          Skip to content
+        </a>
         <Nav />
-        {children}
+        <div id="main" tabIndex={-1} className="contents">
+          {children}
+        </div>
       </body>
     </html>
   );

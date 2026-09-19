@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Band, CaseView } from "@/contract";
+import type { Band } from "@/contract";
+import type { CaseWithReceipt as CaseView } from "@/lib/api";
 import { api } from "@/lib/api";
 import { Actions } from "@/components/Actions";
-import { HexMap } from "@/components/HexMap";
+import { LiveMap } from "@/components/LiveMap";
+import { Receipt } from "@/components/Receipt";
 import { Swimlanes } from "@/components/Swimlanes";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, money } from "@/components/bits";
 
@@ -45,8 +47,9 @@ function Facts({ c }: { c: CaseView }) {
 
 export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const { id } = await params;
-  const [c, events] = await Promise.all([api.case(id), api.events(id)]);
+  const [c, events, hexes, pins] = await Promise.all([api.case(id), api.events(id), api.mapBook("all"), api.mapPins()]);
   if (!c) notFound();
+  const pin = pins.find((p) => p.caseId === c.caseId);
   const flippers = c.decision.kind === "open" ? c.decision.flippers : [];
   const place = c.facts.find((f) => f.id === "state")?.display;
   const delta = (c.score.lo + c.score.hi - c.scoreWithoutEnrichment.lo - c.scoreWithoutEnrichment.hi) / 2;
@@ -54,8 +57,16 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   return (
     <main>
       <div className="grid grid-cols-[640px_1fr] border-b border-rule">
-        <div className="relative overflow-hidden border-r border-rule">
-          <HexMap c={c} />
+        <div className="relative h-[550px] overflow-hidden border-r border-rule">
+          <LiveMap
+            compact
+            hexes={hexes}
+            pins={pin ? [pin] : [{ caseId: c.caseId, insured: c.title, decision: c.decision.kind, site: c.site, cell: "" }]}
+            center={[c.site.lng, c.site.lat]}
+            zoom={c.kind === "tenant" ? 13.5 : 8.2}
+            highlight={pin?.cell}
+          />
+          <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
           {c.portfolio && (
             <p className="absolute left-[330px] top-[64px] w-[290px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12.5px]">
               <b className="float-right ml-2.5 font-mono text-[20px] font-medium text-rust">{c.portfolio.points}</b>
@@ -87,9 +98,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               ))}
             </ul>
           </section>
-          <p className="absolute bottom-[18px] right-5 text-right font-mono text-[10px] text-dim">
-            static preview, live map in W5<br />{c.site.lat.toFixed(3)}° N, {Math.abs(c.site.lng).toFixed(3)}° W
-          </p>
         </div>
 
         <div className="px-8 pb-4 pt-4">
@@ -100,7 +108,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <h1 className="mt-0.5 font-serif text-[32px] font-semibold leading-[1.1] text-balance">
               {c.title} <span className="align-[6px]"><DecisionChip decision={c.decision} large /></span>
             </h1>
-            <Actions caseId={c.caseId} flippers={flippers.map((f) => f.fact)} />
+            {c.kind === "commercial" && <Actions caseId={c.caseId} flippers={flippers.map((f) => f.fact)} />}
           </div>
 
           <div className="my-3">
@@ -134,7 +142,20 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         </div>
       </div>
 
-      <Swimlanes events={events} initialScore={c.scoreWithoutEnrichment} />
+      {c.receipt && (
+        <div className="border-b border-rule px-10 py-5">
+          <Receipt r={c.receipt} />
+        </div>
+      )}
+      {events.length ? (
+        <Swimlanes events={events} initialScore={c.scoreWithoutEnrichment} />
+      ) : (
+        <p className="px-10 py-4 text-[12.5px] text-dim">
+          {c.kind === "tenant"
+            ? "No desk run. Tenant quotes are decided in code in under a second; the desk only reviews referrals."
+            : "The desk has not run on this case yet."}
+        </p>
+      )}
 
       <div className="grid grid-cols-3 gap-10 border-t border-rule px-10 py-6">
         <section aria-labelledby="fb">

@@ -37,6 +37,10 @@ export function Nav() {
         </ul>
       </nav>
       <span className="ml-auto font-mono text-[11px] text-dim">Federato snapshot · 158 submissions</span>
+      <span className="flex gap-3 text-[11.5px] text-dim">
+        <Link href="/privacy" className="hover:text-ink hover:underline">Privacy</Link>
+        <Link href="/terms" className="hover:text-ink hover:underline">Terms</Link>
+      </span>
     </header>
   );
 }

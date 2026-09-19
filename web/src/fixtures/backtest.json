@@ -1,0 +1,134 @@
+{
+ "preregistration": null,
+ "b1": {
+  "n": 27,
+  "statuses": {
+   "active": 15,
+   "expired": 9,
+   "non_renewed": 3
+  },
+  "all": {
+   "n": 27,
+   "premium": 6690900,
+   "incurred": 12626300,
+   "lossRatio": 1.887
+  },
+  "tiers": [
+   {
+    "tier": "target",
+    "n": null,
+    "premium": null,
+    "incurred": null,
+    "lossRatio": null
+   },
+   {
+    "tier": "acceptable",
+    "n": null,
+    "premium": null,
+    "incurred": null,
+    "lossRatio": null
+   },
+   {
+    "tier": "not_acceptable",
+    "n": null,
+    "premium": null,
+    "incurred": null,
+    "lossRatio": null
+   }
+  ]
+ },
+ "b2": {
+  "n": 11,
+  "excluded": 3,
+  "rows": [
+   {
+    "reason": "insufficient_controls",
+    "n": 4,
+    "lines": {
+     "health": 1,
+     "cgl": 2,
+     "auto": 1
+    },
+    "lane": "hazard",
+    "factor": "controls gaps in ExposureUnit data",
+    "excluded": false,
+    "deskAgrees": null
+   },
+   {
+    "reason": "loss_history",
+    "n": 3,
+    "lines": {
+     "property": 1,
+     "health": 1,
+     "cyber": 1
+    },
+    "lane": "intake",
+    "factor": "loss factor",
+    "excluded": false,
+    "deskAgrees": null
+   },
+   {
+    "reason": "broker_withdrew",
+    "n": 3,
+    "lines": {
+     "cgl": 1,
+     "cyber": 1,
+     "lpl": 1
+    },
+    "lane": null,
+    "factor": null,
+    "excluded": true,
+    "deskAgrees": null
+   },
+   {
+    "reason": "outside_appetite",
+    "n": 2,
+    "lines": {
+     "health": 2
+    },
+    "lane": "appetite",
+    "factor": "line or state",
+    "excluded": false,
+    "deskAgrees": null
+   },
+   {
+    "reason": "cat_exposure_aggregation",
+    "n": 2,
+    "lines": {
+     "health": 1,
+     "auto": 1
+    },
+    "lane": "portfolio",
+    "factor": "concentration",
+    "excluded": false,
+    "deskAgrees": null
+   }
+  ]
+ },
+ "b3": {
+  "n": null,
+  "changed": null,
+  "cases": []
+ },
+ "b4": {
+  "n": 27,
+  "factors": [
+   {
+    "factor": "premium above $175,000",
+    "declines": 17
+   },
+   {
+    "factor": "state outside 2025 list",
+    "declines": null
+   },
+   {
+    "factor": "building age",
+    "declines": null
+   },
+   {
+    "factor": "construction",
+    "declines": null
+   }
+  ]
+ }
+}
