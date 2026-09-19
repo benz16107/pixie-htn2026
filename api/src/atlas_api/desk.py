@@ -786,12 +786,16 @@ class Desk:
         digest = []
         for cid, r in runs.items():
             a = r.triage
-            digest.append({"case_id": cid, "score": f"{a.score.lo:.0f}-{a.score.hi:.0f}", "decision": _decision_kind(a),
-                           "flippers": [f"{f.fact} ({f.resolver})" for f in a.decision.flippers]
-                           if isinstance(a.decision, Open) else [],
-                           "value_at_stake": _fmt_money(r.case.tiv.v) if isinstance(r.case.tiv, Known) else "unknown",
-                           "issues": [i.text for i in r.case.issues if i.kind != "missing_roof_year"],
-                           "depth_floor": floors[cid][0], "floor_reason": floors[cid][1]})
+            entry = {"case_id": cid, "score": f"{a.score.lo:.0f}-{a.score.hi:.0f}", "decision": _decision_kind(a),
+                     "flippers": [f"{f.fact} ({f.resolver})" for f in a.decision.flippers]
+                     if isinstance(a.decision, Open) else [],
+                     "value_at_stake": _fmt_money(r.case.tiv.v) if isinstance(r.case.tiv, Known) else "unknown",
+                     "issues": [i.text for i in r.case.issues if i.kind != "missing_roof_year"],
+                     "depth_floor": floors[cid][0], "floor_reason": floors[cid][1]}
+            # The triage digest is code's own output, so it belongs in the fact whitelist: without
+            # it the guardrail trips on the Lead quoting the value at stake we just handed it.
+            r.fact(json.dumps(entry, default=str))
+            digest.append(entry)
         first = next(iter(runs.values()))
         lead = self._mk(first, "lead", "lead_plan", LeadPlan)
         prompt = json.dumps(digest)

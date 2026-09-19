@@ -135,8 +135,10 @@ def _client():
 
 
 async def assistant_id(client: Any) -> str:
-    """The underwriter's assistant, created once and cached; the appetite guideline uploaded to it
-    once so document search can cite it. Cached to disk so a restart does not create a second one."""
+    """The underwriter's assistant, found or created once and cached to disk so a restart does not
+    create a second one. Deliberately does *not* upload the guideline: memory works on the free
+    tier's memory credit, document upload and chat need paid credits, and one failing does not get
+    to take the other down."""
     cache, who = _cache(), underwriter()
     rec = cache.get(f"assistant-{who}")
     if rec:
@@ -146,13 +148,24 @@ async def assistant_id(client: Any) -> str:
     a = found[0] if found else await client.create_assistant(
         name=name, description="Pixie underwriting desk: cross-case memory and the appetite guideline",
         system_prompt=SYSTEM_PROMPT)
-    aid, doc_id = str(a.assistant_id), ""
-    if GUIDELINE.exists():
-        doc = await client.upload_document_to_assistant(aid, GUIDELINE)
-        doc_id = str(getattr(doc, "document_id", ""))
-    cache.set(f"assistant-{who}", {"assistant_id": aid, "name": name, "guideline_document": doc_id})
-    log("backboard.assistant", assistant=name, guideline_document=doc_id)
+    aid = str(a.assistant_id)
+    cache.set(f"assistant-{who}", {"assistant_id": aid, "name": name, "guideline_document": ""})
+    log("backboard.assistant", assistant=name)
     return aid
+
+
+async def ensure_guideline(client: Any, aid: str) -> str:
+    """Upload APPETITE_GUIDELINES.txt to the assistant once, for document RAG. Returns the document
+    id, or "" when the upload is refused -- in which case recall still works, without a citation."""
+    cache, who = _cache(), underwriter()
+    rec = cache.get(f"assistant-{who}") or {}
+    if rec.get("guideline_document") or not GUIDELINE.exists():
+        return rec.get("guideline_document", "")
+    doc = await client.upload_document_to_assistant(aid, GUIDELINE)
+    doc_id = str(getattr(doc, "document_id", ""))
+    cache.set(f"assistant-{who}", rec | {"guideline_document": doc_id})
+    log("backboard.guideline", document=doc_id, file=GUIDELINE.name)
+    return doc_id
 
 
 # ---------- the two calls the desk makes ------------------------------------------------------------
@@ -172,16 +185,20 @@ async def recall(memo: CaseMemo, limit: int = 5, cite_guideline: bool = False) -
         aid = await assistant_id(client)
         found = await client.search_memories(aid, memo.query(), limit=limit)
         lines = [m["content"] for m in (found or {}).get("memories", []) if m.get("content")]
-        guideline = ""
+        guideline, detail = "", ""
         if cite_guideline:
-            answer = await client.send_message(
-                f"Quote the paragraph of the appetite guideline that governs a {memo.business} property "
-                f"risk in {memo.state}. Quote it; do not summarise, and add no number of your own.",
-                assistant_id=aid, memory="Auto")
-            guideline = _text_of(answer)
+            try:                                  # document RAG is a paid call; memory is not
+                await ensure_guideline(client, aid)
+                answer = await client.send_message(
+                    f"Quote the paragraph of the appetite guideline that governs a {memo.business} property "
+                    f"risk in {memo.state}. Quote it; do not summarise, and add no number of your own.",
+                    assistant_id=aid)
+                guideline = _text_of(answer)
+            except Exception as exc:
+                detail = f"no guideline citation: {type(exc).__name__}: {exc}"
         cache.set(key, {"lines": lines, "guideline": guideline})
         log("backboard.recall", case_id=memo.case_id, lines=len(lines), cited=bool(guideline))
-        return Recall(lines=lines, guideline=guideline, source="backboard")
+        return Recall(lines=lines, guideline=guideline, source="backboard", detail=detail)
     except Exception as exc:                      # memory is advisory: a failure is never a failed case
         log("backboard.error", level="warning", case_id=memo.case_id, op="recall", error=f"{type(exc).__name__}: {exc}")
         return Recall(source="error", detail=f"{type(exc).__name__}: {exc}")
