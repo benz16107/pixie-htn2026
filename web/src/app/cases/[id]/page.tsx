@@ -4,10 +4,12 @@ import type { Band } from "@/contract";
 import type { CaseWithReceipt as CaseView } from "@/lib/api";
 import { api } from "@/lib/api";
 import { Actions } from "@/components/Actions";
-import { LiveMap } from "@/components/LiveMap";
+import { CaseMap } from "@/components/LiveMap";
+import { HazardCard, PortfolioCallout, portfolioSentence } from "@/components/CaseParts";
+import { bandPhrase, factorValue, whenLabel } from "@/lib/format";
 import { Receipt } from "@/components/Receipt";
 import { Swimlanes } from "@/components/Swimlanes";
-import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, money } from "@/components/bits";
+import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
 
 const BANDS: { band: Band; label: string }[] = [
   { band: "target", label: "target" },
@@ -58,46 +60,10 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
     <main>
       <div className="grid grid-cols-[640px_1fr] border-b border-rule">
         <div className="relative h-[550px] overflow-hidden border-r border-rule">
-          <LiveMap
-            compact
-            hexes={hexes}
-            pins={pin ? [pin] : [{ caseId: c.caseId, insured: c.title, decision: c.decision.kind, site: c.site, cell: "" }]}
-            center={[c.site.lng, c.site.lat]}
-            zoom={c.kind === "tenant" ? 13.5 : 8.2}
-            highlight={pin?.cell}
-          />
+          <CaseMap site={c.site} zoom={c.kind === "tenant" ? 13.5 : 8.2} hexes={hexes} home={pin?.ring} />
           <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
-          {c.portfolio && (
-            <p className="absolute left-[330px] top-[64px] w-[290px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12.5px]">
-              <b className="float-right ml-2.5 font-mono text-[20px] font-medium text-rust">{c.portfolio.points}</b>
-              {c.portfolio.line}.{" "}
-              <span className="text-dim">Threshold <span className="num">{money(c.portfolio.threshold)}</span>.</span>
-            </p>
-          )}
-          <section aria-labelledby="hz" className="absolute bottom-[18px] left-5 w-[360px] rounded-sm border border-rule bg-paper/95 px-3.5 py-2.5">
-            <Kicker right={<>total <span className="num text-ink">×{c.risk.total.toFixed(2)}</span>{c.risk.totalCapped && " capped"}</>}>
-              <span id="hz">Hazard at site</span>
-            </Kicker>
-            <ul className="grid grid-cols-[52px_1fr] items-baseline gap-y-1">
-              {c.risk.factors.map((f) => (
-                <li key={f.peril} className="contents">
-                  <span className={`font-mono text-[15px] font-medium ${f.applied > 1.1 ? "text-rust" : ""}`}>×{f.applied.toFixed(2)}</span>
-                  <span className="text-[12px]">
-                    {f.line}{f.capped && <span className="ml-1 font-mono text-[10px]">[capped]</span>}{" "}
-                    <a href={f.citation.startsWith("http") ? f.citation : undefined} className="text-[11px] text-dim underline-offset-2 hover:underline" target="_blank" rel="noreferrer" title={f.citation}>
-                      {f.source}
-                    </a>
-                  </span>
-                </li>
-              ))}
-              {c.risk.skipped.map(([peril, why]) => (
-                <li key={peril} className="contents text-dim">
-                  <span className="font-mono text-[12px]">skip</span>
-                  <span className="text-[11.5px]">{why}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {c.portfolio && <PortfolioCallout p={c.portfolio} />}
+          <HazardCard risk={c.risk} />
         </div>
 
         <div className="px-8 pb-4 pt-4">
@@ -108,7 +74,13 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <h1 className="mt-0.5 font-serif text-[32px] font-semibold leading-[1.1] text-balance">
               {c.title} <span className="align-[6px]"><DecisionChip decision={c.decision} large /></span>
             </h1>
-            {c.kind === "commercial" && <Actions caseId={c.caseId} flippers={flippers.map((f) => f.fact)} />}
+            {c.kind === "commercial" && (
+              <Actions
+                caseId={c.caseId}
+                facts={flippers.map((f) => f.fact)}
+                proposed={c.actions.find((a) => a.key === "request_broker_info")?.status}
+              />
+            )}
           </div>
 
           <div className="my-3">
@@ -171,7 +143,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               {c.factors.map((f) => (
                 <tr key={f.fact} className="border-t border-rule">
                   <th scope="row" className="py-1 text-left font-normal">
-                    {f.fact.replaceAll("_", " ")} <span className="font-mono text-[11px] text-dim">{f.valueText}</span>
+                    {f.fact.replaceAll("_", " ")} <span className="font-mono text-[11px] text-dim">{factorValue(f.fact, f.valueText)}</span>
                   </th>
                   {BANDS.map((b) => {
                     const on = f.possible.includes(b.band);
@@ -193,9 +165,9 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           {c.contradictions.length === 0 && <p className="text-dim">None found.</p>}
           {c.contradictions.map((x, i) => (
             <dl key={i} className="grid grid-cols-[64px_1fr] gap-y-0.5 border-t border-rule py-1.5 text-[12px]">
-              <dt className="font-mono text-[10.5px] text-moss">+ for</dt><dd>{x.good.join("; ")}</dd>
-              <dt className="font-mono text-[10.5px] text-rust">− against</dt><dd>{x.bad.join("; ")}</dd>
-              <dt className="font-mono text-[10.5px] text-dim">? resolve</dt><dd>{x.resolve.join("; ")}</dd>
+              <dt className="font-mono text-[10.5px] text-moss">+ for</dt><dd>{x.good.map(bandPhrase).join("; ")}</dd>
+              <dt className="font-mono text-[10.5px] text-rust">− against</dt><dd>{x.bad.map(bandPhrase).join("; ")}</dd>
+              {x.resolve.length > 0 && (<><dt className="font-mono text-[10.5px] text-dim">? resolve</dt><dd>{x.resolve.map(bandPhrase).join("; ")}</dd></>)}
             </dl>
           ))}
           {c.issues.length > 0 && (
@@ -213,17 +185,20 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         <section aria-labelledby="pf">
           <Kicker><span id="pf">Portfolio</span></Kicker>
           {c.portfolio ? (
-            <p className="text-[12.5px]">
-              {c.portfolio.line}. Neighbourhood holds <span className="num">{money(c.portfolio.neighbourhoodTiv)}</span> against a{" "}
-              <span className="num">{money(c.portfolio.threshold)}</span> limit, so the score takes{" "}
-              <span className="num font-semibold text-rust">{c.portfolio.points}</span>.
-            </p>
+            <p className="text-[12.5px]">{portfolioSentence(c.portfolio)}</p>
           ) : (
             <p className="text-dim">No portfolio check ran for this case.</p>
           )}
           <div className="mt-3"><Kicker>Actions log</Kicker></div>
           {c.actions.length ? (
-            <ul className="text-[12px]">{c.actions.map((a) => <li key={a.key} className="num">{a.at} {a.channel} {a.status}</li>)}</ul>
+            <ul className="space-y-0.5 text-[12px]">
+              {c.actions.map((a) => (
+                <li key={a.key}>
+                  {a.key.replaceAll("_", " ")} by {a.channel}: <b className="font-semibold">{a.status}</b>{" "}
+                  <span className="num text-[11px] text-dim">{whenLabel(a.at)}</span>
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="text-[12px] text-dim">Nothing sent yet. Request from broker emails only the facts that could flip the decision.</p>
           )}

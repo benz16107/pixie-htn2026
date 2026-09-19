@@ -84,7 +84,7 @@ export const api = {
       (mapBook as unknown as Record<string, Record<Peril, Hex[]>>)[res][peril],
     )) ?? [],
   // Not in contract.ts yet: case sites for the map. Backend can serve it as GET /map/pins.
-  mapPins: async () => (await get<Pin[]>(`/map/pins`, () => mapPins as Pin[])) ?? [],
+  mapPins: async () => (await get<Pin[]>(`/map/pins`, () => mapPins as unknown as Pin[])) ?? [],
   askCanned: Object.keys(askFixture),
   ask: async (question: string) =>
     (await postJson<AskResult>(`/ask`, { question })) ??

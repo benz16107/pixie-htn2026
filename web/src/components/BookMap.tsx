@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import type { Hex } from "@/contract";
 
-export type Pin = { caseId: string; insured: string; decision: string; site: { lat: number; lng: number }; cell: string };
+export type Pin = { caseId: string; insured: string; decision: string; site: { lat: number; lng: number }; cell: string; ring?: [number, number][] };
 
 // The bundler hides the worker file MapLibre looks for next to its module; postinstall copies it to public/.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
@@ -25,7 +25,7 @@ export const PIN_FILL: Record<string, RGBA> = {
 };
 
 // Pull OpenFreeMap's Positron toward the Cartographic palette instead of shipping a custom style.
-function earthTone(map: MapLibre) {
+export function earthTone(map: MapLibre) {
   for (const l of map.getStyle().layers) {
     const id = l.id;
     if (l.type === "background") map.setPaintProperty(id, "background-color", "#ECE6D6");
@@ -68,6 +68,7 @@ export default function BookMap({
       zoom,
       attributionControl: { compact: true },
       interactive: !compact,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
     });
     if (!compact) map.addControl(new NavigationControl({ showCompass: false }), "top-right");
     map.on("style.load", () => earthTone(map));

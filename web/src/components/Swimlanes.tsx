@@ -1,104 +1,186 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Actor, DeskEvent, Interval } from "@/contract";
+import { humanize, parseHazard, parseSkip, prettyBands, signed } from "@/lib/format";
 import { IntervalBar } from "./bits";
 
 const LANES: Actor[] = ["lead", "intake", "appetite", "hazard", "portfolio", "system", "human"];
-const LANE_H = 38;
-const LABEL_W = 96;
-const CARD_W = 150;
-const CARD_H = 34;
-const KNOWN = new Set(["plan", "tool_call", "finding", "ask", "answer", "assessment", "decision"]);
+const LANE_H = 60;
+const LABEL_W = 92;
+const COL_W = 200;
+const CARD_W = 188;
+const CARD_H = 52;
+const SAME_MOMENT_MS = 1000;
+const TOP = 16; // header row for the moment labels
 const GEO = new Set<Actor>(["hazard", "portfolio"]);
 
-type Placed = { e: DeskEvent; x: number; y: number };
+type Card = { e: DeskEvent; chips: DeskEvent[]; col: number; lane: number };
+type Text = { title: string; meta?: string; tag?: string };
 
-const text = (e: DeskEvent) => (typeof e.body.text === "string" ? e.body.text : e.kind.replaceAll("_", " "));
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+const firstSentence = (s: string) => s.split(/(?<=[.!?])\s/)[0];
 
-function place(events: DeskEvent[], width: number): Placed[] {
-  const maxT = Math.max(1, ...events.map((e) => e.tMs));
-  const span = width - LABEL_W - CARD_W - 60;
-  const right: Record<string, number> = {};
-  return events.map((e) => {
-    const lane = Math.max(0, LANES.indexOf(e.actor));
-    const wide = e.kind === "decision" ? 60 : 0;
-    // Time sets x; a card never overlaps the previous card in its lane.
-    const x = Math.max(LABEL_W + (e.tMs / maxT) * span, (right[lane] ?? 0) + 6);
-    right[lane] = x + CARD_W + wide;
-    return { e, x, y: lane * LANE_H + (LANE_H - CARD_H) / 2 };
-  });
+/** A card's words: the kind decides the phrasing; raw engine strings are cleaned, never shown bare. */
+function describe(e: DeskEvent): Text {
+  const b = e.body;
+  const text = prettyBands(str(b.text));
+  switch (e.kind) {
+    case "plan":
+      return { title: text.replace(/^Deep dive \((\w+)\):\s*/i, "Deep dive, $1 depth. "), tag: "plan" };
+    case "ask":
+      return { title: str(b.question) || text.replace(/^Ask \w+:\s*/i, ""), tag: `asks ${e.to ?? ""}`.trim() };
+    case "answer":
+      return { title: firstSentence(text), tag: `answers ${e.to ?? ""}`.trim() };
+    case "assessment":
+      return { title: text.replace(/^Re-assessed:/, "Re-assessed").replace(/\s*\(triage [^)]+\)/, "") };
+    case "estimate":
+      return { title: text, tag: "estimate" };
+    case "query":
+      return { title: text, tag: "query" };
+    case "query_retry":
+      return { title: `Federato rejected the query: ${str(b.error).replace(/^\[\w+\]\s*/, "")}`, tag: "retry" };
+    case "conflict": {
+      const st = (b.stances ?? {}) as Record<string, string>;
+      const who = Object.entries(st).map(([a, s]) => `${a} ${s === "against" ? "against" : "for"}`).join(", ");
+      return { title: firstSentence(text), meta: who || undefined, tag: "conflict" };
+    }
+    case "resolution": {
+      const [, choice = "", why = ""] = text.match(/->\s*([a-z_]+):\s*(.*)$/i) ?? [];
+      return { title: choice ? `Chose ${humanize(choice).toLowerCase()}` : text, meta: why ? firstSentence(why) : undefined, tag: "resolution" };
+    }
+    case "decision":
+      return { title: text.split(":")[0] || text, meta: firstSentence(text.split(":").slice(1).join(":").trim()), tag: "decision" };
+    case "note":
+      return { title: text, tag: "note" };
+    case "finding": {
+      if (b.skipped) {
+        const s = parseSkip(str(b.skipped), text);
+        return { title: `${s.peril} lookup skipped`, meta: s.reason };
+      }
+      if (/^[a-z_]+: .*\(x[\d.]+,\s*[+-]?[\d.]+\s*pts\)$/i.test(text)) {
+        const h = parseHazard(text);
+        return { title: `${h.peril}: ${h.sentence}`, meta: `×${h.multiplier?.toFixed(2)} · ${signed(h.points ?? 0)} pts` };
+      }
+      return { title: text };
+    }
+    case "tool_call":
+      return { title: `Ran ${humanize(str(b.tool)).toLowerCase()}`, tag: "tool" };
+    default:
+      return { title: text || humanize(e.kind), tag: e.kind.replaceAll("_", " ") };
+  }
 }
 
-function Card({ p }: { p: Placed }) {
-  const { e } = p;
-  const known = KNOWN.has(e.kind);
-  const final = e.kind === "decision";
-  const tool = e.kind === "tool_call" && typeof e.body.tool === "string" ? e.body.tool : null;
-  const chip = final && typeof e.body.action === "string" ? e.body.action : null;
-  const tone = !known
-    ? "border-dashed border-dim bg-paper"
-    : final
-      ? "border-[1.5px] border-ink bg-paper"
-      : GEO.has(e.actor)
-        ? "border-ochre bg-ochre-soft"
-        : "border-rule bg-land";
+/** Tool calls ride on the card they produced: same actor, within a second, matching text when possible. */
+function attach(events: DeskEvent[]): { cards: DeskEvent[]; chips: Map<string, DeskEvent[]> } {
+  const cards: DeskEvent[] = [];
+  const chips = new Map<string, DeskEvent[]>();
+  for (const e of events) {
+    const riders = e.kind === "tool_call" || e.kind === "action";
+    const recent = cards.filter((c) => c.actor === e.actor && e.tMs - c.tMs <= 1500 && c.kind !== "tool_call");
+    if (riders && recent.length) {
+      const t = str(e.body.text).replace(/^[a-z_]+:\s*/i, "");
+      const src = str((e.body.args as Record<string, unknown> | undefined)?.source);
+      const host =
+        recent.find((c) => src && str(c.body.skipped) === src) ??
+        recent.find((c) => t && str(c.body.text).startsWith(t.slice(0, 30))) ??
+        recent.at(-1)!;
+      chips.set(host.id, [...(chips.get(host.id) ?? []), e]);
+    } else cards.push(e);
+  }
+  return { cards, chips };
+}
+
+/** Ordinal columns: events in the same second share a column; a lane never overlaps itself. */
+function layout(events: DeskEvent[]): { cards: Card[]; cols: number; colTimes: number[] } {
+  const { cards, chips } = attach(events);
+  const last: Record<number, number> = {};
+  const colTimes: number[] = [];
+  let prev: { col: number; t: number } | null = null;
+  const out = cards.map((e) => {
+    const lane = Math.max(0, LANES.indexOf(e.actor));
+    const floor = prev ? (e.tMs - prev.t < SAME_MOMENT_MS ? prev.col : prev.col + 1) : 0;
+    const col = Math.max(floor, (last[lane] ?? -1) + 1);
+    last[lane] = col;
+    prev = { col, t: e.tMs };
+    colTimes[col] ??= e.tMs;
+    return { e, chips: chips.get(e.id) ?? [], col, lane };
+  });
+  return { cards: out, cols: colTimes.length, colTimes };
+}
+
+const TONE: Record<string, string> = {
+  decision: "border-[1.5px] border-ink bg-paper",
+  conflict: "border-rust bg-paper",
+  resolution: "border-ink bg-paper",
+  note: "border-dashed border-dim bg-paper",
+  query_retry: "border-rust/70 bg-land",
+};
+
+function CardView({ c, x, y }: { c: Card; x: number; y: number }) {
+  const { e } = c;
+  const d = describe(e);
+  const tone = TONE[e.kind] ?? (GEO.has(e.actor) ? "border-ochre bg-ochre-soft" : "border-rule bg-land");
+  const full = str(e.body.text);
   return (
     <li
-      className={`lane-card absolute rounded-sm has-[details[open]]:z-30 border px-[7px] py-[3px] text-[11px] leading-[1.25] ${tone}`}
-      style={{ left: p.x, top: p.y, width: CARD_W + (final ? 60 : 0), minHeight: CARD_H }}
+      className={`lane-card absolute rounded-sm border px-2 py-1 text-[11px] leading-[1.28] has-[details[open]]:z-30 ${tone}`}
+      style={{ left: x, top: y, width: CARD_W, minHeight: CARD_H }}
+      title={full}
     >
-      <span className="float-right ml-1 font-mono text-[10px] text-dim">{String(Math.round(e.tMs / 1000)).padStart(2, "0")}</span>
-      {!known && <span className="mr-1 font-mono text-[9.5px] text-dim">{e.kind}</span>}
-      <span className={tool || chip || !known ? "line-clamp-1" : "line-clamp-2"} title={text(e)}>{text(e)}</span>
-      {chip && <span className="mt-px inline-block rounded-sm bg-moss px-[5px] font-mono text-[9.5px] font-medium text-paper">{chip}</span>}
-      {tool && (
-        <details className="group">
-          <summary className="mt-px inline-block cursor-pointer list-none rounded-sm bg-moss px-[5px] font-mono text-[9.5px] font-medium text-paper [&::-webkit-details-marker]:hidden">
-            {tool} <span aria-hidden className="inline-block transition-transform duration-150 group-open:rotate-90">›</span>
-          </summary>
-          <pre className="absolute left-0 top-full z-20 mt-1 max-h-64 w-[300px] overflow-auto rounded-sm border border-ink bg-paper p-2 font-mono text-[10.5px] leading-snug shadow-[0_6px_16px_-6px_rgba(47,42,34,0.35)]">
-            {JSON.stringify({ args: e.body.args, result: e.body.result }, null, 2)}
-          </pre>
-        </details>
+      <span className="float-right ml-1 font-mono text-[10px] text-dim">{(e.tMs / 1000).toFixed(0).padStart(2, "0")}s</span>
+      {d.tag && (
+        <span className={`mr-1 font-mono text-[9.5px] uppercase tracking-wide ${e.kind === "conflict" || e.kind === "query_retry" ? "text-rust" : "text-dim"}`}>{d.tag}</span>
+      )}
+      <span className={c.chips.length ? "line-clamp-1" : "line-clamp-2"}>{d.title}</span>
+      {d.meta && <span className="line-clamp-1 text-[10.5px] text-dim">{d.meta}</span>}
+      {c.chips.length > 0 && (
+        <span className="mt-0.5 flex flex-wrap gap-1">
+          {c.chips.slice(0, 3).map((t) =>
+            t.kind === "action" ? (
+              <span key={t.id} className="rounded-sm bg-moss px-[5px] font-mono text-[9.5px] font-medium text-paper">
+                {str(t.body.text)} · {str(t.body.status)}
+              </span>
+            ) : (
+              <details key={t.id} className="group relative">
+                <summary className="cursor-pointer list-none rounded-sm bg-moss px-[5px] font-mono text-[9.5px] font-medium text-paper [&::-webkit-details-marker]:hidden">
+                  {str(t.body.tool)} <span aria-hidden className="inline-block transition-transform duration-150 group-open:rotate-90">›</span>
+                </summary>
+                <pre className="absolute left-0 top-full z-20 mt-1 max-h-64 w-[320px] overflow-auto whitespace-pre-wrap break-words rounded-sm border border-ink bg-paper p-2 font-mono text-[10.5px] leading-snug shadow-[0_6px_16px_-6px_rgba(47,42,34,0.35)]">
+                  {JSON.stringify({ args: t.body.args, result: t.body.result }, null, 2)}
+                </pre>
+              </details>
+            ),
+          )}
+          {c.chips.length > 3 && <span className="font-mono text-[9.5px] text-dim">+{c.chips.length - 3}</span>}
+        </span>
       )}
     </li>
   );
 }
 
-function Arrows({ placed, height, width }: { placed: Placed[]; height: number; width: number }) {
-  const byId = new Map(placed.map((p) => [p.e.id, p]));
-  const edges: { from: Placed; to: Placed; dashed: boolean }[] = [];
-  for (const p of placed) {
-    const parent = p.e.inReplyTo && byId.get(p.e.inReplyTo);
-    if (parent) edges.push({ from: parent, to: p, dashed: false });
-    for (const r of p.e.refs) {
-      const src = byId.get(r);
-      if (src && r !== p.e.inReplyTo) edges.push({ from: src, to: p, dashed: true });
-    }
+function Arrows({ cards, pos, height, width }: { cards: Card[]; pos: Map<string, { x: number; y: number }>; height: number; width: number }) {
+  const byId = new Map(cards.map((c) => [c.e.id, c]));
+  const edges: { from: string; to: string; dashed: boolean }[] = [];
+  for (const c of cards) {
+    if (c.e.inReplyTo && byId.has(c.e.inReplyTo)) edges.push({ from: c.e.inReplyTo, to: c.e.id, dashed: false });
+    for (const r of c.e.refs) if (r !== c.e.inReplyTo && byId.has(r)) edges.push({ from: r, to: c.e.id, dashed: true });
   }
   return (
-    <svg aria-hidden className="pointer-events-none absolute inset-0 overflow-visible" width={width} height={height}>
+    <svg aria-hidden className="pointer-events-none absolute left-0 top-0 overflow-visible" width={width} height={height}>
       <defs>
         <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
           <path d="M0,0 L8,4 L0,8z" fill="#2F2A22" />
         </marker>
       </defs>
       {edges.map(({ from, to, dashed }) => {
-        const x1 = from.x + CARD_W + (from.e.kind === "decision" ? 60 : 0);
-        const y1 = from.y + CARD_H / 2;
-        const y2 = to.y + CARD_H / 2;
-        const bend = Math.max(x1 + 6, Math.min(to.x - 8, x1 + 12));
-        return (
-          <path
-            key={`${from.e.id}-${to.e.id}`}
-            d={`M${x1},${y1} H${bend} V${y2} H${to.x - 2}`}
-            fill="none"
-            stroke="#2F2A22"
-            strokeWidth={1.25}
-            strokeDasharray={dashed ? "4 3" : undefined}
-            markerEnd="url(#arr)"
-          />
-        );
+        const a = pos.get(from)!;
+        const b = pos.get(to)!;
+        const x1 = a.x + CARD_W;
+        const y1 = a.y + CARD_H / 2;
+        const y2 = b.y + CARD_H / 2;
+        const mid = b.x > x1 ? x1 + (b.x - x1) / 2 : x1 + 6;
+        const d = b.x > x1 ? `M${x1},${y1} H${mid} V${y2} H${b.x - 2}` : `M${a.x + CARD_W / 2},${y1 + (y2 > y1 ? CARD_H / 2 : -CARD_H / 2)} V${y2 + (y2 > y1 ? -CARD_H / 2 : CARD_H / 2) - (y2 > y1 ? 2 : -2)}`;
+        return <path key={`${from}-${to}`} d={d} fill="none" stroke="#2F2A22" strokeWidth={1.25} strokeDasharray={dashed ? "4 3" : undefined} markerEnd="url(#arr)" />;
       })}
     </svg>
   );
@@ -106,17 +188,10 @@ function Arrows({ placed, height, width }: { placed: Placed[]; height: number; w
 
 export function Swimlanes({ events, initialScore }: { events: DeskEvent[]; initialScore: Interval }) {
   const sorted = useMemo(() => [...events].sort((a, b) => a.seq - b.seq), [events]);
-  const box = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(1360);
-  const [clock, setClock] = useState<number | null>(null); // null = show the whole run
+  const { cards, cols, colTimes } = useMemo(() => layout(sorted), [sorted]);
+  const scroller = useRef<HTMLDivElement>(null);
+  const [clock, setClock] = useState<number | null>(null); // null = the whole run
   const [speed, setSpeed] = useState(1);
-
-  useLayoutEffect(() => {
-    if (!box.current) return;
-    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
-    ro.observe(box.current);
-    return () => ro.disconnect();
-  }, []);
 
   const end = sorted.at(-1)?.tMs ?? 0;
   useEffect(() => {
@@ -125,50 +200,78 @@ export function Swimlanes({ events, initialScore }: { events: DeskEvent[]; initi
     return () => clearTimeout(id);
   }, [clock, speed, end]);
 
-  const visible = clock === null ? sorted : sorted.filter((e) => e.tMs <= clock);
-  const placed = useMemo(() => place(sorted, width), [sorted, width]).filter((p) => visible.includes(p.e));
-  const assessed = visible.filter((e) => e.kind === "assessment" && e.body.score).at(-1);
+  const shown = clock === null ? cards : cards.filter((c) => c.e.tMs <= clock);
+  const latestCol = shown.reduce((m, c) => Math.max(m, c.col), 0);
+
+  // Keep the newest card in view: jump to the end on load, follow the replay as it grows.
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const target = Math.max(0, (latestCol + 1) * COL_W - el.clientWidth + 24);
+    el.scrollTo({ left: target, behavior: clock === null ? "auto" : "smooth" });
+  }, [latestCol, clock]);
+
+  const assessed = sorted.filter((e) => e.kind === "assessment" && e.body.score && (clock === null || e.tMs <= clock)).at(-1);
   const score = (assessed?.body.score as Interval | undefined) ?? initialScore;
-  const height = LANES.length * LANE_H;
-  const play = (s: number) => {
-    setSpeed(s);
-    setClock(0);
-  };
+  const height = TOP + LANES.length * LANE_H;
+  const width = cols * COL_W + 12;
+  const pos = new Map(shown.map((c) => [c.e.id, { x: c.col * COL_W + 6, y: TOP + c.lane * LANE_H + (LANE_H - CARD_H) / 2 }]));
   const btn = "rounded-sm border border-ink px-2 py-px font-mono text-[11px] transition-colors duration-150 hover:bg-ink hover:text-paper";
 
   return (
-    <section aria-labelledby="lanes-h" className="px-10 pb-4 pt-2.5">
+    <section aria-labelledby="lanes-h" className="px-10 pb-5 pt-2.5">
       <div className="mb-2 flex items-center gap-6">
         <h2 id="lanes-h" className="kicker">Agent lanes</h2>
         <div className="flex items-center gap-2" role="group" aria-label="Replay">
-          <button className={btn} onClick={() => play(1)}>Replay 1×</button>
-          <button className={btn} onClick={() => play(4)}>4×</button>
+          <button className={btn} onClick={() => { setSpeed(1); setClock(0); }}>Replay 1×</button>
+          <button className={btn} onClick={() => { setSpeed(4); setClock(0); }}>4×</button>
           {clock !== null && <button className={btn} onClick={() => setClock(null)}>Skip to end</button>}
         </div>
-        <div className="ml-auto flex w-[380px] items-center gap-3">
+        <span className="text-[11.5px] text-dim">
+          <span className="num">{cards.length}</span> steps, <span className="num">{sorted.length}</span> events. Columns are moments, not seconds.
+        </span>
+        <div className="ml-auto flex w-[360px] items-center gap-3">
           <span className="kicker whitespace-nowrap">Interval</span>
           <div className="flex-1"><IntervalBar score={score} compact /></div>
           <span className="num w-[44px] text-[11.5px]" aria-live="polite">{score.lo}–{score.hi}</span>
         </div>
         <span className="kicker font-mono">
-          t+ <span className="num">{clock === null ? Math.round(end / 1000) : Math.round(Math.min(clock, end) / 1000)}</span> s
+          t+ <span className="num">{((clock === null ? end : Math.min(clock, end)) / 1000).toFixed(0)}</span> s
         </span>
       </div>
-      <div ref={box} className="relative" style={{ height }}>
-        {LANES.map((l, i) => (
-          <div key={l} className="absolute inset-x-0 border-b border-dashed border-rule" style={{ top: i * LANE_H, height: LANE_H }}>
-            <span className="absolute left-0 top-[11px] text-[11px] font-semibold uppercase tracking-[0.08em]">{l}</span>
-            {l === "human" && !visible.some((e) => e.actor === "human") && (
-              <span className="absolute top-[11px] text-[11px] text-dim" style={{ left: LABEL_W }}>
-                Waiting on the underwriter. Replies to the digest land here.
-              </span>
+      <div className="flex">
+        <ul className="shrink-0" style={{ width: LABEL_W, paddingTop: TOP }} aria-hidden>
+          {LANES.map((l) => (
+            <li key={l} className="flex items-center border-b border-dashed border-rule text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ height: LANE_H }}>
+              {l}
+            </li>
+          ))}
+        </ul>
+        <div ref={scroller} className="relative min-w-0 flex-1 overflow-x-auto overflow-y-auto overscroll-x-contain pb-2" tabIndex={0} aria-label="Desk events, scroll sideways for earlier steps">
+          <div className="relative" style={{ width: Math.max(width, 100), height }}>
+            {LANES.map((l, i) => (
+              <div key={l} className="absolute inset-x-0 border-b border-dashed border-rule" style={{ top: TOP + i * LANE_H, height: LANE_H }}>
+                {l === "human" && !shown.some((c) => c.e.actor === "human") && (
+                  <span className="sticky left-0 inline-block px-1.5 pt-[18px] text-[11px] text-dim">Waiting on the underwriter. Replies to the digest land here.</span>
+                )}
+              </div>
+            ))}
+            {colTimes.map((t, i) =>
+              i % 2 === 0 ? (
+                <span key={i} className="absolute top-0 font-mono text-[9.5px] text-dim" style={{ left: i * COL_W + 8 }}>
+                  {(t / 1000).toFixed(1)}s
+                </span>
+              ) : null,
             )}
+            <Arrows cards={shown} pos={pos} height={height} width={width} />
+            <ol aria-label="Desk events in order">
+              {shown.map((c) => {
+                const p = pos.get(c.e.id)!;
+                return <CardView key={c.e.id} c={c} x={p.x} y={p.y} />;
+              })}
+            </ol>
           </div>
-        ))}
-        <Arrows placed={placed} height={height} width={width} />
-        <ol aria-label="Desk events in time order">
-          {placed.map((p) => <Card key={p.e.id} p={p} />)}
-        </ol>
+        </div>
       </div>
     </section>
   );
