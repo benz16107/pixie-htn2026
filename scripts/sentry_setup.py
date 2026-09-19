@@ -7,8 +7,9 @@ exists is left alone, not duplicated.
 
 Needs SENTRY_AUTH_TOKEN, SENTRY_ORG and SENTRY_PROJECT_API (project slug for the FastAPI project;
 pass --project or set the env var) with scopes org:read, project:read, project:write, alerts:write.
-The org auth token already in .env (sntrys_...) only carries project:releases -- every call below
-will print a clear 403 and this script exits 0 regardless, so it is safe to leave in CI/setup docs.
+Run against the live API on 2026-09-19 with a user token carrying those scopes: the alert workflow
+and the uptime monitor were both created. A token without them prints a clear 403 and the script
+still exits 0, so it is safe to leave in CI/setup docs.
 See docs/SENTRY.md for exactly what did and did not run and why.
 """
 
@@ -51,29 +52,52 @@ def _call(host: str, path: str, token: str, method: str = "GET", body: dict | No
             return e.code, {"detail": "non-JSON error body"}
 
 
+ALERT_NAME = "Pixie: an agent stated a number the engine did not compute"
+
+
 def verify_numbers_alert_rule(host: str, org: str, project: str, token: str) -> None:
-    """POST .../projects/{org}/{project}/rules/: fire when an issue is tagged pixie.alert=verify_numbers
-    (set in telemetry.verify_numbers_alert), notify the team that owns it."""
-    status, existing = _call(host, f"/api/0/projects/{org}/{project}/rules/", token)
-    if status == 200 and any(r.get("name") == "Pixie: verify_numbers rejected a model sentence" for r in existing):
+    """Fire when a new issue carries the tag pixie.alert=verify_numbers, which telemetry.
+    verify_numbers_alert() sets when an agent states a number no tool computed.
+
+    Sentry retired the per-project /rules/ API (it answers 410 "This API no longer exists").
+    Issue alerts now live in the workflow engine: a trigger says which issues wake the workflow,
+    an action filter narrows by tag, and the action notifies. Verified against the live API
+    2026-09-19."""
+    status, existing = _call(host, f"/api/0/organizations/{org}/workflows/", token)
+    if status == 200 and any(w.get("name") == ALERT_NAME for w in existing):
         print("alert rule: already exists, left alone")
         return
     payload = {
-        "name": "Pixie: verify_numbers rejected a model sentence",
-        "actionMatch": "all", "filterMatch": "all", "frequency": 5,
-        "conditions": [{"id": "sentry.rules.conditions.tagged_event.TaggedEventCondition",
-                        "key": "pixie.alert", "match": "eq", "value": "verify_numbers"}],
-        "filters": [],
-        "actions": [{"id": "sentry.mail.actions.NotifyEmailAction", "targetType": "IssueOwners"}],
+        "name": ALERT_NAME,
+        "enabled": True,
+        "config": {"frequency": 5},
+        "triggers": {"logicType": "any-short", "conditions": [
+            {"type": "first_seen_event", "comparison": True, "conditionResult": True},
+            {"type": "regression_event", "comparison": True, "conditionResult": True},
+        ]},
+        "actionFilters": [{
+            "logicType": "all",
+            "conditions": [{"type": "tagged_event", "conditionResult": True,
+                            "comparison": {"key": "pixie.alert", "match": "eq", "value": "verify_numbers"}}],
+            "actions": [{"type": "email", "data": {"fallthroughType": "ActiveMembers"},
+                         "config": {"targetType": "issue_owners"}}],
+        }],
+        "detectorIds": [],
     }
-    status, out = _call(host, f"/api/0/projects/{org}/{project}/rules/", token, "POST", payload)
+    status, out = _call(host, f"/api/0/organizations/{org}/workflows/", token, "POST", payload)
     print(f"alert rule: {'created ' + str(out.get('id')) if status in (200, 201) else f'FAILED {status}: {out}'}")
 
 
 def uptime_monitor(host: str, org: str, project: str, token: str, url: str) -> None:
-    payload = {"projectSlug": project, "name": "Pixie API /health", "url": url, "intervalSeconds": 300}
-    status, out = _call(host, f"/api/0/organizations/{org}/uptime-detectors/", token, "POST", payload)
-    print(f"uptime monitor: {'created' if status in (200, 201) else f'FAILED {status}: {out}'}")
+    """POST .../projects/{org}/{project}/uptime/. Do not send `mode`: only superusers may set it."""
+    status, existing = _call(host, f"/api/0/organizations/{org}/uptime/", token)
+    if status == 200 and any(m.get("url") == url for m in existing):
+        print("uptime monitor: already exists, left alone")
+        return
+    payload = {"name": "Pixie API health", "url": url, "intervalSeconds": 300,
+               "timeoutMs": 10_000, "environment": "hackathon"}
+    status, out = _call(host, f"/api/0/projects/{org}/{project}/uptime/", token, "POST", payload)
+    print(f"uptime monitor: {'created ' + str(out.get('id')) if status in (200, 201) else f'FAILED {status}: {out}'}")
 
 
 def main() -> None:
@@ -81,7 +105,7 @@ def main() -> None:
     token = env.get("SENTRY_AUTH_TOKEN")
     org = env.get("SENTRY_ORG")
     project = env.get("SENTRY_PROJECT_API", "atlas-api")
-    health_url = env.get("ATLAS_PUBLIC_URL", "").rstrip("/") + "/health"
+    health_url = (env.get("ATLAS_PUBLIC_URL") or env.get("PUBLIC_URL", "")).rstrip("/") + "/health"
     host = "https://us.sentry.io"
     if not token or not org:
         print("SENTRY_AUTH_TOKEN / SENTRY_ORG not set; nothing to do.", file=sys.stderr)
@@ -90,7 +114,7 @@ def main() -> None:
     if health_url.startswith("http"):
         uptime_monitor(host, org, project, token, health_url)
     else:
-        print("uptime monitor: skipped, ATLAS_PUBLIC_URL not set (no deployed /health to point at)")
+        print("uptime monitor: skipped, neither ATLAS_PUBLIC_URL nor PUBLIC_URL is set")
     print("Cron monitor: created by running the job itself -- eval/backtest.py's "
          "_write_backtest_monitored() wraps it in @sentry_sdk.crons.monitor(monitor_slug='pixie-backtest'); "
          "Sentry auto-creates the monitor on its first check-in, no separate API call needed.")
