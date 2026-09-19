@@ -1,27 +1,28 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { QueueRow } from "@/contract";
 import { DecisionChip, IntervalBar, IssueTag, money } from "./bits";
+import type { Row } from "@/lib/live";
 
-type Key = "rank" | "insured" | "line" | "state" | "score" | "delta" | "value";
+type Key = "rank" | "insured" | "score" | "value";
 const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
-const group = (r: QueueRow) => GROUP[r.decision.kind] ?? 3;
-const scored = (r: QueueRow) => !!r.score && r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
-const mid = (r: QueueRow) => (scored(r) ? (r.score!.lo + r.score!.hi) / 2 : -1);
+const group = (r: Row) => GROUP[r.decision.kind] ?? 3;
+const scored = (r: Row) => !!r.score && r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
+const mid = (r: Row) => (scored(r) ? (r.score!.lo + r.score!.hi) / 2 : -1);
 
-const COLS: { key: Key; label: string; align?: "right" }[] = [
-  { key: "rank", label: "#" },
+type Extras = { deskVerdict?: string; challengeRisks?: number };
+type Ranked = Row & Extras & { rank: number };
+
+const COLS: { key: Key; label: string; align?: "right"; w?: string }[] = [
+  { key: "rank", label: "#", w: "w-[38px]" },
   { key: "insured", label: "Insured" },
-  { key: "line", label: "Line" },
-  { key: "state", label: "State" },
-  { key: "score", label: "Score interval" },
-  { key: "delta", label: "Enrich Δ", align: "right" },
-  { key: "value", label: "At stake", align: "right" },
+  { key: "score", label: "Score interval", w: "w-[250px]" },
+  { key: "value", label: "At stake", align: "right", w: "w-[92px]" },
 ];
 
-export function QueueTable({ rows }: { rows: QueueRow[] }) {
-  const ranked = useMemo(
+/** One row per submission: who, where it landed, and why. Everything else lives on the case page. */
+export function QueueTable({ rows }: { rows: (Row & Extras)[] }) {
+  const ranked = useMemo<Ranked[]>(
     () =>
       [...rows]
         .sort((a, b) => group(a) - group(b) || mid(b) - mid(a) || b.valueAtStake - a.valueAtStake)
@@ -30,25 +31,24 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
   );
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: "rank", dir: 1 });
   const sorted = useMemo(() => {
-    const val = (r: (typeof ranked)[number]): string | number =>
-      ({ rank: r.rank, insured: r.insured, line: r.line, state: r.state, score: mid(r), delta: r.enrichmentDelta ?? 0, value: r.valueAtStake })[
-        sort.key
-      ];
+    const val = (r: Ranked): string | number => ({ rank: r.rank, insured: r.insured, score: mid(r), value: r.valueAtStake })[sort.key];
     return [...ranked].sort((a, b) => {
-      const x = val(a), y = val(b);
+      const x = val(a),
+        y = val(b);
       return (typeof x === "string" ? x.localeCompare(y as string) : x - (y as number)) * sort.dir;
     });
   }, [ranked, sort]);
 
-  const toggle = (key: Key) =>
-    setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : key === "rank" || key === "insured" || key === "line" || key === "state" ? 1 : -1 }));
+  const toggle = (key: Key) => setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : key === "rank" || key === "insured" ? 1 : -1 }));
 
-  if (!rows.length)
-    return <p className="mt-10 text-dim">No submissions match. Switch to All to see decided and bound cases.</p>;
+  if (!rows.length) return <p className="mt-10 text-dim">No submissions match. Switch to All to see decided and bound cases.</p>;
+
+  const desk = sorted.filter((r) => r.region !== "toronto");
+  const consumer = sorted.filter((r) => r.region === "toronto");
 
   return (
-    <table className="mt-6 w-full border-collapse text-[12.5px]">
-      <caption className="sr-only">Submission queue. Column headers are buttons that sort the table.</caption>
+    <table className="mt-5 w-full border-collapse text-[12.5px]">
+      <caption className="sr-only">Submission queue, ranked by score interval. Column headers sort the table.</caption>
       <thead>
         <tr className="border-b border-ink">
           {COLS.map((c) => (
@@ -56,7 +56,7 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
               key={c.key}
               scope="col"
               aria-sort={sort.key === c.key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
-              className={`py-1.5 pr-4 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.key === "score" ? "w-[260px]" : ""}`}
+              className={`py-1.5 pr-4 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.w ?? ""}`}
             >
               <button onClick={() => toggle(c.key)} className="kicker rounded-sm hover:text-ink">
                 {c.label}
@@ -66,73 +66,101 @@ export function QueueTable({ rows }: { rows: QueueRow[] }) {
               </button>
             </th>
           ))}
-          <th scope="col" className="kicker py-1.5 pr-4 text-left font-normal">Decision</th>
-          <th scope="col" className="kicker py-1.5 text-left font-normal">Issues</th>
+          <th scope="col" className="kicker py-1.5 pr-4 text-left font-normal">
+            Decision
+          </th>
+          <th scope="col" className="kicker py-1.5 text-left font-normal">
+            Why
+          </th>
         </tr>
       </thead>
       <tbody>
-        {sorted.map((r) => (
-          <tr key={r.caseId} className="group border-b border-rule transition-colors duration-150 hover:bg-land">
-            <td className="num py-2 pr-4 text-dim">{String(r.rank).padStart(2, "0")}</td>
-            <td className="py-2 pr-4">
-              <Link href={`/cases/${r.caseId}`} className="font-medium underline-offset-2 hover:underline">
-                {r.insured}
-              </Link>
-              <span className="num ml-2 text-[11px] text-dim">#{r.caseId}</span>
-              {r.deepDived && (
-                <span title="The desk ran a deep dive on this case" className="ml-2 font-mono text-[10px] text-ochre">
-                  deep dive
-                </span>
-              )}
-            </td>
-            <td className="py-2 pr-4">{r.line.length <= 3 ? r.line.toUpperCase() : r.line[0].toUpperCase() + r.line.slice(1)}</td>
-            <td className="num py-2 pr-4">{r.state}</td>
-            <td className="py-2 pr-4">
-              {!scored(r) ? (
-                <span className="text-[11.5px] text-dim" title={r.decision.kind === "routed" ? r.decision.because : undefined}>
-                  <span aria-hidden className="num mr-2">—</span>
-                  {r.decision.kind === "routed" ? `routed to ${r.decision.to}` : "not scored"}
-                </span>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex-1"><IntervalBar score={r.score} compact /></div>
-                  <span className="num w-[42px] text-[11.5px]">{r.score!.lo}–{r.score!.hi}</span>
-                </div>
-              )}
-            </td>
-            <td className={`num py-2 pr-4 text-right ${r.enrichmentDelta ? "" : "text-dim"}`}>
-              {r.enrichmentDelta == null ? "—" : `${r.enrichmentDelta > 0 ? "+" : r.enrichmentDelta < 0 ? "−" : "±"}${Math.abs(r.enrichmentDelta)}`}
-            </td>
-            <td className="num py-2 pr-4 text-right">{money(r.valueAtStake)}</td>
-            <td className="py-2 pr-4">
-              <DecisionChip decision={r.decision} />
-              {r.decision.kind === "open" &&
-                r.decision.flippers.map((f) => (
-                  <span
-                    key={f.fact}
-                    title={`${f.fact} could flip the decision; ask the ${f.resolver}`}
-                    className="ml-1.5 font-mono text-[10.5px]"
-                  >
-                    <span aria-hidden>⇅</span> {f.fact} <span className="text-dim">← {f.resolver}</span>
-                  </span>
-                ))}
-            </td>
-            <td className="py-2">
-              <span className="flex flex-wrap gap-1">
-                {/* The engine can report the same issue once per building; show it once with a count. */}
-                {Object.values(
-                  r.issues.reduce<Record<string, { kind: string; severity: string; n: number }>>((m, i) => {
-                    m[i.kind] = { ...i, n: (m[i.kind]?.n ?? 0) + 1 };
-                    return m;
-                  }, {}),
-                ).map((i) => (
-                  <IssueTag key={i.kind} kind={i.kind} severity={i.severity} count={i.n} />
-                ))}
-              </span>
+        {desk.map((r) => (
+          <QueueRowView key={r.caseId} r={r} />
+        ))}
+        {consumer.length > 0 && (
+          <tr>
+            <td colSpan={6} className="pb-1 pt-5">
+              <span className="kicker">Consumer referrals</span>
+              <span className="ml-2 text-[11.5px] text-dim">Toronto renters the same engine priced and sent here.</span>
             </td>
           </tr>
+        )}
+        {consumer.map((r) => (
+          <QueueRowView key={r.caseId} r={r} />
         ))}
       </tbody>
     </table>
+  );
+}
+
+function QueueRowView({ r }: { r: Ranked }) {
+  const has = scored(r);
+  // "route" and "routed" are the same call; only show the desk's verdict when it really differs.
+  const same = (a: string, b: string) => a.replace(/d$/, "") === b.replace(/d$/, "");
+  const moved = !!r.deskVerdict && !same(r.deskVerdict, r.decision.kind);
+  const reasons = "because" in r.decision ? (Array.isArray(r.decision.because) ? r.decision.because : [r.decision.because]) : [];
+  const why = reasons.length
+    ? reasons.slice(0, 2).map((b) => b.replace(/:/g, " ").replaceAll("_", " ")).join("; ")
+    : r.decision.kind === "open"
+      ? `waiting on ${r.decision.flippers.map((f) => f.fact).join(", ") || "the broker"}`
+      : "";
+
+  return (
+    <tr className="group border-b border-rule transition-colors duration-150 hover:bg-land">
+      <td className="num py-2 pr-4 text-dim">{String(r.rank).padStart(2, "0")}</td>
+      <td className="py-2 pr-4">
+        <Link href={`/cases/${r.caseId}`} className="font-medium underline-offset-2 hover:underline">
+          {r.insured}
+        </Link>
+        <span className="num ml-2 whitespace-nowrap text-[11px] text-dim">
+          #{r.caseId} · {r.line} · {r.state}
+        </span>
+        {r.deepDived && (
+          <span title="The desk ran a deep dive on this case" className="ml-2 font-mono text-[10px] text-ochre">
+            deep dive
+          </span>
+        )}
+      </td>
+      <td className="py-2 pr-4">
+        {has ? (
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <IntervalBar score={r.score} compact />
+            </div>
+            <span className="num w-[42px] text-[11.5px]">
+              {r.score!.lo}-{r.score!.hi}
+            </span>
+          </div>
+        ) : (
+          <span className="num text-[11.5px] text-dim">not scored</span>
+        )}
+      </td>
+      <td className="num py-2 pr-4 text-right">{money(r.valueAtStake)}</td>
+      <td className="py-2 pr-4">
+        <DecisionChip decision={r.decision} />
+        {moved && <span className="ml-1.5 font-mono text-[10px] text-ochre">desk: {r.deskVerdict!.replaceAll("_", " ")}</span>}
+      </td>
+      <td className="min-w-0 py-2">
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[11.5px] text-dim" title={why}>
+            {why}
+          </span>
+          {!!r.challengeRisks && (
+            <span title={`${r.challengeRisks} risks raised by the Challenger`} className="shrink-0 rounded-sm border border-rust px-1 font-mono text-[9.5px] text-rust">
+              {r.challengeRisks} risks
+            </span>
+          )}
+          {Object.values(
+            r.issues.reduce<Record<string, { kind: string; severity: string; n: number }>>((m, i) => {
+              m[i.kind] = { ...i, n: (m[i.kind]?.n ?? 0) + 1 };
+              return m;
+            }, {}),
+          ).map((i) => (
+            <IssueTag key={i.kind} kind={i.kind} severity={i.severity} count={i.n} />
+          ))}
+        </span>
+      </td>
+    </tr>
   );
 }

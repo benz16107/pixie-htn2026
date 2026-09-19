@@ -24,8 +24,8 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
       <div className="relative overflow-hidden border-r border-rule">
         <LiveMap hexes={hexes} pins={pins} center={[-99, 37]} zoom={3.5} />
         <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
-        <div className="absolute left-5 top-4 rounded-sm border border-rule bg-paper/95 px-3.5 py-2.5">
-          <p className="kicker">Book of business · H3 res 3</p>
+        <div className="absolute left-5 top-4 rounded-sm border border-ink bg-paper/95 px-3.5 py-2.5">
+          <p className="kicker">Book of business</p>
           <p className="mt-0.5 font-serif text-[22px] font-semibold leading-tight">
             <span className="num">{money(total)}</span> active TIV in <span className="num">{hexes.length}</span> cells
           </p>
@@ -42,7 +42,7 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
             ))}
           </nav>
         </div>
-        <div className="absolute bottom-6 left-5 flex items-center gap-4 rounded-sm border border-rule bg-paper/95 px-3 py-1.5 text-[11.5px]">
+        <div className="absolute bottom-6 left-5 flex items-center gap-4 rounded-sm border border-rule bg-paper/95 px-3 py-1.5 text-[11px]">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-3 w-5 bg-[#B7813A]/25" />
             <span className="inline-block h-3 w-5 bg-[#B7813A]/80" /> low to high TIV
@@ -58,14 +58,14 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
         </div>
       </div>
       <aside className="overflow-y-auto px-6 py-5" aria-labelledby="cases-h">
-        <h1 id="cases-h" className="kicker mb-2">Submission sites · {pins.length}</h1>
-        <p className="mb-3 text-[12px] text-dim">Every pin on the map, as a list. Choose one to open its case.</p>
+        <h1 id="cases-h" className="kicker mb-1">Submission sites · {pins.length}</h1>
+        <p className="mb-3 text-[11.5px] text-dim">Every pin, as a list. Open one to see how its score was built.</p>
         <ul>
           {pins.map((p) => (
             <li key={p.caseId} className="border-t border-rule">
               <Link href={`/cases/${p.caseId}`} className="flex items-baseline gap-2 py-1.5 transition-colors duration-150 hover:bg-land">
-                <span className="num w-9 text-[11px] text-dim">#{p.caseId}</span>
-                <span className="flex-1 truncate text-[12.5px]">{p.insured}</span>
+                <span className="num w-9 shrink-0 text-[11px] text-dim">#{p.caseId}</span>
+                <span className="min-w-0 flex-1 truncate text-[12.5px]">{p.insured}</span>
                 <DecisionChip decision={{ kind: p.decision } as DecisionView} />
               </Link>
             </li>
