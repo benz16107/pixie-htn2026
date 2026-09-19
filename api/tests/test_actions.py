@@ -11,6 +11,9 @@ from atlas_api.actions import (
     book_referral_review,
     check_broker_reply,
     file_data_quality_ticket,
+    guarded_book_review,
+    guarded_email_broker,
+    guarded_file_defect,
     log_decision_to_sheet,
     request_broker_info,
 )
@@ -20,6 +23,7 @@ from atlas_api.engine import DEFAULT_RULES_DIR, Open, RulesFile, assess
 from atlas_api.events import DecisionP, DeskEvent
 
 RULES = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+
 
 def test_request_broker_info_is_idempotent_and_lists_only_flippers(tmp_path, monkeypatch):
     monkeypatch.delenv("ATLAS_ACTIONS", raising=False)   # dry: composes, sends nothing
@@ -187,3 +191,21 @@ def test_file_data_quality_ticket_live_via_linear(tmp_path, monkeypatch):
     out = file_data_quality_ticket(store, case, issue, "Some Insured Inc")
     assert out["status"] == "sent" and out["url"] == "https://linear.app/x/1"
 
+
+# ---- A7: the guarded tools the actions agent gets (allowlist enforced in code, not by the model) --
+
+def test_guarded_tools_refuse_anything_not_already_true_of_the_case(tmp_path, monkeypatch):
+    monkeypatch.delenv("ATLAS_ACTIONS", raising=False)
+    store = CaseStore.open(tmp_path / "guard.sqlite")
+    case = World.load().case("SUB-138")
+    a = assess(case, RULES)
+
+    assert "refused" in guarded_email_broker(store, case, a, RULES, "Lumen Data Works Inc", None, ["year_built"])
+    ok = guarded_email_broker(store, case, a, RULES, "Lumen Data Works Inc", None, ["premium"])
+    assert ok.startswith("dry")
+
+    assert "refused" in guarded_book_review(store, case, "Lumen Data Works Inc", None, "accept_with_subjectivity", "x")
+    booked = guarded_book_review(store, case, "Lumen Data Works Inc", None, "refer_with_subjectivity", "x")
+    assert booked.startswith("dry")
+
+    assert "refused" in guarded_file_defect(store, case, "Lumen Data Works Inc", None, "not_a_real_kind")

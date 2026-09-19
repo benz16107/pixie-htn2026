@@ -555,3 +555,90 @@ def file_data_quality_ticket(store: CaseStore, case: Case, issue: DataIssue, ins
     append_after_run(store, case_id, run_id, "system", ActionResultP(
         text=f"Data-quality ticket {status}: {title}", ok=status in ("sent", "dry"), detail=detail))
     return record
+
+
+# ---- 5. A small tool-calling agent: the desk CHOOSES, code only guards --------------------------
+#
+# Each tool below refuses anything not already true of the case -- email_broker only for facts the
+# engine itself marked missing/estimated, book_review only when the fold's own decision says referred,
+# file_defect only for a kind that is really in case.issues -- so the agent cannot invent a fact or a
+# defect; it can only choose whether, and in what order, to act on what code has already found. Every
+# tool calls the same idempotent functions above, so a repeated or duplicate tool call is a no-op.
+
+def guarded_email_broker(store: CaseStore, case: Case, a: Assessment, rules: RulesFile, insured: str,
+                         run_id: str | None, facts: list[str]) -> str:
+    allowed = {f.fact for f in a.factors if f.provenance in ("missing", "estimated")}
+    bad = [x for x in facts if x not in allowed]
+    if bad:
+        return f"refused: {bad} are not missing/estimated on this case"
+    out = request_broker_info(store, case, a, rules, insured, facts, run_id)
+    return f"{out['status']}: {out.get('detail', '')}"[:200]
+
+
+def guarded_book_review(store: CaseStore, case: Case, insured: str, run_id: str | None,
+                        verdict: str | None, explanation: str) -> str:
+    if verdict != "refer_with_subjectivity":
+        return "refused: this case has not been referred"
+    out = book_referral_review(store, case, explanation, insured, run_id)
+    return f"{out['status']}: event {out.get('eventId')}" if out.get("eventId") else f"{out['status']}"
+
+
+def guarded_file_defect(store: CaseStore, case: Case, insured: str, run_id: str | None, kind: str) -> str:
+    issue = next((i for i in case.issues if i.kind == kind), None)
+    if issue is None:
+        return f"refused: no {kind!r} issue found on this case"
+    out = file_data_quality_ticket(store, case, issue, insured, run_id)
+    return f"{out['status']}: {out.get('detail', '')}"[:200]
+
+
+def actions_agent_tools(store: CaseStore, case: Case, a: Assessment, rules: RulesFile, insured: str,
+                        run_id: str | None, verdict: str | None, explanation: str) -> list[Any]:
+    """The Composio tools, wrapped as `agents.function_tool`s closed over one case run. `run_actions_agent`
+    hands these to an Agent so it -- not this code -- decides which to call."""
+    from agents import function_tool
+
+    @function_tool
+    def email_broker(facts: list[str]) -> str:
+        """Request missing/estimated facts from the broker by email. `facts` must be a subset of the
+        facts this case's own engine marked missing or estimated -- anything else is refused."""
+        return guarded_email_broker(store, case, a, rules, insured, run_id, facts)
+
+    @function_tool
+    def book_review() -> str:
+        """Book the 15-minute underwriter review on the calendar. Only works if this case's decision
+        is already "refer_with_subjectivity"; otherwise refused."""
+        return guarded_book_review(store, case, insured, run_id, verdict, explanation)
+
+    @function_tool
+    def file_defect(kind: str) -> str:
+        """File a data-quality ticket for a real defect on this case (kind must be one already present
+        in this case's own data issues, e.g. "duplicate_account", "stale_submission", "limit_vs_tiv")."""
+        return guarded_file_defect(store, case, insured, run_id, kind)
+
+    return [email_broker, book_review, file_defect]
+
+
+async def run_actions_agent(store: CaseStore, case: Case, a: Assessment, rules: RulesFile, insured: str,
+                            verdict: str | None, explanation: str, run_id: str | None = None) -> dict[str, Any]:
+    """Give the Lead's job -- decide whether to email, book, or file -- to a small agent with the three
+    guarded tools above. Uses the OpenAI Agents SDK the rest of the desk already depends on (own
+    wrapper, not the composio_openai_agents provider package, which isn't installed here)."""
+    from agents import Agent, Runner
+
+    from .desk import ModelConfig
+
+    models = ModelConfig.from_env()
+    tools = actions_agent_tools(store, case, a, rules, insured, run_id, verdict, explanation)
+    agent = Agent(name="actions", model=models.specialist, tools=tools, instructions=(
+        "You are Pixie's actions agent for one case. You have three tools: email_broker, book_review, "
+        "file_defect. Each refuses anything not already true of the case, so you cannot invent a fact "
+        "or a defect -- you only choose whether, and in what order, to act on what the case already "
+        "shows below. Call at most the tools that genuinely apply, then stop; if nothing applies, call "
+        "nothing and say so in one sentence."))
+    prompt = json.dumps({
+        "case": case.id, "verdict": verdict, "assessment": explain(a),
+        "factors": [{"fact": f.fact, "provenance": f.provenance} for f in a.factors],
+        "issues": [i.kind for i in case.issues],
+    })
+    result = await Runner.run(agent, prompt, max_turns=4)
+    return {"summary": result.final_output}

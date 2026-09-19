@@ -21,6 +21,7 @@ from .actions import (
     connected,
     file_data_quality_ticket,
     log_decision_to_sheet,
+    run_actions_agent,
 )
 from .engine import explain
 from .events import CaseFile, DecisionP
@@ -110,3 +111,17 @@ def defects_file(case_id: str) -> dict[str, Any]:
     if not case.issues:
         return {"filed": [], "detail": "no data-quality issues on this case"}
     return {"filed": [file_data_quality_ticket(store, case, issue, insured) for issue in case.issues]}
+
+
+@router.post("/cases/{case_id}/agent")
+async def agent_act(case_id: str) -> dict[str, Any]:
+    """Let a small agent -- not this code -- choose whether to email, book, or file, from the three
+    guarded Composio tools in actions.py. See actions.py section 5 for the allowlist."""
+    store, world, case, a, rules, insured = _resolve(case_id)[:6]
+    dec_event, _fold = _latest_decision(store, case.id.removeprefix("SUB-"))
+    verdict = dec_event.payload.verdict if dec_event else None
+    explanation = dec_event.payload.explanation if dec_event else explain(a)
+    out = await run_actions_agent(store, case, a, rules, insured, verdict, explanation)
+    from .app import apply_desk_run
+    apply_desk_run(store, world, case.id.removeprefix("SUB-"))
+    return out
