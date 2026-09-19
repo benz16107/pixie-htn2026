@@ -43,6 +43,15 @@
         {
           "locationWhenInUsePermission": "Pixie uses your location once to fill in your address for a tenant quote."
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "benzhou",
+          "project": "atlas-app",
+          "note": "SENTRY_AUTH_TOKEN env var authenticates source map uploads on an EAS/native build; Expo Go never runs this plugin's native step."
+        }
       ]
     ],
     "experiments": {
