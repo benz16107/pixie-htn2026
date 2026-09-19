@@ -1,13 +1,13 @@
 {
  "138": {
-  "runId": "r1789855515",
+  "runId": "r1789855878",
   "events": 42,
   "byActor": {
    "system": 11,
    "lead": 6,
-   "hazard": 12,
    "intake": 7,
    "portfolio": 3,
+   "hazard": 12,
    "appetite": 3
   },
   "kinds": {
@@ -15,10 +15,10 @@
    "run_stats": 7,
    "plan": 1,
    "ask": 2,
-   "tool_call": 11,
    "finding": 8,
-   "estimate": 1,
+   "tool_call": 11,
    "query": 1,
+   "estimate": 1,
    "answer": 2,
    "conflict": 2,
    "resolution": 2,
@@ -27,16 +27,16 @@
    "note": 1
   },
   "verdict": "request_info",
-  "explanation": "Obtain the actual broker premium before determining premium eligibility; the property is in acceptable/target bands and TIV is verified at $2,073,000. Although Appetite states that the actual premium would settle its concern, the overall assessment remains open and says no single fact would resolve it, so reassess the full case when the premium is received.",
+  "explanation": "Obtain the broker-confirmed proposed premium to assess compliance with the acceptable premium band rather than decline on comparable estimates. The overall assessment remains open, and confirmation should trigger reassessment rather than automatic acceptance because the case digest states that no single fact would resolve it.",
   "fallback": false,
-  "calls": 13,
-  "tokensIn": 10598,
-  "tokensOut": 1330,
-  "costUsd": 0.0294,
-  "seconds": 24.8
+  "calls": 14,
+  "tokensIn": 13655,
+  "tokensOut": 2228,
+  "costUsd": 0.0277,
+  "seconds": 36.9
  },
  "126": {
-  "runId": "r1789855515",
+  "runId": "r1789855878",
   "events": 4,
   "byActor": {
    "system": 2,
@@ -52,13 +52,35 @@
   "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
   "fallback": true,
   "calls": 1,
-  "tokensIn": 676,
-  "tokensOut": 300,
-  "costUsd": 0.0024,
-  "seconds": 7.9
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.3
+ },
+ "141": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "decline",
+  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.3
  },
  "143": {
-  "runId": "r1789855515",
+  "runId": "r1789855878",
   "events": 4,
   "byActor": {
    "system": 2,
@@ -74,9 +96,383 @@
   "explanation": "Decline: business_type:not_acceptable, primary_admin:not_acceptable. Score 30-30.",
   "fallback": true,
   "calls": 1,
-  "tokensIn": 676,
-  "tokensOut": 300,
-  "costUsd": 0.0024,
-  "seconds": 7.9
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.3
+ },
+ "134": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "decline",
+  "explanation": "Decline: primary_admin:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.3
+ },
+ "133": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "decline",
+  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "155": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "158": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to auto desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "114": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to auto desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "148": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "145": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to cyber desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "128": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to lpl desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "142": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "137": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "146": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "144": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "157": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to auto desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "140": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "151": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "135": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to health desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
+ },
+ "123": {
+  "runId": "r1789855878",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "route",
+  "explanation": "Routed to cgl desk: no property_2025 guideline for this line.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 2511,
+  "tokensOut": 1208,
+  "costUsd": 0.0002,
+  "seconds": 19.4
  }
 }
