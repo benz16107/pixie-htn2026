@@ -4,17 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CaseView, DeskEvent, Hex } from "@/contract";
 import { Swimlanes } from "../Swimlanes";
 import { CasePanel, Chatter, QueueRail, SweepBoard } from "./Panels";
+import { StationLine } from "./StationLine";
 import { Phone, type DigestState } from "./Phone";
 import { useRun, type Speed } from "./useRun";
 import type { MapPin, Pulse } from "./DeskMap";
 import type { Quote } from "./types";
 import { PROXY, brokerEmail, isPlumbing, nowLine, type OutboxItem, type Row } from "@/lib/live";
-import { parseHazard, parseSkip } from "@/lib/format";
 import { money } from "../bits";
 
 const DeskMap = dynamic(() => import("./DeskMap"), { ssr: false, loading: () => <div className="absolute inset-0 bg-land" /> });
 
-const LANES = ["lead", "intake", "appetite", "hazard", "portfolio", "system"] as const;
+const LANES = ["lead", "intake", "appetite", "hazard", "portfolio", "challenger", "system"] as const;
 const SPECIALISTS = new Set(["intake", "appetite", "hazard", "portfolio"]);
 const BEATS = ["Queue", "Case run", "Actions", "Backtest", "Toronto", "Close"] as const;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -245,18 +245,6 @@ export function LiveDesk(props: LiveProps) {
       decision: r.decision.kind,
     }));
 
-  const hazardChips = (focusCase?.events ?? [])
-    .filter((e) => e.actor === "hazard" && e.kind === "finding")
-    .map((e) => {
-      const t = str(e.body.text);
-      if (e.body.skipped) {
-        const sk = parseSkip(str(e.body.skipped), t);
-        return { id: e.id, label: `${sk.peril} lookup skipped`, skipped: true };
-      }
-      const h = parseHazard(t);
-      return { id: e.id, label: `${h.peril}: ${h.sentence}`, skipped: false };
-    });
-  const portfolio = (focusCase?.events ?? []).find((e) => e.actor === "portfolio" && e.kind === "finding");
   const hasSpecialist = (focusCase?.events ?? []).some((e) => SPECIALISTS.has(e.actor));
   const triageReason =
     str((focusCase?.events ?? []).find((e) => e.kind === "plan" || e.kind === "decision")?.body.text) ||
@@ -270,7 +258,7 @@ export function LiveDesk(props: LiveProps) {
         ? { lat: site.lat, lng: site.lng, zoom: 8.5 }
         : { lat: 38, lng: -96, zoom: 3.2 };
   const pulses: Pulse[] =
-    mode === "focus" && site && focusCase?.status === "working" && hazardChips.length ? [{ id: "site", ...site, label: "hazard lookup" }] : [];
+    mode === "focus" && site && focusCase?.status === "working" ? [{ id: "site", ...site, label: "hazard lookup" }] : [];
   const near = (h: Hex) => !site || (Math.abs(h.ring[0][0] - site.lat) < 1.6 && Math.abs(h.ring[0][1] - site.lng) < 1.9);
   const hexes = region === "toronto" && quote ? quote.hexes : mode === "focus" ? fineHexes.filter(near) : bookHexes;
 
@@ -362,20 +350,19 @@ export function LiveDesk(props: LiveProps) {
           <QueueRail rows={rows} cases={run.cases} selected={selected} flash={flash} onPick={(id) => startFocus(id)} />
         </aside>
 
-        <section className="relative min-h-0 border-r border-rule" aria-label="Map">
-          <DeskMap pins={region === "toronto" ? [] : pins} hexes={hexes} focus={focusPoint} pulses={pulses} onPick={(id) => startFocus(id)} reduced={reduced} />
-          {mode === "focus" && hazardChips.length > 0 && region === "desk" && (
-            <section aria-label="Hazard lookups" className="absolute bottom-3 right-3 w-[246px] rounded-sm border border-rule bg-paper/95 p-2">
-              <p className="kicker mb-1">Hazard lookups</p>
-              <ul className="space-y-1">
-                {hazardChips.slice(-4).map((h) => (
-                  <li key={h.id} className={`lane-card rounded-sm border px-1.5 py-1 text-[11px] leading-snug ${h.skipped ? "border-dashed border-rule text-dim" : "border-ochre bg-ochre-soft"}`}>
-                    {h.label}
-                  </li>
-                ))}
-                {portfolio && <li className="lane-card rounded-sm border border-ink px-1.5 py-1 text-[11px] leading-snug">{str(portfolio.body.text)}</li>}
-              </ul>
-            </section>
+        <section className="relative min-h-0 border-r border-rule" aria-label={mode === "focus" ? "The case walking the desk" : "Map"}>
+          <div className={mode === "focus" && region === "desk" ? "absolute inset-0 opacity-45" : "absolute inset-0"}>
+            <DeskMap pins={region === "toronto" ? [] : pins} hexes={hexes} focus={focusPoint} pulses={pulses} onPick={(id) => startFocus(id)} reduced={reduced} />
+          </div>
+          {mode === "focus" && region === "desk" && focusCase && (
+            <>
+              <div className="pointer-events-none absolute left-5 top-4 max-w-[420px]">
+                <p className="kicker">Case #{selected} · {focusCase.row.line} · {focusCase.row.state}</p>
+                <h2 className="font-serif text-[26px] font-semibold leading-tight">{focusCase.row.insured}</h2>
+                <p className="text-[12px] text-dim">{money(focusCase.row.valueAtStake)} at stake. Watch what the desk had to find out.</p>
+              </div>
+              <StationLine events={focusCase.events} caseTitle={`Case ${selected}`} />
+            </>
           )}
           {region === "toronto" && quote && (
             <div className="absolute bottom-3 left-3 max-w-[420px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12px]">

@@ -5,7 +5,7 @@
 
 export type Provenance = "known" | "estimated" | "missing";
 export type Band = "target" | "acceptable" | "not_acceptable";
-export type Actor = "lead" | "intake" | "appetite" | "hazard" | "portfolio" | "system" | "human" | "applicant";
+export type Actor = "lead" | "intake" | "appetite" | "hazard" | "portfolio" | "challenger" | "system" | "human" | "applicant";
 
 export interface FactView {
   id: string;                 // "premium"
