@@ -295,6 +295,10 @@ class RunRequest(BaseModel):
     mode: Literal["live", "replay"] = "replay"
 
 
+MAX_CONCURRENT_RUNS = 2
+_running: set[str] = set()
+
+
 @app.post("/desk/run")
 async def desk_run(req: RunRequest) -> dict[str, Any]:
     store, ids = get_store(), [c.removeprefix("SUB-") for c in req.caseIds]
@@ -302,13 +306,23 @@ async def desk_run(req: RunRequest) -> dict[str, Any]:
         return {"mode": "replay", "runs": {c: store.latest_run(c) for c in ids}}
     from .desk import Desk
 
+    busy = sorted(set(ids) & _running)
+    if busy:
+        raise HTTPException(status_code=409, detail=f"already running: {', '.join(busy)}")
+    if len(_running) + len(ids) > MAX_CONCURRENT_RUNS * 4:
+        raise HTTPException(status_code=429, detail="too many desk runs in flight")
+
     async def go() -> None:
-        await Desk(_world, store).run(ids, run_id=run_id)
-        for c in ids:
-            apply_desk_run(store, _world, c)
+        try:
+            await Desk(_world, store).run(ids, run_id=run_id)
+            for c in ids:
+                apply_desk_run(store, _world, c)
+        finally:
+            _running.difference_update(ids)
 
     import time
     run_id = f"r{int(time.time())}"
+    _running.update(ids)
     task = asyncio.create_task(go())
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)
@@ -570,3 +584,93 @@ def backtest_report() -> dict[str, Any]:
     if not BACKTEST_PATH.exists():
         raise HTTPException(status_code=503, detail="backtest has not been generated")
     return json.loads(BACKTEST_PATH.read_text())
+
+
+# ---------- one screen: combined stream, run totals, demo reset -----------------------------------
+
+@app.get("/events/stream", response_model=None)
+async def events_stream(request: Request, cases: str = "", replay: int = 0, speed: float = 1.0, after: int = 0):
+    """Several cases on one SSE stream, in time order, each event carrying its caseId (the /live screen)."""
+    store = get_store()
+    ids = [c.strip().removeprefix("SUB-") for c in cases.split(",") if c.strip()] or \
+        [c["queue"]["caseId"] for c in store.list_cases() if store.latest_run(c["queue"]["caseId"])]
+
+    async def gen():
+        if replay:
+            events = sorted((e for cid in ids for e in store.tail(cid, run_id=store.latest_run(cid) or "")),
+                            key=lambda e: e.t_ms)
+            last = None
+            for e in events:
+                if last is not None and speed > 0:
+                    await asyncio.sleep(max(0, e.t_ms - last) / 1000 / speed)
+                last = e.t_ms
+                yield _sse(e)
+            return
+        cursors = {cid: after for cid in ids}
+        idle = 0.0
+        while idle < 180 and not await request.is_disconnected():
+            batch = []
+            for cid in ids:
+                for e in store.tail(cid, after_seq=cursors[cid]):
+                    cursors[cid] = e.seq
+                    batch.append(e)
+            for e in sorted(batch, key=lambda e: (e.ts, e.seq)):
+                yield _sse(e)
+            idle = 0.0 if batch else idle + 0.25
+            await asyncio.sleep(0.25)
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+@app.get("/runs/{run_id}")
+def run_totals(run_id: str) -> dict[str, Any]:
+    """Cheap poll: per-case and total model calls, cost and elapsed seconds for one desk run."""
+    from .events import DecisionP, NoteP, RunStatsP
+
+    events = get_store().run_events(run_id)
+    if not events:
+        raise HTTPException(status_code=404, detail=f"no run {run_id}")
+    cases: dict[str, dict[str, Any]] = {}
+    for e in events:
+        c = cases.setdefault(e.case_id, {"caseId": e.case_id, "events": 0, "calls": 0, "tokensIn": 0,
+                                          "tokensOut": 0, "costUsd": 0.0, "elapsedS": 0.0, "verdict": None,
+                                          "done": False})
+        c["events"] += 1
+        if isinstance(e.payload, (RunStatsP, NoteP)) and e.payload.calls is not None:
+            stats = e.payload
+            c["calls"] = stats.calls
+            c["tokensIn"] = stats.tokens_in or c["tokensIn"]
+            c["tokensOut"] = stats.tokens_out or c["tokensOut"]
+            c["costUsd"] = stats.cost_usd or c["costUsd"]
+            c["elapsedS"] = getattr(stats, "elapsed_s", None) or round((stats.ms or 0) / 1000, 1)
+            c["done"] = c["done"] or isinstance(e.payload, NoteP)
+        if isinstance(e.payload, DecisionP):
+            c["verdict"] = e.payload.verdict
+    rows = list(cases.values())
+    return {"runId": run_id, "cases": rows, "running": run_id in {r for r in _running},
+            "totals": {"cases": len(rows), "events": sum(r["events"] for r in rows),
+                       "calls": sum(r["calls"] for r in rows), "costUsd": round(sum(r["costUsd"] for r in rows), 4),
+                       "elapsedS": max((r["elapsedS"] for r in rows), default=0.0),
+                       "done": all(r["done"] for r in rows)}}
+
+
+def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
+    """T14: drop the action events, outbox rows and human decisions, keep the recorded desk run and
+    restore the stored view from it. Running it twice leaves the same state."""
+    store = get_store()
+    ids = case_ids or [c["queue"]["caseId"] for c in store.list_cases() if store.latest_run(c["queue"]["caseId"])]
+    cleared = {}
+    for cid in ids:
+        events = store.delete_events(cid, {"action", "action_result"})
+        events += store.delete_actor(cid, "human")
+        outbox = store.delete_outbox(cid)
+        apply_desk_run(store, _world, cid)
+        if events or outbox:
+            cleared[cid] = {"events": events, "outbox": outbox}
+    store.cache_set("linq:last_digest", [])
+    return {"reset": cleared, "cases": ids}
+
+
+@app.post("/demo/reset")
+def demo_reset_route() -> dict[str, Any]:
+    return demo_reset()

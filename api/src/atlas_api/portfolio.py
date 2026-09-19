@@ -32,6 +32,7 @@ class Impact:
     cell: str
     n_locations: int
     policies: tuple[str, ...]
+    near_cells: tuple[str, ...] = ()
 
 
 class PortfolioIndex:
@@ -58,4 +59,5 @@ class PortfolioIndex:
         near_tiv = sum(r[4] for r in near)
         pts = -min(self.max_penalty, near_tiv * PENALTY_PER_TIV)
         return Impact(points=round(pts, 1), near_tiv=near_tiv, cell_tiv=sum(r[4] for r in in_cell), cell=cell,
-                      n_locations=len(near), policies=tuple(sorted({r[0] for r in near})))
+                      n_locations=len(near), policies=tuple(sorted({r[0] for r in near})),
+                      near_cells=tuple(sorted({r[5] for r in near})))

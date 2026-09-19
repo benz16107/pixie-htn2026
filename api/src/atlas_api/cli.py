@@ -101,6 +101,14 @@ def main() -> None:
     args = sys.argv[1:]
     if args[:1] == ["triage"]:
         triage()
+    elif args[:1] == ["demo-reset"]:
+        import json
+
+        from . import app as app_mod
+        from .case_store import CaseStore
+        app_mod._store = CaseStore.open()
+        app_mod._world = World.load()
+        print(json.dumps(app_mod.demo_reset(args[1:] or None), indent=1))
     elif args[:1] == ["ask"]:
         import asyncio
         import json
@@ -116,7 +124,7 @@ def main() -> None:
     elif args[:1] == ["record"] and len(args) == 3 and args[1] == "--cases":
         record([c.strip().removeprefix("SUB-") for c in args[2].split(",") if c.strip()])
     else:
-        print("usage: atlas triage | atlas record --cases 138,126,143 | atlas ask [question]", file=sys.stderr)
+        print("usage: atlas triage | atlas record --cases 138,126,143 | atlas ask [question] | atlas demo-reset [caseId...]", file=sys.stderr)
         raise SystemExit(2)
 
 

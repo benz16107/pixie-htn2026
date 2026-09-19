@@ -55,6 +55,10 @@ class QueryRetryP(_P):
 class FindingP(_P):
     kind: Literal["finding"] = "finding"
     fact: str
+    layer: str | None = None                   # hazard: which cached layer this came from
+    lat: float | None = None                   # hazard: the location the map should pulse
+    lng: float | None = None
+    cells: list[str] = []                      # portfolio: the H3 cells it aggregated
     value: str | float | int | None = None
     provenance: Literal["known", "estimated", "missing", "external"] = "known"
     score_delta: float | None = None           # engine-computed, never model-written
@@ -157,6 +161,16 @@ class ToolCallP(_P):
     ms: int = 0
 
 
+class RunStatsP(_P):
+    kind: Literal["run_stats"] = "run_stats"
+    calls: int
+    tokens_in: int
+    tokens_out: int
+    cost_usd: float
+    elapsed_s: float
+    phase: str = ""
+
+
 class NoteP(_P):
     kind: Literal["note"] = "note"
     calls: int | None = None
@@ -168,11 +182,12 @@ class NoteP(_P):
 
 Payload = Annotated[Union[
     PlanP, QueryP, QueryRetryP, FindingP, EstimateP, GapP, AskP, AnswerP, ConflictP, ResolutionP,
-    AssessmentP, DecisionP, ActionP, ActionResultP, InboundP, ToolCallP, NoteP,
+    AssessmentP, DecisionP, ActionP, ActionResultP, InboundP, ToolCallP, RunStatsP, NoteP,
 ], Field(discriminator="kind")]
 
 Kind = Literal["plan", "query", "query_retry", "finding", "estimate", "gap", "ask", "answer", "conflict",
-               "resolution", "assessment", "decision", "action", "action_result", "inbound", "tool_call", "note"]
+               "resolution", "assessment", "decision", "action", "action_result", "inbound", "tool_call",
+               "run_stats", "note"]
 
 
 class DeskEvent(BaseModel):

@@ -121,6 +121,37 @@ class CaseStore:
         rows = self.conn.execute(sql + " ORDER BY seq", args).fetchall()
         return [DeskEvent.model_validate_json(r[0]) for r in rows]
 
+    def run_events(self, run_id: str) -> list["DeskEvent"]:
+        from .events import DeskEvent
+        rows = self.conn.execute("SELECT json FROM desk_events WHERE run_id = ? ORDER BY case_id, seq",
+                                 (run_id,)).fetchall()
+        return [DeskEvent.model_validate_json(r[0]) for r in rows]
+
+    def delete_events(self, case_id: str, kinds: set[str]) -> int:
+        """Demo reset (T14): drop events of these kinds, keeping the rest of the recorded run."""
+        return self._rewrite(case_id, lambda e: e.kind not in kinds)
+
+    def delete_actor(self, case_id: str, actor: str) -> int:
+        return self._rewrite(case_id, lambda e: e.actor != actor)
+
+    def _rewrite(self, case_id: str, keep_if) -> int:
+        events = self.tail(case_id)
+        keep = [e for e in events if keep_if(e)]
+        dropped = len(events) - len(keep)
+        if dropped:
+            with self._lock:
+                self.conn.execute("DELETE FROM desk_events WHERE case_id = ?", (case_id,))
+                for e in keep:
+                    self.conn.execute("INSERT INTO desk_events(id, case_id, seq, run_id, json) VALUES (?, ?, ?, ?, ?)",
+                                      (e.id, e.case_id, e.seq, e.run_id, e.model_dump_json()))
+                self.conn.commit()
+        return dropped
+
+    def delete_outbox(self, case_id: str) -> int:
+        cur = self.conn.execute("DELETE FROM outbox WHERE case_id = ?", (case_id,))
+        self.conn.commit()
+        return cur.rowcount
+
     def latest_run(self, case_id: str) -> str | None:
         row = self.conn.execute("SELECT run_id FROM desk_events WHERE case_id = ? ORDER BY seq DESC LIMIT 1",
                                 (case_id,)).fetchone()

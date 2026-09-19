@@ -85,3 +85,38 @@ def test_ask_serves_cache_and_says_so_offline(tmp_path, monkeypatch):
     assert asyncio.run(ask("open property  submissions with no premium", store))["answer"] == "cached"
     miss = asyncio.run(ask("something new", store))
     assert miss["attempts"] == [] and "Offline" in miss["answer"]
+
+
+def test_combined_stream_run_totals_reset_and_run_guard(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_DB", str(tmp_path / "live.sqlite"))
+    monkeypatch.setenv("ATLAS_OFFLINE", "1")
+    monkeypatch.delenv("ATLAS_ACTIONS", raising=False)
+    from atlas_api.app import app
+    with TestClient(app) as client:
+        store = CaseStore.open()
+        _record(store, "138")
+        _record(store, "126")
+
+        with client.stream("GET", "/events/stream?cases=138,126&replay=1&speed=50") as resp:
+            seen = [json.loads(ln[6:]) for ln in resp.iter_lines() if ln.startswith("data: ")]
+        assert len(seen) == 6 and {e["caseId"] for e in seen} == {"138", "126"}
+        assert [e["tMs"] for e in seen] == sorted(e["tMs"] for e in seen)
+
+        totals = client.get("/runs/rtest").json()
+        assert totals["totals"] == {"cases": 2, "events": 6, "calls": 2, "costUsd": 0.0, "elapsedS": 0.0, "done": True}
+
+        client.post("/cases/138/actions/request_info")
+        assert len(store.outbox_for("138")) == 1
+        reset = client.post("/demo/reset").json()
+        assert reset["reset"]["138"]["outbox"] == 1 and store.outbox_for("138") == []
+        assert [e.kind for e in store.tail("138")] == ["plan", "decision", "note"]
+        assert client.post("/demo/reset").json()["reset"] == {}    # idempotent
+
+        # a second live run on a case already running is refused
+        from atlas_api import app as app_mod
+        app_mod._running.add("138")
+        monkeypatch.delenv("ATLAS_OFFLINE")
+        try:
+            assert client.post("/desk/run", json={"caseIds": ["138"], "mode": "live"}).status_code == 409
+        finally:
+            app_mod._running.discard("138")

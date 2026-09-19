@@ -1,21 +1,22 @@
 {
  "138": {
-  "runId": "r1789855234",
-  "events": 35,
+  "runId": "r1789855515",
+  "events": 42,
   "byActor": {
-   "system": 4,
+   "system": 11,
    "lead": 6,
+   "hazard": 12,
    "intake": 7,
    "portfolio": 3,
-   "hazard": 12,
    "appetite": 3
   },
   "kinds": {
    "assessment": 2,
+   "run_stats": 7,
    "plan": 1,
    "ask": 2,
-   "finding": 8,
    "tool_call": 11,
+   "finding": 8,
    "estimate": 1,
    "query": 1,
    "answer": 2,
@@ -26,12 +27,56 @@
    "note": 1
   },
   "verdict": "request_info",
-  "explanation": "Request broker confirmation of the actual premium before determining whether the submission meets the premium guideline. The favourable hazard findings do not override the premium uncertainty, and the overall assessment remains open; confirmation should inform reassessment rather than imply automatic acceptance.",
+  "explanation": "Obtain the actual broker premium before determining premium eligibility; the property is in acceptable/target bands and TIV is verified at $2,073,000. Although Appetite states that the actual premium would settle its concern, the overall assessment remains open and says no single fact would resolve it, so reassess the full case when the premium is received.",
   "fallback": false,
   "calls": 13,
-  "tokensIn": 10395,
-  "tokensOut": 1194,
-  "costUsd": 0.0341,
-  "seconds": 20.8
+  "tokensIn": 10598,
+  "tokensOut": 1330,
+  "costUsd": 0.0294,
+  "seconds": 24.8
+ },
+ "126": {
+  "runId": "r1789855515",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "decline",
+  "explanation": "Decline: primary_admin:not_acceptable, year_built:not_acceptable, loss_5yr:not_acceptable. Score 30-30.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 676,
+  "tokensOut": 300,
+  "costUsd": 0.0024,
+  "seconds": 7.9
+ },
+ "143": {
+  "runId": "r1789855515",
+  "events": 4,
+  "byActor": {
+   "system": 2,
+   "lead": 2
+  },
+  "kinds": {
+   "assessment": 1,
+   "plan": 1,
+   "decision": 1,
+   "note": 1
+  },
+  "verdict": "decline",
+  "explanation": "Decline: business_type:not_acceptable, primary_admin:not_acceptable. Score 30-30.",
+  "fallback": true,
+  "calls": 1,
+  "tokensIn": 676,
+  "tokensOut": 300,
+  "costUsd": 0.0024,
+  "seconds": 7.9
  }
 }
