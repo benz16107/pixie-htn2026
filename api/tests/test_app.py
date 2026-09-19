@@ -1,5 +1,6 @@
 """T5 accept tests. See docs/PLAN.md section 2 and docs/sketch/contract.ts."""
 
+import os
 import time
 
 import pytest
@@ -9,7 +10,8 @@ from atlas_api.app import app
 
 
 @pytest.fixture(scope="module")
-def client() -> TestClient:
+def client(tmp_path_factory) -> TestClient:
+    os.environ["ATLAS_DB"] = str(tmp_path_factory.mktemp("db") / "atlas.sqlite")   # never the recorded runs
     with TestClient(app) as c:  # runs the startup event once, populating the CaseStore
         yield c
 
