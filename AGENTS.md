@@ -1,5 +1,8 @@
 # Atlas: rules for every coding agent (Claude Code, Codex)
 
+**Product name: Pixie** (user-facing everywhere: UI, app, pitches, Devpost). The repo and code keep the internal name `atlas`.
+
+
 Atlas is a multi-agent underwriting desk (Federato challenge) plus a consumer quote app (Intact challenge) on one shared risk engine. Plan: docs/PLAN.md (tasks T1-T13, W1-W8, C1-C8, E1-E5). Design and type contracts: docs/DESIGN.md and docs/sketch/. Hack the North 2026, solo build.
 
 ## Invariants (do not break; tests enforce them)
