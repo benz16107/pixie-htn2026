@@ -3,11 +3,21 @@ Composio actions built on it (broker-reply watch, calendar hold, Sheets audit, L
 tickets, and the guarded agent tools) are each idempotent and dry-run-able without network."""
 
 import asyncio
+import time
 
-from atlas_api.actions import apply_broker_reply, check_broker_reply, request_broker_info
+from atlas_api.actions import (
+    FINAL_VERDICTS,
+    apply_broker_reply,
+    book_referral_review,
+    check_broker_reply,
+    file_data_quality_ticket,
+    log_decision_to_sheet,
+    request_broker_info,
+)
 from atlas_api.case import World
 from atlas_api.case_store import CaseStore
 from atlas_api.engine import DEFAULT_RULES_DIR, Open, RulesFile, assess
+from atlas_api.events import DecisionP, DeskEvent
 
 RULES = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
 
@@ -95,4 +105,85 @@ def test_check_broker_reply_live_applies_a_verified_extraction(tmp_path, monkeyp
     out = asyncio.run(check_broker_reply(store, case, a, RULES))
     assert out["status"] == "applied" and out["facts"]["premium"] == 88000.0
     assert out["messageId"] == "m-9"
+
+
+# ---- A7: book the referral review ---------------------------------------------------------------
+
+def test_book_referral_review_is_idempotent_dry(tmp_path, monkeypatch):
+    monkeypatch.delenv("ATLAS_ACTIONS", raising=False)
+    store = CaseStore.open(tmp_path / "cal.sqlite")
+    case = World.load().case("SUB-138")
+
+    first = book_referral_review(store, case, "Refer: needs a second look.", "Lumen Data Works Inc")
+    assert first["status"] == "dry" and "SUB-138" in first["summary"]
+    second = book_referral_review(store, case, "Refer: needs a second look.", "Lumen Data Works Inc")
+    assert second.get("deduped") and len(store.outbox_for("138")) == 1
+
+
+def test_book_referral_review_live_stores_event_id_on_the_case(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")
+    monkeypatch.setenv("COMPOSIO_GOOGLECALENDAR_ACCOUNT", "ca_cal")
+    monkeypatch.setattr("atlas_api.actions.composio_execute",
+                        lambda tool, toolkit, arguments: {"successful": True, "data": {"id": "evt-1"}})
+    store = CaseStore.open(tmp_path / "cal2.sqlite")
+    case = World.load().case("SUB-138")
+    store.put_case("138", {"queue": {}, "case": {"title": "Lumen Data Works Inc"}})
+
+    out = book_referral_review(store, case, "Refer: needs a second look.", "Lumen Data Works Inc")
+    assert out["status"] == "sent" and out["eventId"] == "evt-1"
+    assert store.get_case("138")["case"]["referralReview"] == {"eventId": "evt-1", "status": "sent"}
+
+
+# ---- A7: decision audit trail in Sheets ----------------------------------------------------------
+
+def _decision_event(case_id: str, verdict: str) -> DeskEvent:
+    e = DeskEvent.make(case_id, "run1", "lead", DecisionP(
+        text="d", verdict=verdict, explanation="x", verified=True), t0=time.time() - 2)
+    return e
+
+
+def test_log_decision_to_sheet_is_idempotent_per_decision_event(tmp_path, monkeypatch):
+    monkeypatch.delenv("ATLAS_ACTIONS", raising=False)
+    store = CaseStore.open(tmp_path / "sheet.sqlite")
+    case = World.load().case("SUB-138")
+    dec_event = _decision_event("138", "refer_with_subjectivity")
+    store.append(dec_event)
+
+    first = log_decision_to_sheet(store, case, dec_event, "Lumen Data Works Inc", (54.0, 79.0), ["premium"])
+    assert first["status"] == "dry" and first["row"][2] == "refer_with_subjectivity"
+    second = log_decision_to_sheet(store, case, dec_event, "Lumen Data Works Inc", (54.0, 79.0), ["premium"])
+    assert second.get("deduped") and len(store.outbox_for("138")) == 1
+
+
+def test_final_verdicts_are_the_three_human_facing_outcomes():
+    assert FINAL_VERDICTS == {"accept_with_subjectivity", "decline", "refer_with_subjectivity"}
+
+
+# ---- A7: data-quality defect tickets -------------------------------------------------------------
+
+def test_file_data_quality_ticket_one_per_issue_kind_and_reports_what_to_connect(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")   # neither Linear nor Notion is connected in this env
+    store = CaseStore.open(tmp_path / "ticket.sqlite")
+    case = World.load().case("SUB-134")   # has a limit_vs_tiv issue (case.py's own fixture assertion)
+    issue = next(i for i in case.issues if i.kind == "limit_vs_tiv")
+
+    out = file_data_quality_ticket(store, case, issue, "Some Insured Inc")
+    assert out["status"] == "not_connected" and "connect" in out["detail"]
+    again = file_data_quality_ticket(store, case, issue, "Some Insured Inc")
+    assert again.get("deduped")
+
+
+def test_file_data_quality_ticket_live_via_linear(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")
+    monkeypatch.setenv("COMPOSIO_LINEAR_ACCOUNT", "ca_linear")
+    monkeypatch.setenv("COMPOSIO_LINEAR_TEAM_ID", "team-1")
+    monkeypatch.setattr("atlas_api.actions.composio_execute",
+                        lambda tool, toolkit, arguments: {"successful": True,
+                                                           "data": {"issue": {"url": "https://linear.app/x/1"}}})
+    store = CaseStore.open(tmp_path / "ticket2.sqlite")
+    case = World.load().case("SUB-134")
+    issue = next(i for i in case.issues if i.kind == "limit_vs_tiv")
+
+    out = file_data_quality_ticket(store, case, issue, "Some Insured Inc")
+    assert out["status"] == "sent" and out["url"] == "https://linear.app/x/1"
 

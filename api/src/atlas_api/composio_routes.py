@@ -14,7 +14,16 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from .actions import check_broker_reply, connected
+from .actions import (
+    FINAL_VERDICTS,
+    book_referral_review,
+    check_broker_reply,
+    connected,
+    file_data_quality_ticket,
+    log_decision_to_sheet,
+)
+from .engine import explain
+from .events import CaseFile, DecisionP
 
 router = APIRouter(prefix="/composio", tags=["composio"])
 
@@ -36,6 +45,15 @@ def _resolve(case_id: str):
     return store, _world, case, a, rules, insured, data
 
 
+def _latest_decision(store, case_id: str):
+    run = store.latest_run(case_id)
+    if not run:
+        return None, None
+    events = store.tail(case_id, run_id=run)
+    dec_event = next((e for e in reversed(events) if isinstance(e.payload, DecisionP)), None)
+    return dec_event, CaseFile.fold(events)
+
+
 @router.get("/status")
 def status() -> dict[str, Any]:
     """What's live vs. what needs Ben to connect -- the booth/demo can hit this directly."""
@@ -55,3 +73,40 @@ async def broker_reply_check(case_id: str) -> dict[str, Any]:
         from .app import apply_desk_run
         apply_desk_run(store, world, case.id.removeprefix("SUB-"))
     return out
+
+
+@router.post("/cases/{case_id}/review/book")
+def review_book(case_id: str) -> dict[str, Any]:
+    """Book the 15-minute underwriter review. Only meaningful once the case has been referred, but the
+    call itself is safe regardless -- the caller (the web app, or the actions agent) decides when to
+    call it; this just books it and puts the event id on the case."""
+    store, world, case, a, rules, insured = _resolve(case_id)[:6]
+    dec_event, _fold = _latest_decision(store, case.id.removeprefix("SUB-"))
+    explanation = dec_event.payload.explanation if dec_event else explain(a)
+    out = book_referral_review(store, case, explanation, insured)
+    if out.get("eventId") or out.get("status") == "dry":
+        from .app import apply_desk_run
+        apply_desk_run(store, world, case.id.removeprefix("SUB-"))
+    return out
+
+
+@router.post("/cases/{case_id}/decision/log")
+def decision_log(case_id: str) -> dict[str, Any]:
+    """Append the case's latest final decision (accept/decline/refer) to the Sheets audit trail."""
+    store, _world, case, a, rules, insured = _resolve(case_id)[:6]
+    dec_event, fold = _latest_decision(store, case.id.removeprefix("SUB-"))
+    if dec_event is None or dec_event.payload.verdict not in FINAL_VERDICTS:
+        raise HTTPException(status_code=409, detail="no final decision (accept/decline/refer) on this case yet")
+    flippers = fold.last_assessment.flippers if fold and fold.last_assessment else []
+    score = (a.score.lo, a.score.hi)
+    return log_decision_to_sheet(store, case, dec_event, insured, score, flippers)
+
+
+@router.post("/cases/{case_id}/defects/file")
+def defects_file(case_id: str) -> dict[str, Any]:
+    """File one ticket per real data-quality issue the engine already found on this case
+    (case.issues) -- duplicate account, stale submission, limit far below TIV, etc."""
+    store, _world, case, a, rules, insured = _resolve(case_id)[:6]
+    if not case.issues:
+        return {"filed": [], "detail": "no data-quality issues on this case"}
+    return {"filed": [file_data_quality_ticket(store, case, issue, insured) for issue in case.issues]}

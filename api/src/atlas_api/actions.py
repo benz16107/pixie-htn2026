@@ -355,3 +355,203 @@ async def check_broker_reply(store: CaseStore, case: Case, a: Assessment, rules:
     values = {f["fact"]: f["value"] for f in findings
              if f.get("value") and f.get("quote") and f["quote"] in text and f["fact"] in facts}
     return apply_broker_reply(store, case, a, rules, run_id, message_id, values) | {"searched": len(messages)}
+
+
+# ---- 2. Book a 15-minute underwriter review when a case is referred ---------------------------
+
+def _next_business_hour(days_ahead: int = 1, hour: int = 10) -> str:
+    """Naive local datetime GOOGLECALENDAR_CREATE_EVENT wants: the next weekday at `hour`:00."""
+    d = datetime.now() + timedelta(days=days_ahead)
+    while d.weekday() >= 5:  # Sat/Sun
+        d += timedelta(days=1)
+    return d.replace(hour=hour, minute=0, second=0, microsecond=0).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def book_referral_review(store: CaseStore, case: Case, explanation: str, insured: str,
+                         run_id: str | None = None, case_url: str | None = None) -> dict[str, Any]:
+    """15-minute underwriter review on Google Calendar, with the case link in the description.
+    Idempotent per case: a case referred twice (e.g. a replayed run) books one hold."""
+    case_id = case.id.removeprefix("SUB-")
+    key = outbox_key(case_id, "book_referral_review", [])
+    existing = next((o for o in store.outbox_for(case_id) if o["id"] == key), None)
+    if existing:
+        return existing | {"deduped": True}
+
+    run_id = run_id or store.latest_run(case_id) or "actions"
+    link = case_url or f"{os.environ.get('ATLAS_WEB_URL', 'http://localhost:3000')}/cases/{case_id}"
+    summary = f"Underwriter review: SUB-{case_id} ({insured})"
+    description = f"{explanation}\n\nCase: {link}"
+    append_after_run(store, case_id, run_id, "system", ActionP(
+        text=f"Calendar hold proposed: {summary}", action="book_referral_review", status="proposed"))
+
+    mode = os.environ.get("ATLAS_ACTIONS", "dry")
+    status, detail, event_id = "dry", "ATLAS_ACTIONS=dry: composed, not booked", None
+    if mode == "live":
+        if not connected("googlecalendar"):
+            status = "not_connected"
+            detail = "googlecalendar toolkit not connected -- see docs/COMPOSIO.md for the one-click connect"
+        else:
+            try:
+                arguments: dict[str, Any] = {
+                    "summary": summary, "description": description, "start_datetime": _next_business_hour(),
+                    "timezone": os.environ.get("ATLAS_TZ", "America/Toronto"),
+                    "event_duration_minutes": 15, "calendar_id": "primary",
+                }
+                if os.environ.get("ATLAS_UNDERWRITER_EMAIL"):
+                    arguments["attendees"] = [os.environ["ATLAS_UNDERWRITER_EMAIL"]]
+                res = composio_execute("GOOGLECALENDAR_CREATE_EVENT", "googlecalendar", arguments)
+                data = res.get("data", res)
+                ok = bool(res.get("successful", True))
+                event_id = data.get("id") or data.get("eventId")
+                status, detail = ("sent" if ok else "failed"), json.dumps(data)[:300]
+            except Exception as exc:
+                status, detail = "failed", f"{type(exc).__name__}: {exc}"[:300]
+
+    record = {"id": key, "channel": "googlecalendar", "status": status, "detail": detail,
+              "eventId": event_id, "summary": summary}
+    store.post_outbox(key, case_id, "googlecalendar", status,
+                      {k: v for k, v in record.items() if k not in ("id", "channel", "status")})
+    append_after_run(store, case_id, run_id, "system", ActionResultP(
+        text=f"Calendar hold {status}" + (f", event {event_id}" if event_id else ""),
+        ok=status in ("sent", "dry"), detail=detail))
+    if event_id:
+        data = store.get_case(case_id)
+        if data is not None:
+            data["case"]["referralReview"] = {"eventId": event_id, "status": status}
+            store.put_case(case_id, data)
+    return record
+
+
+# ---- 3. Decision audit trail in Sheets ---------------------------------------------------------
+
+SHEETS_CACHE_KEY = "composio:sheets_id"
+SHEET_TITLE = "Pixie Decisions"
+SHEET_HEADER = ["case_id", "insured", "decision", "score_lo", "score_hi", "flippers", "approved_by", "at"]
+
+
+def _sheet_id(store: CaseStore) -> str | None:
+    """Cached to disk (AGENTS.md invariant 4), not re-looked-up or re-created every call."""
+    cached = store.cache_get(SHEETS_CACHE_KEY)
+    if cached:
+        return cached
+    env = os.environ.get("COMPOSIO_SHEETS_ID")
+    if env:
+        store.cache_set(SHEETS_CACHE_KEY, env)
+        return env
+    return None
+
+
+def _ensure_sheet(store: CaseStore) -> str:
+    """Create the "Pixie Decisions" sheet if none is on file yet, write its header row once, and
+    cache the id so every later call is a plain append."""
+    sid = _sheet_id(store)
+    if sid:
+        return sid
+    res = composio_execute("GOOGLESHEETS_CREATE_GOOGLE_SHEET1", "googlesheets", {"title": SHEET_TITLE})
+    data = res.get("data", res)
+    sid = data.get("spreadsheetId") or data.get("id")
+    if not sid:
+        raise RuntimeError(f"GOOGLESHEETS_CREATE_GOOGLE_SHEET1 returned no id: {json.dumps(res)[:200]}")
+    store.cache_set(SHEETS_CACHE_KEY, sid)
+    composio_execute("GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND", "googlesheets", {
+        "spreadsheetId": sid, "range": "Sheet1!A1", "valueInputOption": "RAW", "values": [SHEET_HEADER]})
+    return sid
+
+
+def log_decision_to_sheet(store: CaseStore, case: Case, dec_event: DeskEvent, insured: str,
+                          score: tuple[float, float] | None, flippers: list[str] | None = None) -> dict[str, Any]:
+    """Append one audit row for a finalized decision (accept/decline/refer): the case, the score
+    interval, the flippers that decided it, who approved it, and when. Append-only, so it's a paper
+    trail by construction -- no upsert logic needed. Idempotent per decision event id (already a
+    content hash of the decision itself, per events.py)."""
+    case_id = case.id.removeprefix("SUB-")
+    key = outbox_key(case_id, "log_decision_to_sheet", [dec_event.id])
+    existing = next((o for o in store.outbox_for(case_id) if o["id"] == key), None)
+    if existing:
+        return existing | {"deduped": True}
+
+    run_id = store.latest_run(case_id) or "actions"
+    dec = dec_event.payload
+    lo, hi = (round(score[0]), round(score[1])) if score else ("", "")
+    row = [case_id, insured, dec.verdict, lo, hi, "; ".join(flippers or []),
+          dec_event.actor, datetime.fromtimestamp(dec_event.ts, tz=UTC).isoformat()]
+
+    mode = os.environ.get("ATLAS_ACTIONS", "dry")
+    status, detail = "dry", "ATLAS_ACTIONS=dry: composed, not logged"
+    if mode == "live":
+        if not connected("googlesheets"):
+            status = "not_connected"
+            detail = "googlesheets toolkit not connected -- see docs/COMPOSIO.md for the one-click connect"
+        else:
+            try:
+                sid = _ensure_sheet(store)
+                res = composio_execute("GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND", "googlesheets", {
+                    "spreadsheetId": sid, "range": "Sheet1!A1", "valueInputOption": "USER_ENTERED", "values": [row]})
+                ok = bool(res.get("successful", True))
+                status, detail = ("sent" if ok else "failed"), json.dumps(res.get("data", res))[:300]
+            except Exception as exc:
+                status, detail = "failed", f"{type(exc).__name__}: {exc}"[:300]
+
+    record = {"id": key, "channel": "googlesheets", "status": status, "detail": detail, "row": row}
+    store.post_outbox(key, case_id, "googlesheets", status,
+                      {k: v for k, v in record.items() if k not in ("id", "channel", "status")})
+    append_after_run(store, case_id, run_id, "system", ActionResultP(
+        text=f"Decision logged to Sheets: {dec.verdict}", ok=status in ("sent", "dry"), detail=detail))
+    return record
+
+
+# ---- 4. Data-quality defect tickets ------------------------------------------------------------
+
+def file_data_quality_ticket(store: CaseStore, case: Case, issue: DataIssue, insured: str,
+                             run_id: str | None = None) -> dict[str, Any]:
+    """One ticket per (case, issue kind): a real defect the engine already found in the carrier's own
+    data (case.issues), not a broker gap. Linear if connected, else Notion, else composes the ticket
+    and says exactly what to connect. Idempotent per (case, issue.kind)."""
+    case_id = case.id.removeprefix("SUB-")
+    key = outbox_key(case_id, "file_data_quality_ticket", [issue.kind])
+    existing = next((o for o in store.outbox_for(case_id) if o["id"] == key), None)
+    if existing:
+        return existing | {"deduped": True}
+
+    run_id = run_id or store.latest_run(case_id) or "actions"
+    title = f"[Data quality] SUB-{case_id}: {issue.kind.replace('_', ' ')}"
+    body = (f"{issue.text}\n\nCase: SUB-{case_id} ({insured})\n"
+           f"Facts involved: {', '.join(issue.facts) or 'n/a'}\nSeverity: {issue.severity}")
+    append_after_run(store, case_id, run_id, "system", ActionP(
+        text=f"Data-quality ticket proposed: {issue.kind}", action="file_data_quality_ticket", status="proposed"))
+
+    mode = os.environ.get("ATLAS_ACTIONS", "dry")
+    status, detail, url, channel = "dry", "ATLAS_ACTIONS=dry: composed, not filed", None, "linear"
+    if mode == "live":
+        if connected("linear") and os.environ.get("COMPOSIO_LINEAR_TEAM_ID"):
+            try:
+                res = composio_execute("LINEAR_CREATE_LINEAR_ISSUE", "linear", {
+                    "team_id": os.environ["COMPOSIO_LINEAR_TEAM_ID"], "title": title, "description": body})
+                data = res.get("data", res)
+                ok = bool(res.get("successful", True))
+                status, detail = ("sent" if ok else "failed"), json.dumps(data)[:300]
+                url = (data.get("issue") or {}).get("url") if isinstance(data.get("issue"), dict) else data.get("url")
+            except Exception as exc:
+                status, detail = "failed", f"{type(exc).__name__}: {exc}"[:300]
+        elif connected("notion") and os.environ.get("COMPOSIO_NOTION_PARENT_ID"):
+            channel = "notion"
+            try:
+                res = composio_execute("NOTION_CREATE_NOTION_PAGE", "notion", {
+                    "parent_id": os.environ["COMPOSIO_NOTION_PARENT_ID"], "title": f"{title}\n\n{body}"})
+                data = res.get("data", res)
+                ok = bool(res.get("successful", True))
+                status, detail = ("sent" if ok else "failed"), json.dumps(data)[:300]
+                url = data.get("url")
+            except Exception as exc:
+                status, detail = "failed", f"{type(exc).__name__}: {exc}"[:300]
+        else:
+            status = "not_connected"
+            detail = ("neither Linear nor Notion is connected -- see docs/COMPOSIO.md for the one-click "
+                     "connect for either")
+
+    record = {"id": key, "channel": channel, "status": status, "detail": detail, "title": title, "url": url}
+    store.post_outbox(key, case_id, channel, status,
+                      {k: v for k, v in record.items() if k not in ("id", "channel", "status")})
+    append_after_run(store, case_id, run_id, "system", ActionResultP(
+        text=f"Data-quality ticket {status}: {title}", ok=status in ("sent", "dry"), detail=detail))
+    return record
