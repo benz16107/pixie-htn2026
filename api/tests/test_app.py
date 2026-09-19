@@ -117,3 +117,32 @@ def test_map_endpoints(client):
     assert hexes and len(hexes[0]["ring"]) >= 5 and 0 <= hexes[0]["level"] <= 4
     flood = client.get("/map/book?res=3&peril=flood").json()
     assert sum(h["value"] for h in flood) < sum(h["value"] for h in client.get("/map/book?res=3").json())
+
+
+def test_explainability_endpoints(client):
+    explain = client.get("/cases/138/explain").json()
+    assert explain["reconciles"] is True and explain["steps"][0]["key"] == "line"
+    assert {"key", "label", "band", "kind", "pointsLo", "pointsHi", "runningLo", "runningHi", "capped",
+            "rule", "value", "provenance", "source"} <= set(explain["steps"][0])
+
+    whatif = client.post("/cases/138/whatif", json={"overrides": {"premium": 80000}}).json()
+    assert whatif["after"]["decision"]["kind"] == "accept" and whatif["decisiveOverride"] == "premium"
+
+    sensitivity = client.get("/cases/138/sensitivity").json()
+    premium = next(f for f in sensitivity["facts"] if f["fact"] == "premium")
+    assert premium["movesDecision"] and premium["flip"]["at"] == 50000
+    assert sensitivity["facts"][0]["movesDecision"]      # ranked: the facts that move the decision first
+
+    precedent = client.get("/cases/138/precedent?size=2").json()
+    assert len(precedent["hits"]) == 2 and precedent["hits"][0]["basis"]
+
+    assert client.get("/cases/9999/explain").status_code == 404
+
+
+def test_tenant_explain_returns_the_price_waterfall(client):
+    quote = client.post("/quote/tenant", json={"address": "180 Queen St W", "answers": {
+        "contentsValue": 30000, "unitLevel": "basement", "claims3yr": 0, "deductible": 1000}}).json()
+    out = client.get(f"/cases/{quote['caseId']}/explain").json()
+    assert out["kind"] == "tenant" and out["reconciles"] is True
+    assert out["steps"][0]["kind"] == "base" and out["annual"] == quote["annual"]
+    assert any("percentile" in v["text"] for v in out["percentiles"].values())

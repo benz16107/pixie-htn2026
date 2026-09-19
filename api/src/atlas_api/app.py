@@ -314,8 +314,14 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
 
 
 class _FixedImpact:
-    def __init__(self, points: float | None) -> None:
+    """The portfolio penalty the desk recorded, replayed into assess() without re-querying the index."""
+
+    def __init__(self, points: float | None, finding: Any | None = None) -> None:
         self.points = points or 0.0
+        self.near_tiv = float(getattr(finding, "value", 0.0) or 0.0)
+        self.cell = ((finding.cells[0] if finding.cells else "") if finding else "")
+        self.near_cells = tuple((finding.cells[1:] if finding and finding.cells else ()))
+        self.backend = "recorded"
 
     def impact(self, _case: Case) -> "_FixedImpact":
         return self
@@ -710,3 +716,94 @@ def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
 @app.post("/demo/reset")
 def demo_reset_route() -> dict[str, Any]:
     return demo_reset()
+
+
+# ---------- explainability (AUDIT 3.1): waterfall, what-if, sensitivity, precedent -----------------
+
+TORONTO_SCORES = Path(__file__).resolve().parents[3] / "packs" / "toronto" / "hex_scores.json"
+
+
+def _enriched(case_id: str):
+    """(case, assessment, hazard multipliers, portfolio impact, events, rules) as the desk left it."""
+    from . import layers
+    from .events import CaseFile, FindingP
+
+    store = get_store()
+    run = store.latest_run(case_id)
+    events = store.tail(case_id, run_id=run) if run else []
+    case = _world.case(f"SUB-{case_id}")
+    folded = CaseFile.fold(events)
+    for name, value in folded.facts.items():
+        case = case.with_fact(name, value, by="desk")
+    port = next((e.payload for e in events if isinstance(e.payload, FindingP)
+                 and e.payload.fact == "portfolio.concentration"), None)
+    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    pack = layers.LayersPack(folded.hazard_multipliers) if folded.hazard_multipliers else None
+    impact = _FixedImpact(port.score_delta, port) if port else None
+    return case, assess(case, rules, pack, impact), folded.hazard_multipliers, impact, events, rules
+
+
+def _tenant_view(case_id: str) -> dict[str, Any] | None:
+    data = get_store().get_case(case_id)
+    view = (data or {}).get("case")
+    return view if view and view.get("kind") == "tenant" else None
+
+
+@app.get("/cases/{case_id}/explain")
+def case_explain(case_id: str) -> dict[str, Any]:
+    """The contribution waterfall: 0 to the final interval, one step per factor, layer, penalty and cap."""
+    from .explain import explain_payload, tenant_waterfall, toronto_percentiles
+
+    case_id = case_id.removeprefix("SUB-")
+    tenant = _tenant_view(case_id)
+    if tenant is not None:
+        cell = next((f["display"] for f in tenant["facts"] if f["id"] == "hex"), "")
+        scores = json.loads(TORONTO_SCORES.read_text()) if TORONTO_SCORES.exists() else {}
+        return tenant_waterfall(tenant, toronto_percentiles(cell, scores))
+    if get_store().get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    case, a, _hz, _impact, events, rules = _enriched(case_id)
+    return explain_payload(case, a, rules, events)
+
+
+class WhatIfRequest(BaseModel):
+    overrides: dict[str, Any] = {}
+
+
+@app.post("/cases/{case_id}/whatif")
+def case_whatif(case_id: str, req: WhatIfRequest) -> dict[str, Any]:
+    """Pure recompute: no model, no store write. Returns the new interval, decision, band diff and
+    which single override decided it."""
+    from .explain import whatif
+
+    case_id = case_id.removeprefix("SUB-")
+    if _tenant_view(case_id) is not None:
+        raise HTTPException(status_code=400, detail="what-if runs on commercial cases; tenant quotes re-quote")
+    if get_store().get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    case, _a, hazard, impact, _events, rules = _enriched(case_id)
+    return whatif(case, rules, req.overrides, hazard, impact)
+
+
+@app.get("/cases/{case_id}/sensitivity")
+def case_sensitivity(case_id: str) -> dict[str, Any]:
+    """Per unresolved fact: the decision at each end of its range and the value where it flips."""
+    from .explain import sensitivity
+
+    case_id = case_id.removeprefix("SUB-")
+    if get_store().get_case(case_id) is None or _tenant_view(case_id) is not None:
+        raise HTTPException(status_code=404, detail=f"no scored commercial case {case_id}")
+    case, _a, hazard, impact, _events, rules = _enriched(case_id)
+    return sensitivity(case, rules, hazard, impact)
+
+
+@app.get("/cases/{case_id}/precedent")
+def case_precedent(case_id: str, size: int = 3) -> dict[str, Any]:
+    """The closest bound risks and what happened to them (Elastic hybrid, in-memory fallback)."""
+    from .explain import precedent
+
+    case_id = case_id.removeprefix("SUB-")
+    if get_store().get_case(case_id) is None or _tenant_view(case_id) is not None:
+        raise HTTPException(status_code=404, detail=f"no commercial case {case_id}")
+    case, *_rest = _enriched(case_id)
+    return precedent(_world, case, size=max(1, min(size, 10)))
