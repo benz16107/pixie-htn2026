@@ -160,7 +160,7 @@ def _decision_view(a: Assessment) -> dict[str, Any]:
     if isinstance(d, Open):
         return {"kind": "open", "straddles": d.straddles,
                 "flippers": [{"fact": f.fact, "resolver": f.resolver} for f in d.flippers]}
-    return {"kind": "routed", "to": d.to, "because": d.because}
+    return {"kind": "routed", "to": d.to, "because": d.because, "reason": d.because}
 
 
 def _factor_view(f: FactorResult) -> dict[str, Any]:
@@ -172,6 +172,13 @@ def _factor_view(f: FactorResult) -> dict[str, Any]:
     }
 
 
+def _interval(a: Assessment) -> dict[str, int] | None:
+    """Routed cases have no interval: no guideline scored them, so 0-0 would read as a bad score."""
+    if isinstance(a.decision, Routed):
+        return None
+    return {"lo": round(a.score.lo), "hi": round(a.score.hi)}
+
+
 def queue_row(sub_id: int, status: str, case: Case, a: Assessment, insured_name: str) -> dict[str, Any]:
     return {
         "caseId": str(sub_id),
@@ -180,7 +187,7 @@ def queue_row(sub_id: int, status: str, case: Case, a: Assessment, insured_name:
         "state": case.primary_admin.v if isinstance(case.primary_admin, Known) else "?",
         "status": status,
         "valueAtStake": _value_at_stake(case),
-        "score": {"lo": round(a.score.lo), "hi": round(a.score.hi)},
+        "score": _interval(a),
         "decision": _decision_view(a),
         "issues": [{"kind": i.kind, "severity": i.severity} for i in case.issues],
         "deepDived": False,       # no desk (T7) has run yet
@@ -196,8 +203,9 @@ def case_view(sub_id: int, case: Case, a: Assessment, insured_name: str) -> dict
         "title": insured_name,
         "facts": [_fact_view(fid, label, case.fact(fid)) for fid, label in _FACT_LABELS.items()],
         "factors": [_factor_view(f) for f in a.factors],
-        "score": {"lo": round(a.score.lo), "hi": round(a.score.hi)},
-        "scoreWithoutEnrichment": {"lo": round(a.without_enrichment.lo), "hi": round(a.without_enrichment.hi)},
+        "score": _interval(a),
+        "scoreWithoutEnrichment": (None if isinstance(a.decision, Routed) else
+                                    {"lo": round(a.without_enrichment.lo), "hi": round(a.without_enrichment.hi)}),
         "decision": _decision_view(a),
         # no region pack yet (A3): an inert risk profile rather than a fabricated one
         "risk": {"factors": [], "total": 1.0, "totalCapped": False, "skipped": []},
@@ -224,7 +232,10 @@ def queue(view: Literal["open", "all"] = "open") -> list[dict[str, Any]]:
     rows = [c["queue"] for c in get_store().list_cases()]
     if view == "open":
         rows = [r for r in rows if r["status"] in OPEN_STATUSES or r["status"] == "referred"]
-    rows.sort(key=lambda r: (-(r["score"]["lo"] + r["score"]["hi"]) / 2, -r["valueAtStake"]))
+    # routed rows have no interval; they rank below every scored case, by value at stake
+    rows.sort(key=lambda r: (0 if r["score"] else 1,
+                              -((r["score"]["lo"] + r["score"]["hi"]) / 2 if r["score"] else 0),
+                              -r["valueAtStake"]))
     return rows
 
 
@@ -261,7 +272,8 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     data = store.get_case(case_id)
     insured = world.insureds.get(world.submissions[int(case_id)]["insured"], {}).get("name", "?")
     view = case_view(int(case_id), case, a, insured)
-    view["scoreWithoutEnrichment"] = {"lo": round(bare.score.lo), "hi": round(bare.score.hi)}
+    view["scoreWithoutEnrichment"] = (None if isinstance(bare.decision, Routed) else
+                                       {"lo": round(bare.score.lo), "hi": round(bare.score.hi)})
     hz = [e.payload for e in events if isinstance(e.payload, FindingP) and e.payload.multiplier is not None]
     view["risk"] = {
         "factors": [{"peril": p.text.split(":")[0], "line": p.text, "applied": p.multiplier, "capped": False,
@@ -277,8 +289,9 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     view["actions"] = [{"key": e.payload.action, "channel": "email", "status": e.payload.status,
                         "at": str(e.ts)} for e in events if isinstance(e.payload, ActionP)]
     row = data["queue"]
-    row.update(score=view["score"], decision=view["decision"], deepDived=any(e.actor != "system" and e.actor != "lead" for e in events),
-               enrichmentDelta=round((a.score.mid - bare.score.mid)))
+    row.update(score=view["score"], decision=view["decision"],
+               deepDived=any(e.actor not in ("system", "lead") for e in events),
+               enrichmentDelta=0 if view["score"] is None else round(a.score.mid - bare.score.mid))
     store.put_case(case_id, {"queue": row, "case": view})
 
 
@@ -482,8 +495,10 @@ def apply_command(case_id: str, command: str) -> str:
     data = store.get_case(case_id)
     if data is None:
         return f"No case {case_id} on the desk."
+    title = data["case"]["title"]
     if command == "why":
-        return f"{case_id}: {data['case']['explanation']}"
+        text = data["case"]["explanation"]
+        return f"{case_id} {title}: {text[:280]}"
     verdict, kind = command, _HUMAN_KIND[command]
     run = store.latest_run(case_id) or "human"
     append_after_run(store, case_id, run, "human", DecisionP(
@@ -495,14 +510,14 @@ def apply_command(case_id: str, command: str) -> str:
     data["queue"]["decision"] = decision
     store.put_case(case_id, data)
     publish("decision", {"caseId": case_id, "decision": decision})
-    return f"{kind.capitalize()}d {case_id}. Written to the case with the audit trail." if kind != "refer" \
-        else f"Referred {case_id}. Written to the case with the audit trail."
+    verb = {"approve": "Approved", "refer": "Referred", "decline": "Declined"}[kind]
+    return f"{verb} {case_id} {title}. Written to the case file as your decision."
 
 
 @app.post("/webhooks/linq")
 async def linq_webhook(request: Request) -> dict[str, Any]:
     """Always 200: log the raw payload first, then parse tolerantly (T12)."""
-    from .linq import DIGEST_KEY, extract_text, log_raw, parse_command, send_text, verify
+    from .linq import CLARIFY, DIGEST_KEY, extract_text, is_inbound, log_raw, parse_command, send_text, verify
 
     raw = await request.body()
     headers = dict(request.headers)
@@ -515,11 +530,15 @@ async def linq_webhook(request: Request) -> dict[str, Any]:
     text = extract_text(payload)
     parsed = parse_command(text)
     reply = None
-    if parsed and signature is not False:
+    if parsed and signature is not False and is_inbound(payload):
         command, index = parsed
         case_ids = get_store().cache_get(DIGEST_KEY) or []
-        reply = (apply_command(case_ids[index - 1], command) if 1 <= index <= len(case_ids)
-                 else f"I only sent {len(case_ids)} cases; reply with a number up to {len(case_ids)}.")
+        if command == CLARIFY:
+            reply = f"Which one? Reply approve 1, refer 2, or why 1 (numbers from the last {len(case_ids)})."
+        elif 1 <= index <= len(case_ids):
+            reply = apply_command(case_ids[index - 1], command)
+        else:
+            reply = f"I only sent {len(case_ids)} cases; reply with a number up to {len(case_ids)}."
         if os.environ.get("ATLAS_ACTIONS") == "live":
             try:
                 send_text(get_store(), reply)

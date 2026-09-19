@@ -1,0 +1,30 @@
+{
+ "headers": {
+  "host": "ate-climb-barcelona-provide.trycloudflare.com",
+  "user-agent": "Synapse-Webhooks/1.0",
+  "content-length": "1308",
+  "accept-encoding": "gzip",
+  "cdn-loop": "cloudflare; loops=1; subreqs=1",
+  "cf-connecting-ip": "54.157.59.12",
+  "cf-ew-via": "15",
+  "cf-ipcountry": "US",
+  "cf-ray": "a3dbef95e9e3c9a3-YUL",
+  "cf-visitor": "{\"scheme\":\"https\"}",
+  "cf-warp-tag-id": "ef7bc3e5-029a-430e-b40e-c6b813e21f21",
+  "cf-worker": "trycloudflare.com",
+  "connection": "keep-alive",
+  "content-type": "application/json",
+  "traceparent": "00-8a3370b9d47a69b98e3bae01b16ed361-cdfdc61a1937ac77-01",
+  "webhook-id": "9d303673-401d-4ba4-820e-84617e54d692",
+  "webhook-signature": "v1,jmg5WQGKZbeIIYgr7XO41l5eXIKjiVRaFzMJux6+9oE=",
+  "webhook-timestamp": "1789855988",
+  "x-forwarded-for": "54.157.59.12",
+  "x-forwarded-proto": "https",
+  "x-webhook-event": "message.received",
+  "x-webhook-payload-version": "2026-02-03",
+  "x-webhook-signature": "b18923a5f3b3c337c734638d21040a140552807224f4b53ee7de05f8efa95d2f",
+  "x-webhook-subscription-id": "5cd6aa4f-9f73-48c7-add1-14e75287ef3d",
+  "x-webhook-timestamp": "1789855988"
+ },
+ "body": "{\"api_version\":\"v3\",\"webhook_version\":\"2026-02-03\",\"event_type\":\"message.received\",\"event_id\":\"9d303673-401d-4ba4-820e-84617e54d692\",\"created_at\":\"2026-09-19T22:13:08.002336391Z\",\"trace_id\":\"8a3370b9d47a69b98e3bae01b16ed361\",\"partner_id\":\"e8174f8e-0a83-5817-a138-a7ab1a49b7af\",\"data\":{\"chat\":{\"health_status\":{\"doc_url\":\"https://docs.linqapp.com/channel/imessage/guides/chats/chat-health#healthy\",\"status\":\"HEALTHY\",\"updated_at\":\"2026-09-19T22:13:07.99186Z\"},\"id\":\"3a57c2c3-ef3f-483a-a460-c207f2c7bcd6\",\"is_group\":false,\"owner_handle\":{\"handle\":\"+19492831054\",\"id\":\"549b0538-2b72-4d46-93a7-75a0e9236ee5\",\"is_me\":true,\"joined_at\":\"2026-09-19T20:12:33.271018Z\",\"left_at\":null,\"service\":\"iMessage\",\"status\":\"active\"}},\"delivered_at\":null,\"direction\":\"inbound\",\"effect\":null,\"id\":\"a1294d67-d2ca-4c8f-9349-deb43cf7dc7a\",\"idempotency_key\":null,\"parts\":[{\"inline_stickers\":null,\"mention\":null,\"mention_range\":null,\"mentions\":null,\"text_decorations\":null,\"type\":\"text\",\"value\":\"1\"}],\"preferred_service\":null,\"read_at\":null,\"reply_to\":null,\"sender_handle\":{\"handle\":\"+17786809189\",\"id\":\"ddd8d18d-1cc9-4a26-875b-efe390bdc08f\",\"is_me\":false,\"joined_at\":\"2026-09-19T20:12:33.271018Z\",\"left_at\":null,\"service\":\"iMessage\",\"status\":\"active\"},\"sent_at\":\"2026-09-19T22:13:07.82Z\",\"service\":\"iMessage\",\"zero_retention\":false}}"
+}

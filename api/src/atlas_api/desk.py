@@ -97,14 +97,30 @@ class DeskPolicy:
     deep_tiv: float = 20_000_000
 
 
-def depth_floor(a: Assessment, value_at_stake: float, policy: DeskPolicy) -> tuple[Depth, str]:
-    """Code's proposal. The Lead may raise it, never lower it."""
+BLOCKING_ISSUES = {"duplicate_account", "stale_submission", "limit_vs_tiv"}
+
+
+def depth_floor(a: Assessment, value_at_stake: float, policy: DeskPolicy,
+                issues: tuple[Any, ...] = ()) -> tuple[Depth, str]:
+    """Code's proposal. The Lead may raise it, never lower it.
+
+    A blocking data issue raises the floor even when the appetite verdict looks fixed, because the
+    issue changes what the verdict means: an underwriter would not decline a duplicate account
+    without checking which broker owns it, would not decline a stale submission without confirming
+    it is stale, and would not act on a requested limit that sits far below the insured value.
+    """
+    blocking = [i for i in issues if i.kind in BLOCKING_ISSUES]
     d = a.decision
     if isinstance(d, Open):
         flips = ", ".join(f"{f.fact} ({f.resolver})" for f in d.flippers) or "an estimated hard-fail factor"
         if value_at_stake >= policy.deep_tiv:
             return "deep", f"open, straddles {d.straddles:.0f}, ${value_at_stake:,.0f} at stake, flippers: {flips}"
         return "standard", f"open, straddles {d.straddles:.0f}, flippers: {flips}"
+    if blocking:
+        kinds = ", ".join(sorted({i.kind for i in blocking}))
+        verdict = d.kind if isinstance(d, Decided) else f"route to {d.to}"
+        return "standard", (f"{verdict} on the guideline, but a blocking data issue ({kinds}) changes what that "
+                            f"verdict means: {blocking[0].text}")
     if isinstance(d, Decided):
         return "skim", f"decided {d.kind} on {', '.join(d.because) or 'score'}; no fact can flip it"
     return "skim", f"routed to {d.to}"
@@ -190,7 +206,10 @@ PROMPTS: dict[str, str] = {
         "value at stake, data issues and the code's depth floor. Choose a depth per case: skim (no deep dive), "
         "standard, or deep. You may raise the floor, never lower it; raise only with a concrete reason. For each case "
         "with depth standard or deep, write 1-3 briefs: short questions addressed to intake, hazard, portfolio or "
-        "appetite, each tied to a flipper or data issue. " + _NUMBERS_RULE),
+        "appetite, each tied to a flipper or data issue. A case whose floor cites a blocking data issue is "
+        "already declined or routed on the guideline; the work there is to establish what the issue means "
+        "(which broker owns a duplicate account, whether a stale submission is really stale, why a requested "
+        "limit sits far below the insured value), not to re-argue appetite. " + _NUMBERS_RULE),
     "intake": (
         "You are Intake. Explain which hydration path produced the insured value (call hydration_paths), verify it "
         "with exactly one Federato query you write yourself (run_federato_query; it lints before running; if it "
@@ -599,7 +618,8 @@ class Desk:
             case = self.world.case(f"SUB-{cid}")
             runs[cid] = _CaseRun(self, cid, case, assess(case, self.rules), run_id, t0)
 
-        floors = {cid: depth_floor(r.triage, r.case.tiv.v if isinstance(r.case.tiv, Known) else 0.0, self.policy)
+        floors = {cid: depth_floor(r.triage, r.case.tiv.v if isinstance(r.case.tiv, Known) else 0.0, self.policy,
+                                   r.case.issues)
                   for cid, r in runs.items()}
         for cid, r in runs.items():
             r.post("system", _assessment_payload(r.triage, f"Triage {r.triage.score.lo:.0f}-{r.triage.score.hi:.0f}, "

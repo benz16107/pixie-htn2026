@@ -31,9 +31,15 @@ BASE = os.environ.get("LINQ_API_BASE_V3") or "https://api.linqapp.com/v3"
 INBOUND_DIR = Path(__file__).resolve().parents[3] / "var" / "linq_inbound"
 CHAT_KEY = "linq:chat_id"
 DIGEST_KEY = "linq:last_digest"
-COMMANDS = {"approve": "accept_with_subjectivity", "accept": "accept_with_subjectivity",
-            "refer": "refer_with_subjectivity", "decline": "decline", "why": "why"}
-_CMD_RE = re.compile(r"\b(approve|accept|refer|decline|why)\b[^0-9]{0,12}(\d{1,3})?", re.I)
+APPROVE, REFER, DECLINE, WHY = "accept_with_subjectivity", "refer_with_subjectivity", "decline", "why"
+# What a person actually types back to a text message, not a command grammar.
+WORDS = {APPROVE: {"approve", "approved", "accept", "yes", "y", "ok", "okay", "yep", "yup", "sure", "go"},
+         REFER: {"refer", "no", "n", "nope", "hold", "later"},
+         DECLINE: {"decline", "reject", "kill", "pass"},
+         WHY: {"why", "explain", "reason", "details", "detail"}}
+CLARIFY = "clarify"
+_WORD_RE = re.compile(r"[a-z]+")
+_NUM_RE = re.compile(r"\b(\d{1,3})\b")
 
 
 def _headers() -> dict[str, str]:
@@ -67,8 +73,9 @@ def digest_text(store: CaseStore, n: int = 3) -> tuple[str, list[str]]:
     top = (work + rest)[:n]   # cases needing a call first, then the largest of the rest, kind named on each line
     lines = ["Atlas desk: " + ("nothing open." if not top else f"{len(top)} to work.")]
     for i, r in enumerate(top, start=1):
+        score = f" {r['score']['lo']}-{r['score']['hi']}" if r.get("score") else ""   # routed cases have none
         lines.append(f"{i}. {r['caseId']} {r['insured']} - {r['state']} {r['line']}, "
-                     f"${r['valueAtStake']:,.0f}, {r['decision']['kind']} {r['score']['lo']}-{r['score']['hi']}"
+                     f"${r['valueAtStake']:,.0f}, {r['decision']['kind']}{score}"
                      + (f", needs {r['decision']['flippers'][0]['fact']}" if r["decision"].get("flippers") else ""))
     if top:
         lines.append(f"Reply: approve 1 / refer 2 / why {len(top)}")
@@ -130,8 +137,31 @@ def extract_text(payload: Any) -> str:
 
 
 def parse_command(text: str) -> tuple[str, int] | None:
-    """'approve 1', 'Why 2?', 'refer' (defaults to 1) -> (command, 1-based index)."""
-    m = _CMD_RE.search(text or "")
-    if not m:
+    """What the underwriter meant, from what they actually typed.
+
+    "1" alone approves item 1 (the reply Ben sent). "approve 1 please", "yes", "why 2", "no" all work,
+    case-insensitively. Anything with more than one item number, or a number with words that carry no
+    command, returns ("clarify", 0): the webhook asks which item and acts on nothing.
+    """
+    t = (text or "").strip().lower()
+    if not t:
         return None
-    return COMMANDS[m.group(1).lower()], int(m.group(2) or 1)
+    words = set(_WORD_RE.findall(t))
+    numbers = [int(n) for n in _NUM_RE.findall(t)]
+    command = next((c for c, vocab in WORDS.items() if words & vocab), None)
+    if len(numbers) > 1:
+        return (CLARIFY, 0)
+    if command:
+        return (command, numbers[0] if numbers else 1)
+    if numbers and not words:            # a bare item number is an approval of that item
+        return (APPROVE, numbers[0])
+    if numbers:                           # a number, but nothing that says what to do with it
+        return (CLARIFY, 0)
+    return None
+
+
+def is_inbound(payload: Any) -> bool:
+    """False for our own outbound messages, so an echoed event never acts on a case."""
+    data = payload.get("data") if isinstance(payload, dict) else None
+    direction = (data or {}).get("direction") if isinstance(data, dict) else None
+    return direction != "outbound"

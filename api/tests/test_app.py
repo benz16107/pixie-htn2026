@@ -46,7 +46,7 @@ def test_queue_decision_variants_match_contract_shape(client):
     rows = client.get("/queue?view=all").json()
     by_kind = {r["decision"]["kind"]: r["decision"] for r in rows}
     assert "routed" in by_kind
-    assert set(by_kind["routed"]) == {"kind", "to", "because"}
+    assert set(by_kind["routed"]) == {"kind", "to", "because", "reason"}
     assert "open" in by_kind
     assert set(by_kind["open"]) == {"kind", "straddles", "flippers"}
     assert "decline" in by_kind
