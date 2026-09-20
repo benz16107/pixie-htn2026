@@ -358,9 +358,20 @@ def explain(assessment: Assessment) -> str:
     if isinstance(d, Decided):
         reasons = ", ".join(d.because) or "no single factor decided it"
         return f"{d.kind.capitalize()}: {reasons}. Score {assessment.score.lo:.0f}-{assessment.score.hi:.0f}."
-    flip_text = ", ".join(f"{f.fact} ({f.resolver})" for f in d.flippers) or "no single fact would resolve it"
+    if d.flippers:
+        flip_text = ", ".join(f"{f.fact} ({f.resolver})" for f in d.flippers)
+        tail = f"Could flip on: {flip_text}."
+    else:
+        # No factor spans two bands, yet the interval still crosses the line: the width comes from
+        # facts that are estimates rather than knowns. Name them instead of saying nothing would
+        # resolve it, which reads as "we are stuck" when the truth is "we are guessing".
+        estimated = [f.fact for f in assessment.factors if f.provenance == "estimated"]
+        names = " and ".join([", ".join(estimated[:-1]), estimated[-1]] if len(estimated) > 1 else estimated)
+        tail = (f"The range is this wide because {names} "
+                f"{'is an estimate' if len(estimated) == 1 else 'are estimates'}, not firm figures."
+                if estimated else "No single fact would resolve it.")
     return (f"Open, straddling {d.straddles:.0f}. Score {assessment.score.lo:.0f}-{assessment.score.hi:.0f}. "
-            f"Could flip on: {flip_text}.")
+            f"{tail}")
 
 
 _NUMBER_RE = __import__("re").compile(r"\d[\d,]*\.?\d*")

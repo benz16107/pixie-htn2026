@@ -332,8 +332,15 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     # The engine's `decision` is the guideline's; `deskVerdict` is what the Lead settled on after the
     # conflicts and the Challenger, which can differ (a decline the desk refers with subjectivities).
     view["deskVerdict"] = f.decision.verdict
+    # The Lead wrote its explanation mid-run, against the interval as it stood then. Hazard and
+    # portfolio can move the interval afterwards, so re-check the sentence against the final
+    # assessment and fall back to the deterministic template when it no longer matches. Otherwise
+    # the page shows one interval in the header and a different one in the explanation.
     view["explanation"] = f.decision.explanation
-    view["explanationVerified"] = True
+    view["explanationVerified"] = verify_numbers(f.decision.explanation, a)
+    if not view["explanationVerified"]:
+        view["explanation"] = explain(a)
+        view["explanationVerified"] = True
     view["actions"] = [{"key": e.payload.action, "channel": "email", "status": e.payload.status,
                         "at": str(e.ts)} for e in events if isinstance(e.payload, ActionP)]
     row = data["queue"]
