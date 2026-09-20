@@ -24,14 +24,12 @@ def test_case_reset_preserves_other_case_and_active_rules(client):
     assert client.put('/guideline', json=doc).status_code == 200
     for cid in ('138', '141'):
         assert client.post(f'/cases/{cid}/override', json={'points': 3, 'reason': 'reviewed roof'}).status_code == 200
-    get_store().cache_set('linq:last_digest', ['141'])
     response = client.post('/cases/138/reset')
     assert response.status_code == 200
     assert response.json()['cases'] == ['138']
     assert not client.get('/cases/138').json().get('override')
     assert client.get('/cases/141').json()['override']['points'] == 3
     assert client.get('/guideline').json()['thresholds']['accept'] == 75
-    assert get_store().cache_get('linq:last_digest') == ['141']
     assert client.post('/cases/not-real/reset').status_code == 404
 
 

@@ -24,7 +24,7 @@ Open Expo Go on the address screen and `/intact` on the laptop. Use 180 Queen St
 
 ## Service detail to know
 
-The Toronto data pack supplies local risk inputs. `tenant.py` applies separate tenant rules and computes the receipt in cents. The API persists the quote so the Expo app and Intact dashboard open the same case. `/intact/quotes` contains renter quotes only. A referral can continue into the Federato desk without changing the original receipt. Gemini inventory is optional and editable, not required to get a quote.
+The Toronto data pack supplies local risk inputs. `tenant.py` applies separate tenant rules and computes the receipt in cents. The API persists the quote so the Expo app and Intact dashboard open the same case. `/intact/quotes` contains renter quotes only. A referral can continue into the Federato desk without changing the original receipt.
 
 ## Evidence
 

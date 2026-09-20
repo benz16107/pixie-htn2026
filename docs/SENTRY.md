@@ -19,10 +19,9 @@ honestly-documented gap.
 - **One trace per underwriting decision** -- `desk.py::Desk.run().one()`. Every case gets a root
   span (`op="pixie.underwrite_case"`) that every agent/tool span nests under (see "Trace anatomy"
   below).
-- **Structured Logs** (`telemetry.py::log()`, `sentry_sdk.logger.*`) at: Federato query issued
-  (`ingest.query`), lint/API rejection (`ingest.rejected`), a conflict the Lead has to resolve
-  (`conflict.detected`), a broker email or Linq digest send (`action.send`), and every Linq webhook
-  POST (`webhook.inbound`). Every log line carries `case_id` where one exists.
+- **Structured Logs** (`telemetry.py::log()`, `sentry_sdk.logger.*`) record Federato queries,
+  lint or API rejection, conflicts the Lead must resolve, and decision events. Every log line
+  carries `case_id` where one exists.
 - **The verify_numbers alert** -- `telemetry.py::verify_numbers_alert()`, called from
   `desk.py::_CaseRun.checked()` whenever `verify_numbers()` rejects a model sentence. Fires an
   **error-level Sentry event** (not just a log) carrying the offending sentence, the case id, the
@@ -160,10 +159,7 @@ which is the first data that project has ever received.
 
 ## 5. Gaps, in one place
 
-- `docs/research/sentry.md` and `docs/AUDIT.md`, which this lane was scoped from, exist only as
-  **uncommitted** files in the `atlas` (main) worktree, not in `lane/a4`. They were read directly
-  from there for this work but were never copied into this branch (lane A4 only touches its own
-  worktree). Ben: `git add` them in `atlas` if they should ship.
+- `docs/research/sentry.md` contains the research used for this implementation.
 - `SENTRY_DSN_WEB` doesn't exist; web reuses `SENTRY_DSN_APP` (section 1).
 - `/ops/ask` has never been run against the live Sentry MCP server, though the token now has the
   scopes for it.

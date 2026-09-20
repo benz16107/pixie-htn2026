@@ -77,7 +77,6 @@ function RootLayout() {
         <Stack.Screen name="index" options={{ title: 'Pixie renters' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
-        <Stack.Screen name="inventory" options={{ title: 'Photograph your apartment' }} />
         <Stack.Screen name="quote" options={{ title: 'Your quote' }} />
         <Stack.Screen name="about" options={{ title: 'About', headerRight: () => null }} />
       </Stack>

@@ -1,7 +1,6 @@
 import quotes from '@/fixtures/quotes.json';
 
-// Shapes from docs/sketch/contract.ts (TenantRequest, QuoteView, Hex). `liability` and `address`
-// on the quote are additions the backend should accept and echo.
+// Shared tenant quote shapes. `liability` and `address` are accepted and echoed by the API.
 export type UnitLevel = 'basement' | 'ground' | 'upper';
 export type Deductible = 500 | 1000 | 2500;
 export interface Answers {
@@ -29,35 +28,6 @@ export interface QuoteView {
   answers: Answers;
 }
 export interface Place { address: string; lat: number; lng: number }
-
-// ---------- Gemini (docs/EXPO-GEMINI.md): photo inventory, Maps-grounded context, quote speech ----
-
-export interface InventoryLine {
-  id: number;
-  category: string;
-  item: string;
-  quantity: number;
-  low: number;
-  high: number;
-  confidence: number;
-  source: string;
-}
-export interface InventoryResult {
-  lines: InventoryLine[];
-  totalLow: number;
-  totalHigh: number;
-  suggestedContentsValue: number;
-  cached: boolean;
-  model: string;
-}
-export interface ContextCitation { title: string; uri: string }
-export interface ContextNote {
-  note: string;
-  citations: ContextCitation[];
-  grounded: boolean;
-  label: string;
-  cached: boolean;
-}
 
 const API = process.env.EXPO_PUBLIC_API_URL;
 export const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3100';
@@ -104,55 +74,4 @@ export async function quoteTenant(p: Place, answers: Answers): Promise<QuoteResu
   return q
     ? { quote: q, offline: true }
     : { error: 'We could not reach the quote service, and only the three example addresses work offline.' };
-}
-
-export type InventoryOutcome = { result: InventoryResult } | { error: string };
-
-// Photograph your apartment: uploads one or more picked/captured photos to Gemini vision.
-// Gemini only identifies items and value ranges; the app decides what to do with the total.
-export async function scanInventory(photoUris: string[]): Promise<InventoryOutcome> {
-  if (!API) return { error: 'The photo scan needs a live connection to the quote service.' };
-  const form = new FormData();
-  photoUris.forEach((uri, i) => {
-    const name = uri.split('/').pop() || `photo-${i}.jpg`;
-    const ext = name.split('.').pop()?.toLowerCase();
-    const type = ext === 'png' ? 'image/png' : ext === 'heic' ? 'image/heic' : 'image/jpeg';
-    // React Native's fetch FormData accepts this {uri,name,type} shape in place of a Blob.
-    form.append('photos', { uri, name, type } as unknown as Blob);
-  });
-  try {
-    const res = await fetch(API + '/gemini/inventory', { method: 'POST', body: form, signal: AbortSignal.timeout(30000) });
-    if (!res.ok) return { error: (await res.json().catch(() => null))?.detail ?? 'Gemini could not read that photo. Try a brighter, wider shot.' };
-    return { result: (await res.json()) as InventoryResult };
-  } catch {
-    return { error: 'We could not reach the quote service to scan your photo.' };
-  }
-}
-
-// "What's around you" (consumer) / underwriting note (commercial): Gemini Maps grounding.
-// Advisory only -- the caller must never fold this into a price.
-export async function nearbyContext(p: Place, kind: 'consumer' | 'commercial' = 'consumer'): Promise<ContextNote | undefined> {
-  // The address goes in too: without it the model answers "no location was provided".
-  return call<ContextNote>(
-    `/gemini/context?lat=${p.lat}&lng=${p.lng}&address=${encodeURIComponent(p.address)}&kind=${kind}`,
-  );
-}
-
-// URL for the cached Gemini TTS reading of `text`; undefined when no API is configured (the
-// caller should fall back to on-device expo-speech, which needs no URL at all).
-export function speechUrl(text: string): string | undefined {
-  return API ? `${API}/gemini/speech?text=${encodeURIComponent(text)}` : undefined;
-}
-
-export interface VerifyResult { matches: boolean; code: string; output: string; cached: boolean }
-
-// Bonus: asks Gemini to independently add up the same receipt lines with its code-execution tool.
-// `matches` is computed in Python on the server from these same numbers, never from Gemini's own
-// claim -- this is a transparency demo of a second check, not the check the quote itself relies on.
-export async function verifyReceipt(base: number, lines: ReceiptLine[], total: number): Promise<VerifyResult | undefined> {
-  return call<VerifyResult>(`/gemini/verify`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ base, lines: lines.map((l) => ({ label: l.label, dollars: l.dollars })), total }),
-  });
 }

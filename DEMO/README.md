@@ -1,16 +1,14 @@
 # Pixie judging guide
 
-Updated 2026-09-20 after the website audit. This folder is the current demo script. Older pitch notes in `docs/` are implementation history, not the script to read at the booth.
+Use this folder at the booth. Start with [the five-minute rehearsal](1-START-HERE.md), then open only the [card for the current track](4-PER-TRACK.md).
 
-Start with [the five-minute rehearsal](1-START-HERE.md), then open only the [track card](4-PER-TRACK.md) for your next judge. Each card has the opening line, timed clicks, service internals, proof, limitations and fallback.
+- [How Pixie works](0-HOW-IT-WORKS.md) explains the insurance terms and the code/model boundary.
+- [Screen map](2-SCREENS.md) says what each page is for.
+- [Questions](3-QUESTIONS.md) gives short, accurate answers to likely objections.
+- [Recovery](5-IF-IT-BREAKS.md) covers service failures.
+- [Federato brief](6-FEDERATO-BRIEF.md) contains the underwriting background.
+- [Current audit](7-WEBSITE-AUDIT.md) records what was simplified and what still needs rehearsal.
 
-- [How the system works](0-HOW-IT-WORKS.md) explains the insurance terms and the boundaries between code and models.
-- [Every screen](2-SCREENS.md) tells you what to show and what to skip.
-- [Questions and stronger wording](3-QUESTIONS.md) prepares you for objections without invented claims.
-- [Recovery](5-IF-IT-BREAKS.md) has the startup commands and failure paths.
-- [Federato context](6-FEDERATO-BRIEF.md) explains the underwriting workflow.
-- [Website audit](7-WEBSITE-AUDIT.md) records the fixes, verification and remaining work.
+Five minutes is enough for one problem, one provider-specific operation, one result, and one honest limitation. Do not tour the whole product.
 
-Five minutes means one problem, one sponsor workflow, one result, one honest limitation. Spend roughly three minutes on that sponsor's service. Do not tour all twelve integrations at every table.
-
-Best prepared technical stories: Federato, OpenAI, Elastic and Composio's captured broker reply. Expo and Intact need a phone rehearsal. Sentry needs a real trace open. Linq needs the correct phone thread. Backboard needs a provider-labelled response. Gemini needs warmed inputs or a working model. Huawei is conditional because this code does not use openJiuwen.
+The prepared stories are Federato, Intact, Rox, OpenAI and Codex, Sentry, Elastic, Expo, and Backboard. The Huawei card is conditional because Pixie does not use openJiuwen.

@@ -1,5 +1,4 @@
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import { Redirect, router } from 'expo-router';
@@ -10,13 +9,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { Body, Button, Dim, Kicker, Mono, Screen, Title } from '@/components/ui';
-import { nearbyContext, quoteTenant, speechUrl, verifyReceipt, WEB_URL, type Answers, type ContextNote, type QuoteResult, type QuoteView, type ReceiptLine, type VerifyResult } from '@/lib/api';
+import { quoteTenant, WEB_URL, type Answers, type QuoteResult, type QuoteView, type ReceiptLine } from '@/lib/api';
 import { useQuote } from '@/lib/store';
 import { C, F, money } from '@/lib/theme';
 
 const enter = (i: number) => FadeInDown.duration(220).delay(60 + i * 60).reduceMotion(ReduceMotion.System);
 
-// The words Speech/Gemini TTS actually reads: the decision, the price, and the top two factors by
+// The words the device reads: the decision, the price, and the top two factors by
 // dollar impact -- never a number the receipt does not already show.
 function quoteSpeechText(q: QuoteView): string {
   const top = [...q.receipt.lines]
@@ -82,12 +81,9 @@ const describe = (a: Answers) =>
 export default function QuoteScreen() {
   const { place, answers, setPlace } = useQuote();
   const [res, setRes] = useState<QuoteResult | null>(null);
-  const [context, setContext] = useState<ContextNote | 'loading' | 'unavailable'>('loading');
   const [speaking, setSpeaking] = useState(false);
-  const [verify, setVerify] = useState<VerifyResult | 'loading' | undefined>(undefined);
   const sheetRef = useRef<BottomSheet>(null);
   const reduced = useReducedMotion();
-  const nicePlayer = useAudioPlayer(null);
   const sheetSnapPoints = useMemo(() => ['42%'], []);
 
   useEffect(() => {
@@ -105,16 +101,6 @@ export default function QuoteScreen() {
       live = false;
     };
   }, [place, answers]);
-
-  useEffect(() => {
-    if (!place) return;
-    let live = true;
-    setContext('loading');
-    nearbyContext(place, 'consumer').then((c) => live && setContext(c ?? 'unavailable'));
-    return () => {
-      live = false;
-    };
-  }, [place]);
 
   useEffect(
     () => () => {
@@ -158,22 +144,6 @@ export default function QuoteScreen() {
     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setSpeaking(true);
     Speech.speak(quoteSpeechText(q), { onDone: () => setSpeaking(false), onStopped: () => setSpeaking(false), onError: () => setSpeaking(false) });
-  };
-
-  const playNiceVoice = () => {
-    const uri = speechUrl(quoteSpeechText(q));
-    if (!uri) return;
-    Speech.stop();
-    setSpeaking(false);
-    nicePlayer.replace({ uri });
-    nicePlayer.play();
-  };
-
-  const askGeminiToCheck = async () => {
-    setVerify('loading');
-    const v = await verifyReceipt(q.receipt.base, q.receipt.lines, cents / 100);
-    setVerify(v);
-    if (v && Platform.OS !== 'web') Haptics.notificationAsync(v.matches ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error).catch(() => {});
   };
 
   const sharePdf = async () => {
@@ -239,19 +209,6 @@ export default function QuoteScreen() {
           <Button kind="secondary" label="Share as PDF" hint="Makes a PDF of this receipt and opens the share sheet" onPress={sharePdf} />
         </View>
       </View>
-      {speaking ? (
-        <Pressable
-          onPress={playNiceVoice}
-          accessibilityRole="button"
-          accessibilityLabel="Read it again in a nicer, Gemini-generated voice"
-          style={{ minHeight: 44, justifyContent: 'center', marginTop: 4 }}
-        >
-          <Text style={{ fontFamily: F.sansMedium, fontSize: 14, color: C.dim, textDecorationLine: 'underline' }}>
-            Hear it in a nicer voice (Gemini)
-          </Text>
-        </Pressable>
-      ) : null}
-
       <View style={{ marginTop: 22 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Kicker>Why this price</Kicker>
@@ -288,38 +245,6 @@ export default function QuoteScreen() {
         </Animated.View>
         <Text style={st.label}>{q.label}</Text>
 
-        {verify === undefined ? (
-          <Pressable onPress={askGeminiToCheck} accessibilityRole="button" accessibilityLabel="Ask Gemini to independently check this arithmetic with code execution" style={{ minHeight: 48, justifyContent: 'center', marginTop: 10 }}>
-            <Dim style={{ fontSize: 13, textDecorationLine: 'underline' }}>Ask Gemini to double-check this arithmetic</Dim>
-          </Pressable>
-        ) : verify === 'loading' ? (
-          <Dim style={{ fontSize: 13, marginTop: 10 }}>Gemini is writing and running Python to check…</Dim>
-        ) : (
-          <View style={st.verifyBox} accessible accessibilityLabel={`Gemini ran code and ${verify.matches ? 'confirmed' : 'could not confirm'} the total. ${verify.output}`}>
-            <Kicker style={{ color: verify.matches ? C.moss : C.rust }}>{verify.matches ? '✓ Gemini confirmed it with code' : '× Gemini could not confirm it'}</Kicker>
-            {verify.code ? <Mono style={st.code}>{verify.code}</Mono> : null}
-            {verify.output ? <Dim style={{ fontSize: 13, marginTop: 4 }}>{verify.output}</Dim> : null}
-          </View>
-        )}
-      </View>
-
-      <View style={st.advisory}>
-        <Kicker style={{ color: C.ink }}>What's around you · advisory only</Kicker>
-        {context === 'loading' ? (
-          <View style={[st.skeleton, { height: 16, marginTop: 8, width: '80%' }]} />
-        ) : context === 'unavailable' ? (
-          <Dim style={{ fontSize: 14, marginTop: 6 }}>Could not reach Gemini for local context right now.</Dim>
-        ) : (
-          <>
-            <Body style={{ fontSize: 15, marginTop: 6 }}>{context.note}</Body>
-            {context.citations.map((c) => (
-              <Pressable key={c.uri} onPress={() => WebBrowser.openBrowserAsync(c.uri)} accessibilityRole="link" accessibilityLabel={c.title} style={{ minHeight: 48, justifyContent: 'center' }}>
-                <Text style={{ fontFamily: F.sansMedium, fontSize: 13, color: C.ink, textDecorationLine: 'underline' }}>{c.title}</Text>
-              </Pressable>
-            ))}
-          </>
-        )}
-        <Text style={st.advisoryLabel}>{context !== 'loading' && context !== 'unavailable' ? context.label : 'Advisory only. This never changes your price.'}</Text>
       </View>
 
       {q.recommendations.length ? (
@@ -379,9 +304,5 @@ const st = StyleSheet.create({
   total: { flexDirection: 'row', alignItems: 'baseline', gap: 8, borderTopColor: C.ink, borderTopWidth: 2, borderStyle: 'solid' },
   label: { fontFamily: F.sans, fontSize: 13, color: C.dim, marginTop: 6 },
   rec: { marginTop: 22, padding: 16, borderRadius: 14, backgroundColor: C.ochreSoft },
-  advisory: { marginTop: 18, padding: 16, borderRadius: 14, backgroundColor: C.land },
-  advisoryLabel: { fontFamily: F.sansMedium, fontSize: 12, color: C.dim, marginTop: 10 },
   sheetBg: { backgroundColor: C.paper },
-  verifyBox: { marginTop: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: C.rule, backgroundColor: C.land },
-  code: { fontSize: 12, lineHeight: 17, color: C.ink, marginTop: 6 },
 });

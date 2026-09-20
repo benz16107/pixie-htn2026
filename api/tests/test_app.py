@@ -1,4 +1,4 @@
-"""T5 accept tests. See docs/PLAN.md section 2 and docs/sketch/contract.ts."""
+"""HTTP contract acceptance tests."""
 
 import os
 import time

@@ -65,7 +65,7 @@ export default async function IntactHome() {
         </div>
         <div className="intact-proof-copy">
           <p>Base price, coverage choices, break-ins, fire protection, and basement flooding each get their own receipt line and source.</p>
-          <p>Location factors are capped. Personal traits and credit never enter the model. Gemini can read photos and explain context, but code owns every dollar.</p>
+          <p>Location factors are capped. Personal traits and credit never enter the model. The receipt shows every factor and source used to compute the price.</p>
         </div>
       </section>
     </main>

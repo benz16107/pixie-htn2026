@@ -85,22 +85,6 @@ export type DeskMemory = {
   sources: Record<string, MemorySource>; judgements: MemoryJudgement[]; judgementBoundary: string;
 };
 
-// The broker's reply, folded in (POST /composio/cases/{id}/broker-reply/check).
-// `path` is the API's own word for what ran, and the only thing the badge is allowed to read.
-export type BrokerReply = {
-  status: "applied" | "no_new_facts" | "no_reply" | "not_connected" | "dry" | "failed" | "no_fixture";
-  path?: "replay" | "live" | "dry";
-  messageId?: string;
-  facts?: Record<string, number | string>;
-  before?: { lo: number; hi: number };
-  after?: { lo: number; hi: number };
-  deduped?: boolean;
-  detail?: string;
-  /** The verbatim sentence, when the API returns one. */
-  quote?: string;
-  source?: { fixture?: string; capturedAt?: string; extractedBy?: string; extractedAt?: string };
-};
-
 // On the server we call the API directly; in the browser we go through the same-origin proxy,
 // so the page works from another machine (the API sends no CORS headers).
 const BASE = typeof window === "undefined" ? (process.env.ATLAS_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "/api/atlas";
@@ -204,8 +188,6 @@ export const api = {
     (await postJson<AskResult & { path?: string }>(`/ask`, { question })) ??
     ((askFixture as unknown as Record<string, AskResult>)[question] ? { ...(askFixture as unknown as Record<string, AskResult>)[question], path: "sample" } : undefined),
   backtest: async () => (await get<Backtest>(`/backtest`, () => backtestFixture)) as Backtest,
-  requestInfo: (caseId: string) => post(`/actions/${caseId}/request-info`, {}),
-  digest: (n: number) => post(`/actions/digest`, { n }),
   precedent: (id: string) => get<PrecedentResult>(`/cases/${id}/precedent`, () => undefined, true),
   declines: () => get<DeclinesInsight>(`/insights/declines`, () => undefined, true),
   percentile: (id: string) => get<Percentile>(`/cases/${id}/percentile`, () => undefined, true),
@@ -213,24 +195,7 @@ export const api = {
     send(`/cases/${caseId}/override`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ points, reason }) }),
   clearOverride: (caseId: string) => send(`/cases/${caseId}/override`, { method: "DELETE" }),
   memory: (id: string) => get<DeskMemory>(`/cases/${id}/memory`, () => undefined, true),
-  /** A live Gmail search can take a while; a replay answers at once. Errors keep the API's own sentence. */
-  brokerReply: async (caseId: string, replay: boolean): Promise<BrokerReply> => {
-    if (FIXTURES_ONLY) return { status: "dry", path: "dry", detail: "Running on fixtures, so nothing was checked." };
-    try {
-      const res = await fetch(`${BASE}/composio/cases/${caseId}/broker-reply/check?replay=${replay}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-        signal: AbortSignal.timeout(60_000),
-      });
-      const body = (await res.json().catch(() => ({}))) as BrokerReply & { detail?: string };
-      return res.ok ? body : { status: "failed", detail: body.detail ?? `The desk API returned ${res.status}.` };
-    } catch {
-      return { status: "failed", detail: "The desk API is unreachable, so nothing was checked." };
-    }
-  },
   demoReset: () => post(`/demo/reset`, {}),
-  resetCase: (id: string) => post(`/cases/${id}/reset`, {}),
   guideline: () => get<GuidelineDoc>(`/guideline`, () => undefined, true),
   putGuideline: (doc: GuidelineDoc) =>
     sendJson<GuidelineResult>(`/guideline`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(doc) }),

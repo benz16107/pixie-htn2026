@@ -92,8 +92,8 @@ to, what to flag, what to ask for next. Every judgement is stored in the ledger 
 event with `model_number: true`, returned by the API next to `JUDGEMENT_BOUNDARY`, and must be
 rendered in the UI as a model judgement, visually separate from the engine's numbers.
 
-Wiring it to the live inbound path is one call: the Linq webhook (A5's lane) or the Composio email
-watcher can `POST /cases/{id}/triage-message` with the message body.
+Any trusted client can send a message to `POST /cases/{id}/triage-message` for labelled
+classification and prioritisation.
 
 ## Routes
 

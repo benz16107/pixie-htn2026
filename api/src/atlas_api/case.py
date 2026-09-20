@@ -248,7 +248,7 @@ class World:
             human_outcome=sub.get("decline_reason"),
         )
 
-    # ---- TIV hydration: the two named plans from DESIGN.md ---------------------------------------
+    # ---- TIV hydration ---------------------------------------------------------------------------
 
     def _site_from_location(self, loc_id: int) -> Site:
         loc = self.locations[loc_id]
@@ -318,7 +318,7 @@ class World:
                 Known(share, source=f"TIV share over {len(buildings)} buildings"))
 
     def _loss_5yr(self, insured_id: int, as_of: str, exclude_policy_id: int | None = None) -> Value:
-        """Loss history from the insured's OTHER policies' claims before as_of (DESIGN.md)."""
+        """Loss history from the insured's other policies' claims before as_of."""
         policies = self.policies_by_insured.get(insured_id, [])
         if not policies:
             return Missing(reason="insured has no policy history", resolver="broker")

@@ -43,29 +43,6 @@ else
   (cd app && nohup npx expo start --lan --port 8081 > /tmp/pixie-expo.log 2>&1 &)
 fi
 
-# The public tunnel carries Linq's inbound webhooks and the Sentry uptime check.
-# Some networks refuse to resolve trycloudflare.com even when the tunnel is healthy for everyone
-# else, so ask Cloudflare's own resolver before declaring it down.
-tunnel_answers() {
-  local url="${1:-}" host ip
-  [ -n "$url" ] || return 1
-  curl -fsS -m 10 "$url/health" >/dev/null 2>&1 && return 0
-  host=${url#*//}; host=${host%%/*}
-  ip=$(dig +short "$host" @1.1.1.1 2>/dev/null | head -1)
-  [ -n "$ip" ] || return 1
-  [ "$(curl -s -m 20 -o /dev/null -w '%{http_code}' --resolve "$host:443:$ip" "$url/health")" = "200" ]
-}
-
-if pgrep -f "cloudflared tunnel" >/dev/null 2>&1; then
-  if tunnel_answers "${PUBLIC_URL:-}"; then
-    echo "tunnel up: ${PUBLIC_URL}"
-  else
-    echo "tunnel STALE: ${PUBLIC_URL:-unset} does not answer. Run: python3 scripts/retunnel.py"
-  fi
-else
-  echo "tunnel DOWN. iMessage replies will not arrive. Run: python3 scripts/retunnel.py"
-fi
-
 # macserver sleeps on battery, which takes the whole demo down. Keep it awake and plugged in.
 if ! pgrep -qf "caffeinate -disu"; then
   nohup caffeinate -disu > /dev/null 2>&1 &
@@ -87,7 +64,7 @@ cat <<EOF
   If the name does not resolve, use http://${TS_IP:-100.95.223.110}:3100 instead.
 
   Phone       Tailscale on, then Expo Go: exp://${TS_IP:-100.95.223.110}:8081
-  API, public ${PUBLIC_URL:-not configured}  (Linq webhooks, no VPN needed)
+  API         http://macserver:8000
 
   Reset the demo:  curl -X POST localhost:8000/demo/reset
   Runbook:         $ROOT/docs/RUNBOOK.md

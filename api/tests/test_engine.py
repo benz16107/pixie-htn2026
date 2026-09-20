@@ -1,4 +1,4 @@
-"""T4 accept tests. See docs/PLAN.md section 2 and docs/sketch/engine.py."""
+"""Risk engine acceptance tests."""
 
 import pytest
 

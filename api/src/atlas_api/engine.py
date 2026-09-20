@@ -12,7 +12,7 @@ AGENTS.md invariant 4, are themselves disk-cached wherever they eventually land.
 `estimate_premium(case, comparables)` is a standalone pure function (T7's Intake agent will call it
 and fold the result into the case via `case.with_fact("premium", ..., by="intake")`, then
 re-`assess()`; nothing here calls it automatically, so `assess()` always reflects the case's own
-facts, matching DESIGN.md's "before any agent ran" baseline).
+facts before any agent runs).
 """
 
 from __future__ import annotations

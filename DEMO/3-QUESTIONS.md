@@ -1,48 +1,34 @@
-# Questions and strong, supportable answers
+# Questions and answers
 
-## "Why does this need agents?"
+## "Is the AI setting the insurance price?"
 
-"The engine can score a complete case on its own. Agents help when evidence is missing: they choose tools, join records, ask specialists and explain the resulting calculation. We do not spend model calls on cases where code can already settle the question."
+"No. Python computes the commercial score, the renter receipt, the thresholds, and the portfolio totals. Agents choose investigations and write from tool results. The final explanation passes a numerical-claim check."
 
-## "Is the score confidence?"
+## "Why an interval?"
 
-"No. The endpoints are possible rule outcomes given the facts we have. A wider interval means unresolved inputs could change the decision. We have not calibrated it as a probability of loss."
+"A missing fact may belong to several rule bands. Pixie evaluates all of them. The interval shows the decisions still possible and identifies the fact that would narrow it."
 
-## "What stops hallucinations?"
+## "Is this a real carrier rate?"
 
-"Typed outputs constrain the model. Tools compute the commercial risk numbers. An output guardrail checks numeric prose against those tool results and replaces unsupported sentences. It cannot prove that the underlying data or every nonnumeric statement is correct."
+"No. The renter price is illustrative and labelled on the receipt. The product claim is the source-labelled workflow and referral handoff."
 
-## "Did you actually use this sponsor?"
+## "What is live?"
 
-Open the provider-labelled evidence named on the track card. Say whether this is a fresh provider call, cached provider output, a captured run, local fallback or code tested with a fake client. Those are different claims. A `memory` backend badge is a successful local fallback, not live Elastic. `queried:false` is not a Backboard retrieval.
+"The screen labels the active path. Replay is a recorded agent run. Elastic results say Elastic or memory. Provider judgments name their source. I will not describe a fallback as a live call."
 
-## "Does it reduce losses or save time?"
+## "Why six agents?"
 
-"We have not measured either in production. The backtest shows where the filed guideline disagrees with historical decisions and how enrichment moves scores and ranks. The human-time benefit is a hypothesis we would test with underwriters."
+"Each role has a narrow question and typed output. The lead can ask at most two rounds, the run has a budget, and a challenger must address the draft before the decision closes."
 
-## "Why would a carrier use this?"
+## "What would make this production-ready?"
 
-"They can inspect a proposed decision, see which unresolved fact matters, change the rule and measure its effect on the current book. That makes it possible to challenge the workflow rather than trust a paragraph."
+"A carrier-approved guideline, a larger prospective evaluation with working underwriters, fairness analysis for the renter factors, identity and access controls, and provider deployment work."
 
-## "Is this production-ready?"
-
-"It is a hackathon prototype over synthetic commercial data and demo renter rates. Production work includes access control, privacy and retention design, model and rule validation, provider reliability, and workflow integration with a carrier. The current local desk should be operated as a demo."
-
-## "Are all the numbers computed without a model?"
-
-"The commercial score and quote arithmetic are code. Gemini suggests editable inventory values; Backboard can return labelled model probabilities. Those are model outputs, and we keep them distinct from confirmed facts and computed decisions."
-
-## Better pitch wording
+## Wording to avoid
 
 | Avoid | Say instead |
-|---|---|
-| "The first system ever to do this" | "The distinctive part of this demo is the interval, the missing fact and the recomputation in one screen." |
-| "We prevented these losses" | "The retrospective report identifies rule disagreements and includes known misses." |
-| "Production autonomous underwriting" | "An inspectable underwriting prototype with a separate human override." |
-| "Every integration is live" | "This workflow uses Gmail through Composio. These other toolkits have implemented paths but are not connected." |
-| "The agents are running now" during replay | "This is the recorded agent run. The slider and rule editor recompute now." |
-| "Our data shows customers love it" | "The next test is whether an underwriter can find the missing fact faster than in their current workflow." |
-| "Tapbacks work end to end" | "The signed webhook path is tested. Real handset reaction delivery still needs confirmation." |
-| "Gemini sets no input number" | "Gemini proposes inventory estimates for review; code computes the quote from the selected inputs." |
-
-You can make the pitch clearer, shorter and more specific. Do not invent customers, timings, benchmark gains, live calls, certifications or sponsor usage. A labelled rehearsal scenario is fine; presenting it as measured evidence is not.
+| --- | --- |
+| "The AI decides the risk" | "The engine computes the decision interval; agents investigate and explain." |
+| "This is an Intact price" | "This is an illustrative renter quote under our documented rules." |
+| "Everything is live" | Name the live, replay, cache, or fallback path visible on screen. |
+| "The backtest proves accuracy" | "The small pre-registered backtest exposes both matches and misses." |

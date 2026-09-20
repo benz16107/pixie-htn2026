@@ -1,5 +1,5 @@
 """`atlas` console script. `uv run atlas triage` prints all 158 submissions ranked, with their
-interval, decision, and a 2-line reason -- the M1 milestone deliverable (PLAN.md section 1)."""
+interval, decision, and a two-line reason."""
 
 from __future__ import annotations
 

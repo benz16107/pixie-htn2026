@@ -24,7 +24,7 @@ Open cases 126 and 141 side by side, plus `/ask`. Read their named insured, brok
 
 ## Service detail to know
 
-`federato.py` normalises fields, enforces joins and lints the supported query subset. `ask.py` caches by question and exposes how the result was obtained. Numeric formatting preserves IDs and years. Desk memory contains case identity and issue information; it cannot supply a risk price. Filing a defect is a separate Composio workflow and needs a connected toolkit.
+`federato.py` normalises fields, enforces joins and lints the supported query subset. `ask.py` caches by question and exposes how the result was obtained. Numeric formatting preserves IDs and years. Desk memory contains case identity and issue information; it cannot supply a risk price.
 
 ## Evidence
 

@@ -1,4 +1,4 @@
-"""Thin Sentry helpers shared by app.py, desk.py, actions.py and linq.py.
+"""Thin Sentry helpers shared by the API and desk runtime.
 
 Every call here is a safe no-op when SENTRY_DSN_API is unset: sentry_sdk with no client queues
 into a scope that drops the event. Centralised so call sites read as one line, e.g.

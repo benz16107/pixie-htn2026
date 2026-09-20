@@ -1,4 +1,4 @@
-import type { CaseView, DeskEvent, Interval, QueueRow } from "@/contract";
+import type { DeskEvent, Interval, QueueRow } from "@/contract";
 import { parseHazard, parseSkip, prettyBands, signed } from "./format";
 
 export const API = process.env.ATLAS_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -7,8 +7,6 @@ export const PROXY = "/api/atlas";
 
 /** The live queue carries a region and may have no interval at all (routed or tenant). */
 export type Row = Omit<QueueRow, "score"> & { score: Interval | null; region?: "us" | "toronto"; label?: string };
-
-export type OutboxItem = { key?: string; channel?: string; status?: string; to?: string; subject?: string; body?: string; at?: string };
 
 export type CaseState = {
   row: Row;
@@ -86,34 +84,6 @@ export function chatLine(e: DeskEvent): Chat | null {
       return text ? mk(text) : null;
   }
 }
-
-/** The broker email the desk proposed, composed from the case and the run's own events. */
-export function brokerEmail(c: CaseView | null, events: DeskEvent[]) {
-  const facts = events
-    .filter((e) => e.kind === "action")
-    .flatMap((e) => (Array.isArray(e.body.facts) ? (e.body.facts as string[]) : []));
-  const asked = facts.length ? facts : c?.decision.kind === "open" ? c.decision.flippers.map((f) => f.fact) : [];
-  const broker = events
-    .map((e) => str(e.body.text).match(/"name":\s*"([^"]+)"/)?.[1] ?? "")
-    .find((n) => n.length > 0);
-  const premium = c?.facts.find((f) => f.id === "premium");
-  const tiv = c?.facts.find((f) => f.id === "tiv");
-  return {
-    to: broker ? `${broker} (submission broker)` : "the submitting broker",
-    subject: `Submission ${c?.caseId ?? ""} ${c?.title ?? ""}: ${asked.join(", ") || "open items"}`,
-    body: [
-      `We are reviewing ${c?.title ?? "this submission"} (${c?.caseId ?? ""}).`,
-      tiv ? `TIV reads ${tiv.display} from ${tiv.source}.` : "",
-      premium ? `We have no premium on file; our own comparables put it at ${premium.display}.` : "",
-      asked.length ? `Please confirm: ${asked.join(", ")}.` : "",
-      "Once that lands the file can be priced against the 2025 property guideline.",
-    ].filter(Boolean),
-  };
-}
-
-/** A human decision arriving over /events/queue. */
-export const humanVerdict = (e: DeskEvent) =>
-  e.actor === "human" && e.kind === "decision" ? String(e.body.text ?? "Underwriter replied") : null;
 
 /** One plain line for the caption strip: what the desk is doing right now. */
 export function nowLine(e: DeskEvent | undefined, running: boolean): string {

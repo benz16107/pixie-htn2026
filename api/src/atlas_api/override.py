@@ -91,7 +91,7 @@ def refresh(store: CaseStore, case_id: str) -> dict[str, Any] | None:
 
 def apply(store: CaseStore, case_id: str, points: float, reason: str, by: str = "underwriter") -> dict[str, Any]:
     """Validate, write the human event, return the override block. ValueError = a 400 with a reason."""
-    from .actions import append_after_run
+    from .event_log import append_after_run
 
     data = store.get_case(case_id)
     if data is None:

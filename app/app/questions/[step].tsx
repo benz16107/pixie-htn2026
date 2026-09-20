@@ -73,18 +73,6 @@ function Contents({ a, set }: { a: Answers; set: (p: Partial<Answers>) => void }
         A rough guess is fine. Most one-bedroom renters land between $20,000 and $40,000: furniture, clothes, laptop,
         phone, kitchen things. Each $1,000 above $20,000 adds $4 a year.
       </Dim>
-      <Pressable
-        onPress={() => {
-          if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-          router.push('/inventory');
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Or photograph your apartment to estimate this number"
-        accessibilityHint="Opens the camera so Gemini can list what it sees and add up a starting value"
-        style={({ pressed }) => [st.scanLink, pressed && { backgroundColor: C.land }]}
-      >
-        <Text style={st.scanLinkText}>Or photograph your apartment instead</Text>
-      </Pressable>
     </View>
   );
 }
@@ -140,6 +128,4 @@ const st = StyleSheet.create({
   big: { fontFamily: F.monoMedium, fontSize: 40, color: C.ink, fontVariant: ['tabular-nums'] },
   step: { width: 48, height: 48, borderRadius: 14, borderWidth: 1, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   stepText: { fontFamily: F.monoMedium, fontSize: 24, color: C.ink },
-  scanLink: { marginTop: 18, minHeight: 48, justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: C.rule, borderStyle: 'dashed', paddingHorizontal: 14 },
-  scanLinkText: { fontFamily: F.sansMedium, fontSize: 15, color: C.ink, textDecorationLine: 'underline' },
 });

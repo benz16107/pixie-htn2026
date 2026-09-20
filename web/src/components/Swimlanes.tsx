@@ -274,7 +274,7 @@ export function Swimlanes({
             {LANES.map((l, i) => (
               <div key={l} className="absolute inset-x-0 border-b border-dashed border-rule" style={{ top: TOP + i * LANE_H, height: LANE_H }}>
                 {l === "human" && !shown.some((c) => c.e.actor === "human") && (
-                  <span className="sticky left-0 inline-block px-1.5 pt-[18px] text-[11px] text-dim">Waiting on the underwriter. Replies to the digest land here.</span>
+                  <span className="sticky left-0 inline-block px-1.5 pt-[18px] text-[11px] text-dim">Waiting on the underwriter. Human decisions appear here.</span>
                 )}
               </div>
             ))}

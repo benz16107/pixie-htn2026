@@ -8,28 +8,18 @@ import { Swimlanes } from "../Swimlanes";
 import { CasePanel, Chatter, QueueRail, SweepBoard } from "./Panels";
 import { RecordButton } from "./RecordButton";
 import { StationLine } from "./StationLine";
-import { Phone, type DigestState } from "./Phone";
 import { useRun, type Speed } from "./useRun";
 import type { MapPin, Pulse } from "./DeskMap";
 import type { Quote } from "./types";
-import { PROXY, brokerEmail, isPlumbing, nowLine, type OutboxItem, type Row } from "@/lib/live";
+import { PROXY, isPlumbing, nowLine, type Row } from "@/lib/live";
 import { money } from "../bits";
 
 const DeskMap = dynamic(() => import("./DeskMap"), { ssr: false, loading: () => <div className="absolute inset-0 bg-land" /> });
 
 const LANES = ["lead", "intake", "appetite", "hazard", "portfolio", "challenger", "system"] as const;
 const SPECIALISTS = new Set(["intake", "appetite", "hazard", "portfolio"]);
-const BEATS = ["Queue", "Case run", "Actions", "Backtest", "Toronto", "Close"] as const;
+const BEATS = ["Queue", "Case run", "Evidence", "Backtest", "Toronto", "Close"] as const;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
-
-async function readOutbox(id: string): Promise<OutboxItem[]> {
-  try {
-    const res = await fetch(`${PROXY}/outbox/${id}`);
-    if (!res.ok) return [];
-    const items = await res.json();
-    return Array.isArray(items) ? items : [];
-  } catch { return []; }
-}
 
 export type LiveProps = {
   rows: Row[];
@@ -54,16 +44,8 @@ export function LiveDesk(props: LiveProps) {
   const [highlight, setHighlight] = useState<string | null>(null);
   const [beat, setBeat] = useState(0);
   const [overlay, setOverlay] = useState<"backtest" | "close" | null>(null);
-  const [phoneTab, setPhoneTab] = useState<"digest" | "quote">("digest");
-  const [digest, setDigest] = useState<DigestState>(null);
-  const [sendingDigest, setSendingDigest] = useState(false);
-  const [reply, setReply] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [showEmail, setShowEmail] = useState(false);
-  const [outbox, setOutbox] = useState<OutboxItem[]>([]);
-  const picked = useRef<string | null>(null);
-  const [emailStatus, setEmailStatus] = useState<string>("");
   const [reduced, setReduced] = useState(false);
   const script = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [quoteError, setQuoteError] = useState("");
@@ -78,7 +60,7 @@ export function LiveDesk(props: LiveProps) {
     return () => mq.removeEventListener("change", on);
   }, []);
 
-  // The underwriter's reply and every action status arrive here while the desk is on screen.
+  // Rule and override updates arrive here while the desk is on screen.
   useEffect(() => {
     if (!apiUp) return;
     const es = new EventSource(`${PROXY}/events/queue`);
@@ -88,14 +70,6 @@ export function LiveDesk(props: LiveProps) {
       setTimeout(() => setFlash(null), 2600);
       if (m.kind === "decision" && m.decision) {
         setRows((rs) => rs.map((r) => (r.caseId === m.caseId ? { ...r, decision: m.decision! } : r)));
-        setReply(`Case ${m.caseId} ${m.decision.kind === "approve" ? "approved" : m.decision.kind} by the underwriter over iMessage`);
-        setPhoneTab("digest");
-      }
-      if (m.kind === "action") {
-        setEmailStatus(`${m.channel ?? "email"}: ${m.status ?? "sent"}`);
-        if (picked.current === m.caseId) void readOutbox(m.caseId).then((items) => {
-          if (picked.current === m.caseId) setOutbox(items);
-        });
       }
     });
     es.onerror = () => es.close();
@@ -104,9 +78,7 @@ export function LiveDesk(props: LiveProps) {
 
   const pick = useCallback(
     async (id: string) => {
-      picked.current = id;
       setSelected(id);
-      setOutbox([]);
       setMode("focus");
       if (!details[id] && apiUp) {
         const res = await fetch(`${PROXY}/cases/${id}`).catch(() => null);
@@ -115,9 +87,6 @@ export function LiveDesk(props: LiveProps) {
           setDetails((d) => ({ ...d, [id]: view }));
         }
       }
-      if (apiUp) void readOutbox(id).then((items) => {
-        if (picked.current === id) setOutbox(items);
-      });
     },
     [apiUp, details],
   );
@@ -140,8 +109,6 @@ export function LiveDesk(props: LiveProps) {
 
   const loadQuote = useCallback(async () => {
     setRegion("toronto");
-    setPhoneTab("quote");
-    setShowEmail(false);
     if (quote) return;
     if (!apiUp) { setQuoteError("The quote needs the API. Open the saved receipt on the phone instead."); return; }
     setQuoteError("");
@@ -154,41 +121,16 @@ export function LiveDesk(props: LiveProps) {
     else setQuoteError("The quote could not load. Select Toronto to retry.");
   }, [apiUp, quote]);
 
-  const sendEmail = useCallback(async () => {
-    if (!selected) return;
-    setShowEmail(true);
-    setEmailStatus("sending…");
-    const res = await fetch(`${PROXY}/actions/${selected}/request-info`, { method: "POST" }).catch(() => null);
-    const out = res?.ok ? ((await res.json()) as OutboxItem) : null;
-    setEmailStatus(out?.status ? `gmail: ${out.status}` : "the API refused the send");
-    const box = await readOutbox(selected);
-    if (picked.current === selected) setOutbox(box);
-  }, [selected]);
-
-  const sendDigest = useCallback(async () => {
-    setSendingDigest(true);
-    setPhoneTab("digest");
-    const res = await fetch(`${PROXY}/actions/digest`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ n: 3 }),
-    }).catch(() => null);
-    if (res?.ok) setDigest((await res.json()) as DigestState);
-    else setDigest({ text: "The digest could not be sent. Check the API and Linq connection, then retry.", status: "failed", caseIds: [] });
-    setSendingDigest(false);
-  }, []);
-
   const stopScript = useCallback(() => {
     script.current.forEach(clearTimeout);
     script.current = [];
   }, []);
 
-  /** One click runs the whole story: sweep the queue, deep-dive 138, then the broker email. */
+  /** One click runs the whole story: sweep the queue, then deep-dive case 138. */
   const runDemo = useCallback(() => {
     stopScript();
     setOverlay(null);
     setRegion("desk");
-    setShowEmail(false);
     setBeat(0);
     startSweep();
     script.current = [
@@ -196,11 +138,7 @@ export function LiveDesk(props: LiveProps) {
         setBeat(1);
         startFocus("138");
       }, 9000),
-      setTimeout(() => {
-        setBeat(2);
-        setShowEmail(true);
-        setPhoneTab("digest");
-      }, 34000),
+      setTimeout(() => setBeat(2), 34000),
     ];
   }, [startFocus, startSweep, stopScript]);
 
@@ -210,9 +148,9 @@ export function LiveDesk(props: LiveProps) {
       stopScript();
       setBeat(i);
       const acts = [
-        () => { stopScript(); setOverlay(null); setRegion("desk"); setShowEmail(false); startSweep(); },
-        () => { stopScript(); setOverlay(null); setRegion("desk"); setShowEmail(false); startFocus("138"); },
-        () => { setOverlay(null); void pick(selected ?? "138"); setShowEmail(true); setPhoneTab("digest"); },
+        () => { stopScript(); setOverlay(null); setRegion("desk"); startSweep(); },
+        () => { stopScript(); setOverlay(null); setRegion("desk"); startFocus("138"); },
+        () => { setOverlay(null); void pick(selected ?? "138"); },
         () => setOverlay("backtest"),
         () => { setOverlay(null); loadQuote(); },
         () => setOverlay("close"),
@@ -281,8 +219,6 @@ export function LiveDesk(props: LiveProps) {
   const near = (h: Hex) => !site || (Math.abs(h.ring[0][0] - site.lat) < 1.6 && Math.abs(h.ring[0][1] - site.lng) < 1.9);
   const hexes = region === "toronto" && quote ? quote.hexes : mode === "focus" ? fineHexes.filter(near) : bookHexes;
 
-  const email = brokerEmail(selected ? (details[selected] ?? null) : null, focusCase?.events ?? []);
-  const sent = outbox.find((o) => (o.status ?? "").startsWith("sent")) ?? outbox[0];
   const decidedNow = Object.values(run.cases).filter((c) => c.status === "settled").length;
   const costCase = focusCase?.costUsd;
   const btn = "rounded-sm border border-edge px-2 py-0.5 transition-colors duration-150 hover:bg-raise";
@@ -370,7 +306,7 @@ export function LiveDesk(props: LiveProps) {
       </div>
 
       {/* ------------------------------- middle -------------------------------- */}
-      <div className="grid min-h-0 grid-cols-[214px_minmax(0,1fr)_318px_222px]">
+      <div className="grid min-h-0 grid-cols-[214px_minmax(0,1fr)_340px]">
         <aside className="min-h-0 overflow-y-auto border-r border-rule px-2 py-2" aria-label="Open queue">
           <QueueRail rows={rows} cases={run.cases} selected={selected} flash={flash} onPick={(id) => startFocus(id)} />
         </aside>
@@ -401,31 +337,6 @@ export function LiveDesk(props: LiveProps) {
             <StationLine
               events={focusCase.events}
               caseTitle={`Case ${selected}`}
-              takeover={
-                showEmail ? (
-                  <article className="lane-card flex h-full gap-3 overflow-hidden rounded-sm border border-edge bg-paper px-3 py-2 text-[11px] leading-snug">
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                      <p className="kicker mb-0.5">Broker email · to {sent?.to ?? email.to}</p>
-                      <b className="block truncate font-semibold" title={sent?.subject ?? email.subject}>
-                        {sent?.subject ?? email.subject}
-                      </b>
-                      <p className="mt-0.5 line-clamp-3 text-dim" title={sent?.body ?? email.body.join("\n\n")}>
-                        {(sent?.body ?? email.body.join("\n\n")).replace(/^Hi[^\n]*\n+/, "")}
-                      </p>
-                    </div>
-                    <div className="flex w-[132px] shrink-0 flex-col items-start gap-1 border-l border-rule pl-3">
-                      <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className={`${btn} bg-ochre text-paper hover:bg-ochre/85 disabled:opacity-50`}>
-                        {sent ? "Send again" : "Send it"}
-                      </button>
-                      <span className="num text-[10px] text-moss">{emailStatus || (sent ? `gmail: ${sent.status}` : "")}</span>
-                      {sent && <span className="text-[9px] text-dim">Outbox {sent.key ?? ""} · Composio Gmail</span>}
-                      <button onClick={() => setShowEmail(false)} className="num mt-auto text-[10px] text-dim underline-offset-2 hover:underline">
-                        Back to the desk
-                      </button>
-                    </div>
-                  </article>
-                ) : undefined
-              }
             />
           )}
         </section>
@@ -433,10 +344,6 @@ export function LiveDesk(props: LiveProps) {
         <section className="min-h-0 overflow-y-auto border-r border-rule" aria-label="Case">
           <CasePanel c={selected ? (details[selected] ?? null) : null} state={focusCase} typed={!reduced} onStart={runDemo} />
         </section>
-
-        <aside className="min-h-0 overflow-hidden px-2.5 py-2" aria-label="Phone mirror">
-          <Phone tab={phoneTab} setTab={setPhoneTab} digest={digest} onSend={sendDigest} sending={sendingDigest} reply={reply} quote={quote} />
-        </aside>
       </div>
 
       {/* ------------------------- lanes and chatter --------------------------- */}

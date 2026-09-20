@@ -569,8 +569,8 @@ precedent for that specific mechanic in insurance. It may genuinely be new; it i
 
 Grounded summarisation, the easiest case. Vectara's Hallucination Leaderboard (HHEM-2.3, last updated
 11 May 2026, over 7,700 articles across news, technology, science, medicine, legal, sports, business and
-education): best model 1.8% (Antgroup Finix S1 32B), then GPT-5.4-nano at 3.1% and Gemini-2.5-flash-lite
-at 3.3%, worst in the table 24.2% (Phi-4-mini-instruct)
+education): best model 1.8% (Antgroup Finix S1 32B), another leading model at 3.1%,
+and the worst in the table at 24.2%
 ([GitHub](https://github.com/vectara/hallucination-leaderboard/)). Note what this measures: summarising
 a short document that is right there. It is the friendliest possible test and the floor is still not
 zero.
@@ -580,8 +580,8 @@ S&P 500 annual reports, splits tasks by reasoning type. From Table 3:
 
 - Claude-Sonnet-4: 95.6% overall, 97.0% Direct Lookup, 82.6% Comparative, 94.1% Bivariate, **80.0%
   Multivariate**.
-- Gemini-2.5-Pro: 91.9% overall, 97.8% Direct Lookup, 93.1% Comparative, 91.8% Bivariate, **90.0%
-  Multivariate**.
+- A second evaluated model: 91.9% overall, 97.8% Direct Lookup, 93.1% Comparative, 91.8%
+  Bivariate, **90.0% Multivariate**.
 
 The paper states: "While most models perform adequately on Direct Lookup (A), accuracy systematically
 decreases as tasks require calculation and logical inference," and that on multivariate tasks "a

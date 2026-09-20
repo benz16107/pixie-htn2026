@@ -1,4 +1,4 @@
-"""T3 accept tests. See docs/PLAN.md section 2 and docs/DESIGN.md ("Fixed from the judge's fact check").
+"""Case hydration and provenance acceptance tests.
 
 All offline: World.load() reads the pulled snapshot under data/federato (no network).
 """

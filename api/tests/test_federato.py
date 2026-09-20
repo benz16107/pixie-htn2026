@@ -1,4 +1,4 @@
-"""T1/T2 accept tests. See docs/PLAN.md section 2 and docs/DESIGN.md.
+"""Federato schema and query acceptance tests.
 
 A few tests below hit the live Federato API (bad-operator error shape, a lint-fixed live query).
 They need FEDERATO_CLIENT_ID/SECRET in .env, which the hackathon worktree has. Everything else

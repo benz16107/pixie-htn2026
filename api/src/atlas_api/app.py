@@ -2,9 +2,8 @@
 
 At startup, every submission is assessed once against the property_2025 guideline and the
 resulting QueueRow/CaseView JSON is written to the SQLite CaseStore (case_store.py); /queue and
-/cases/{id} are then plain store reads, well under the 500 ms accept bar. Field names follow
-docs/sketch/contract.ts (QueueRow, DecisionView, CaseView) so the web lane's fixture-shaped
-components render real data unchanged.
+/cases/{id} are then plain store reads, well under the 500 ms accept bar. Field names match the
+web contract so fixture-backed components render real data unchanged.
 """
 
 from __future__ import annotations
@@ -23,7 +22,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from . import composio_routes
 from . import guideline
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
@@ -41,8 +39,6 @@ from .engine import (
     explain,
     verify_numbers,
 )
-from .gemini_routes import router as gemini_router
-from .linq_routes import router as linq_router
 from .portfolio import ExposureIndex, open_index
 from .tenant import TenantAnswers, TorontoPack, quote_tenant
 
@@ -134,9 +130,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(insights_routes.router)
-app.include_router(composio_routes.router)  # A7: Composio actions beyond the one email
-app.include_router(linq_router)  # A5: tapbacks, typing, receipt images, in-thread quotes
-app.include_router(gemini_router)  # A6: photo inventory, Maps grounding, TTS, code-execution check
 app.include_router(openai_routes.router)  # A1: OpenAI runtime settings, Backboard memory and judgements
 
 
@@ -503,53 +496,15 @@ async def ops_ask_route(req: AskRequest) -> dict[str, Any]:
     return {"question": req.question, "answer": await ask_ops(req.question.strip())}
 
 
-# ---------- actions (T11) and the queue event bus (T13) -------------------------------------------
+# ---------- queue event bus ----------------------------------------------------------------------
 
 _bus: set[asyncio.Queue] = set()
 
 
 def publish(kind: str, data: dict[str, Any]) -> None:
-    """Fan a human decision or an action status out to every open /events/queue stream."""
+    """Fan a rule or override update out to every open /events/queue stream."""
     for q in list(_bus):
         q.put_nowait({"kind": kind, **data})
-
-
-def _case_and_assessment(case_id: str):
-    from .events import CaseFile
-    store = get_store()
-    case = _world.case(f"SUB-{case_id}")
-    run = store.latest_run(case_id)
-    if run:
-        for name, value in CaseFile.fold(store.tail(case_id, run_id=run)).facts.items():
-            case = case.with_fact(name, value, by="desk")
-    rules = guideline.active()
-    return case, assess(case, rules), rules
-
-
-@app.post("/cases/{case_id}/actions/request_info")
-@app.post("/actions/{case_id}/request-info")
-def action_request_info(case_id: str) -> dict[str, Any]:
-    from .actions import request_broker_info
-    from .events import ActionP
-
-    store, case_id = get_store(), case_id.removeprefix("SUB-")
-    if store.get_case(case_id) is None:
-        raise HTTPException(status_code=404, detail=f"no case {case_id}")
-    case, a, rules = _case_and_assessment(case_id)
-    run = store.latest_run(case_id)
-    facts = next((e.payload.facts for e in reversed(store.tail(case_id, run_id=run) if run else [])
-                  if isinstance(e.payload, ActionP) and e.payload.action == "request_broker_info"), None)
-    out = request_broker_info(store, case, a, rules, store.get_case(case_id)["case"]["title"], facts)
-    apply_desk_run(store, _world, case_id) if run else None
-    publish("action", {"caseId": case_id, "status": out["status"], "channel": "gmail", "key": out["id"]})
-    from .telemetry import log
-    log("action.send", case_id=case_id, action="request_broker_info", channel="gmail", status=out["status"])
-    return out
-
-
-@app.get("/outbox/{case_id}")
-def outbox(case_id: str) -> list[dict[str, Any]]:
-    return get_store().outbox_for(case_id.removeprefix("SUB-"))
 
 
 @app.get("/events/queue", response_model=None)
@@ -570,10 +525,6 @@ async def queue_events(request: Request):
             _bus.discard(q)
     return StreamingResponse(gen(), media_type="text/event-stream")
 
-
-# ---------- Linq (T12, deepened in A5) ------------------------------------------------------------
-# All routes (/actions/digest, /webhooks/linq, /linq/quote, /linq/digest/status, /linq/group,
-# /media/{filename}) live in linq_routes.py's own APIRouter; see the include_router call above.
 
 # ---------- consumer quote ----------------------------------------------------------------------
 
@@ -735,7 +686,7 @@ def _swap(change: list[str], by: str, hash_before: str = "") -> dict[str, Any]:
     again, and the diff is a comparison of two sets of computed views.
     """
     import time as _time
-    from .actions import append_after_run
+    from .event_log import append_after_run
     from .events import GuidelineP, ScoreP
 
     store = get_store()
@@ -798,8 +749,7 @@ def reset_guideline() -> dict[str, Any]:
 
 
 def demo_reset(case_ids: list[str] | None = None, *, reset_guideline: bool = True) -> dict[str, Any]:
-    """T14: drop the action events, outbox rows and human decisions, keep the recorded desk run and
-    restore the stored view from it. Running it twice leaves the same state."""
+    """Drop demo actions and human changes, keep the recorded desk run, and restore its view."""
     store = get_store()
     from . import override
 
@@ -815,14 +765,10 @@ def demo_reset(case_ids: list[str] | None = None, *, reset_guideline: bool = Tru
     for cid in ids:
         events = store.delete_events(cid, {"action", "action_result"})
         events += store.delete_actor(cid, "human")
-        events += store.delete_ref(cid, "broker_reply")   # the reply's finding + assessment: not action kinds
-        outbox = store.delete_outbox(cid)
         apply_desk_run(store, _world, cid)
         override.refresh(store, cid)   # a case with no recorded run keeps its stored view; drop it there too
-        if events or outbox:
-            cleared[cid] = {"events": events, "outbox": outbox}
-    if case_ids is None:
-        store.cache_set("linq:last_digest", [])
+        if events:
+            cleared[cid] = {"events": events}
     return {"reset": cleared, "cases": ids}
 
 

@@ -1,4 +1,4 @@
-"""DeskEvent: the one thing agents write (DESIGN.md "Data structures first").
+"""DeskEvent: the one thing agents write.
 
 One append-only log per case is the trace, the swimlane feed, the replay and the audit. An event id
 is a content hash of (case, run, actor, payload, refs), so appending the same event twice is a

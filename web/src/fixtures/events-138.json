@@ -252,7 +252,7 @@
   "body": {
    "text": "Refer: request premium from broker",
    "kind": "refer",
-   "action": "Email sent via Composio"
+   "action": "Broker information requested"
   },
   "refs": [
    "e10"

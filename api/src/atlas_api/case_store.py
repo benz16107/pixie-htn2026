@@ -1,11 +1,10 @@
-"""SQLite CaseStore: one file (var/atlas.sqlite), four tables, per candidate-2's sketch
-(docs/arena/candidate-2/sketch/case.py) grafted into the T1-T3 design (DESIGN.md "Grafted from
-candidate-2"). One process, one connection; a reentrant lock serialises every use of it, because
+"""SQLite CaseStore: one file (var/atlas.sqlite), three tables.
+
+One process uses one connection. A reentrant lock serialises every use of it, because
 FastAPI runs sync routes on a threadpool and one case page fires eight overlapping reads -- two
 threads touching the same sqlite3 connection raise "bad parameter or other API misuse".
 
-Tables: `cases` (pre-rendered QueueRow/CaseView JSON), `desk_events` (the DeskEvent log, T6),
-`cache`, `outbox` (T11/T12).
+Tables: `cases` (pre-rendered QueueRow/CaseView JSON), `desk_events` (the DeskEvent log), and `cache`.
 """
 
 from __future__ import annotations
@@ -41,14 +40,6 @@ CREATE TABLE IF NOT EXISTS cache (
     key TEXT PRIMARY KEY,
     json TEXT NOT NULL,
     ts TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE TABLE IF NOT EXISTS outbox (
-    id TEXT PRIMARY KEY,
-    case_id TEXT NOT NULL,
-    channel TEXT NOT NULL,
-    status TEXT NOT NULL,
-    json TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
 
@@ -143,11 +134,6 @@ class CaseStore:
     def delete_actor(self, case_id: str, actor: str) -> int:
         return self._rewrite(case_id, lambda e: e.actor != actor)
 
-    def delete_ref(self, case_id: str, ref: str) -> int:
-        """Demo reset: drop the events an action tagged with this ref. The broker reply posts a
-        `finding` and an `assessment`, neither of which is an `action` kind, so only the tag finds them."""
-        return self._rewrite(case_id, lambda e: ref not in e.refs)
-
     def _rewrite(self, case_id: str, keep_if) -> int:
         events = self.tail(case_id)
         keep = [e for e in events if keep_if(e)]
@@ -161,34 +147,8 @@ class CaseStore:
                 self.conn.commit()
         return dropped
 
-    def delete_outbox(self, case_id: str) -> int:
-        with self._lock:
-            cur = self.conn.execute("DELETE FROM outbox WHERE case_id = ?", (case_id,))
-            self.conn.commit()
-        return cur.rowcount
-
     def latest_run(self, case_id: str) -> str | None:
         with self._lock:
             row = self.conn.execute("SELECT run_id FROM desk_events WHERE case_id = ? ORDER BY seq DESC LIMIT 1",
                                     (case_id,)).fetchone()
         return row[0] if row else None
-
-    # ---- outbox: T11/T12's action log; append + list only until those tasks land -----------------
-
-    def post_outbox(self, outbox_id: str, case_id: str, channel: str, status: str,
-                     payload: dict[str, Any]) -> None:
-        with self._lock:
-            self.conn.execute(
-                "INSERT INTO outbox(id, case_id, channel, status, json) VALUES (?, ?, ?, ?, ?) "
-                "ON CONFLICT(id) DO UPDATE SET status = excluded.status, json = excluded.json",
-                (outbox_id, case_id, channel, status, json.dumps(payload)),
-            )
-            self.conn.commit()
-
-    def outbox_for(self, case_id: str) -> list[dict[str, Any]]:
-        with self._lock:
-            rows = self.conn.execute(
-                "SELECT id, channel, status, json FROM outbox WHERE case_id = ? ORDER BY created_at",
-                (case_id,),
-            ).fetchall()
-        return [{"id": i, "channel": c, "status": s, **json.loads(j)} for i, c, s, j in rows]

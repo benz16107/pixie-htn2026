@@ -107,10 +107,6 @@ export const routes = {
   mapBook: "GET /map/book?res=5&peril=",                // Hex[] of active TIV
   mapTenant: "GET /map/toronto?lat&lng&k=3",            // Hex[] break-ins (shrunk)
   quote: "POST /quote/tenant",                          // QuoteView
-  requestInfo: "POST /actions/{caseId}/request-info",   // OutboxItem
   override: "POST /cases/{id}/override {points, reason}", // CaseOverride; DELETE undoes it
-  digest: "POST /actions/digest {n}",                   // OutboxItem
-  linqWebhook: "POST /webhooks/linq",                   // 200 always; raw payload logged first
-  surroundings: "POST /cases/{id}/surroundings",        // SurroundingsCard
   health: "GET /health",                                // Sentry uptime monitor target
 } as const;

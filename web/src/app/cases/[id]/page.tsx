@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { api, type CaseWithReceipt } from "@/lib/api";
 import { explainCase, isTenantExplain, precedentFor, sensitivityOf, surfaceOf, type Challenge, type PriceStep } from "@/lib/explain";
 import { bandPhrase, factorValue, whenLabel } from "@/lib/format";
-import { Actions } from "@/components/Actions";
 import { CaseMap } from "@/components/LiveMap";
 import { HazardCard, PortfolioCallout, portfolioSentence } from "@/components/CaseParts";
 import { Receipt } from "@/components/Receipt";
@@ -13,7 +12,6 @@ import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
 import { CaseNav } from "@/components/case/CaseNav";
 import { Deck } from "@/components/case/Deck";
 import { Override } from "@/components/case/Override";
-import { BrokerReply } from "@/components/case/BrokerReply";
 import { Memory } from "@/components/case/Memory";
 import { BandScale, bandTone, DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, THRESHOLDS } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
@@ -55,7 +53,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   if (!c) notFound();
   const view = c as CaseWithReceipt & { challenge?: Challenge; deskVerdict?: string };
   const pin = pins.find((p) => p.caseId === view.caseId);
-  const flippers = view.decision.kind === "open" ? view.decision.flippers : [];
   const place = view.facts.find((f) => f.id === "primary_admin" || f.id === "state")?.display;
   // The slider is denominated in dollars, so it may only ever be handed a money fact. Once the broker
   // answers on premium the mover can become something like business type, and a dollar slider under
@@ -95,11 +92,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           </span>
         )}
         <span className="ml-auto" />
-        {view.kind === "commercial" && (
-          <span className="shrink-0 pr-1">
-            <Actions caseId={view.caseId} facts={view.decision.kind === "open" ? view.facts.filter((f) => f.provenance !== "known").map((f) => f.id) : flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
-          </span>
-        )}
       </header>
 
       {/* ------------------- score, the book, the case against ------------------ */}
@@ -135,8 +127,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           {view.kind === "commercial" && view.score && (
             <Override caseId={view.caseId} current={view.override} bound={view.override?.bound ?? 5} />
           )}
-          {view.kind === "commercial" && <BrokerReply caseId={view.caseId} />}
-
           {tenant ? (
             <>
               <div className="mt-2 flex min-h-0 flex-1 flex-col">

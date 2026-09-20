@@ -1,11 +1,11 @@
-"""PLAN.md section 4: `pytest eval/test_answer_key.py` must pass (8/10 or better; T4's accept test).
+"""The answer-key evaluation must pass at 8/10 or better.
 
 eval/answer_key.yaml is Ben's lane, hand-scored from APPETITE_GUIDELINES.txt independent of the
 engine. This test loads it, maps each entry to a real case (SUB-<id> for a Federato submission id,
 policy-<id> for a bound policy -- resolved via its own submission, since World only builds cases
 from submissions), assesses it, and compares decisions. A mismatch is reported by id so a wrong
 entry is easy to spot; the test only requires 8 of the (up to) 10 scored entries to agree, per
-PLAN.md's own bar (a decline vs accept vs open vs routed mismatch is scored as an answer-key miss,
+The evaluation bar treats a decline vs accept vs open vs routed mismatch as an answer-key miss,
 not a hard failure -- the guideline's `unknown` premium bands are deliberately ambiguous).
 """
 
