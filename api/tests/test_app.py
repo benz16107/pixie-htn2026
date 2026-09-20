@@ -139,6 +139,25 @@ def test_explainability_endpoints(client):
     assert client.get("/cases/9999/explain").status_code == 404
 
 
+def test_surface_answers_live_and_caches(client):
+    t0 = time.monotonic()
+    cold = client.post("/cases/138/surface", json={}).json()
+    cold_ms = (time.monotonic() - t0) * 1000
+    assert cold["shape"] == [11, 11, 11] and cold["points"] == 1331 and cold["cached"] is False
+    assert [a["fact"] for a in cold["axes"]] == ["premium", "year_built", "tiv"]
+    assert cold_ms < 500, cold["ms"]
+
+    t0 = time.monotonic()
+    warm = client.post("/cases/138/surface", json={}).json()
+    assert warm["cached"] is True and warm["grid"] == cold["grid"]
+    assert (time.monotonic() - t0) * 1000 < 50      # a repeat must not re-run the engine
+
+    two = client.post("/cases/138/surface", json={"axes": ["premium", "year_built"], "resolution": 7}).json()
+    assert two["shape"] == [7, 7] and len(two["grid"]["tier"]) == 49
+    assert client.post("/cases/138/surface", json={"axes": ["premium", "primary_admin"]}).status_code == 400
+    assert client.post("/cases/9999/surface", json={}).status_code == 404
+
+
 def test_tenant_explain_returns_the_price_waterfall(client):
     quote = client.post("/quote/tenant", json={"address": "180 Queen St W", "answers": {
         "contentsValue": 30000, "unitLevel": "basement", "claims3yr": 0, "deductible": 1000}}).json()

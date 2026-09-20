@@ -6,7 +6,7 @@ import pytest
 
 from atlas_api.case import Known, World
 from atlas_api.engine import DEFAULT_RULES_DIR, RulesFile, assess, estimate_premium
-from atlas_api.explain import (explain_payload, reconciles, sensitivity, tenant_waterfall,
+from atlas_api.explain import (explain_payload, reconciles, sensitivity, surface, tenant_waterfall,
                                toronto_percentiles, waterfall, whatif)
 from atlas_api.layers import LayersPack
 
@@ -96,3 +96,49 @@ def test_toronto_percentiles_read_the_pack():
     assert 0 <= out["break-ins_near_you"]["percentile"] <= 100
     assert "percentile for break-ins" in out["break-ins_near_you"]["text"]
     assert toronto_percentiles("not-a-cell", scores) == {}
+
+
+# ---------- the decision surface (AUDIT 4, item 2) -------------------------------------------------
+
+def test_surface_grid_reconciles_with_the_engine(world):
+    """Every grid point must be the engine's own answer for that combination of facts, not a fit."""
+    case = world.case("SUB-138")
+    out = surface(case, RULES, ["premium", "year_built"], 5)
+    assert out["shape"] == [5, 5] and out["points"] == 25
+    for i, premium in enumerate(out["axes"][0]["values"]):
+        for j, year in enumerate(out["axes"][1]["values"]):
+            probed = assess(case.with_fact("premium", Known(premium, source="t"), by="t")
+                                .with_fact("year_built", Known(year, source="t"), by="t"), RULES)
+            n = i * 5 + j
+            assert out["grid"]["lo"][n] == round(probed.score.lo, 1)
+            assert out["grid"]["hi"][n] == round(probed.score.hi, 1)
+    assert set(out["grid"]["tier"]) <= {"accept", "refer", "decline", "open", "routed"}
+
+
+def test_surface_places_the_case_and_its_uncertainty(world):
+    """138's premium is Missing, so its segment covers the whole axis; its year is Known, so the
+    grid is snapped onto it and the case's own position is exact."""
+    out = surface(world.case("SUB-138"), RULES, ["premium", "year_built", "tiv"], 7)
+    premium, year, tiv = out["axes"]
+    assert premium["at"] is None and premium["uncertainty"]["tLo"] == 0.0 and premium["uncertainty"]["tHi"] == 1.0
+    assert "ask the broker" in premium["uncertainty"]["text"]
+    assert year["at"] == 2023 and year["at"] in year["values"] and year["uncertainty"] is None
+    assert tiv["at"] in tiv["values"]
+    assert out["case"]["tier"] == "open" and out["case"]["t"][1] == pytest.approx(1.0)
+
+
+def test_surface_is_fast_enough_to_feel_live(world):
+    """1,331 assessments. 56-61 ms measured; the bar is 300 ms, above which a slider stops feeling live."""
+    case = world.case("SUB-138")
+    surface(case, RULES, None, 11)                       # warm the snapshot reads
+    t0 = time.perf_counter()
+    out = surface(case, RULES, None, 11, {"1:fema_flood": 1.15}, None)
+    assert (time.perf_counter() - t0) * 1000 < 300, out["ms"]
+    assert out["points"] == 1331 and [a["fact"] for a in out["axes"]] == ["premium", "year_built", "tiv"]
+
+
+def test_surface_rejects_axes_it_cannot_score(world):
+    with pytest.raises(ValueError):
+        surface(world.case("SUB-138"), RULES, ["premium", "primary_admin"], 5)
+    with pytest.raises(ValueError):
+        surface(world.case("SUB-138"), RULES, ["premium"], 5)

@@ -769,6 +769,42 @@ def case_sensitivity(case_id: str) -> dict[str, Any]:
     return sensitivity(case, rules, hazard, impact)
 
 
+class SurfaceRequest(BaseModel):
+    axes: list[str] | None = None      # two or three numeric guideline facts; None = sensitivity's top
+    resolution: int = 11               # steps per axis; 11 on three axes is 1,331 assessments
+
+
+# ponytail: a plain dict, not an LRU. It is keyed by the desk run, so a re-run replaces the entry
+# rather than serving a stale grid, and 21 cases x a few axis choices never grows past a few MB.
+_SURFACE_CACHE: dict[tuple, dict[str, Any]] = {}
+
+
+@app.post("/cases/{case_id}/surface")
+def case_surface(case_id: str, req: SurfaceRequest) -> dict[str, Any]:
+    """The decision space: the deterministic engine re-run over a grid of fact combinations.
+
+    Measured on an M2 MacBook Pro: an 11-step three-axis grid is 1,331 assessments in 56-61 ms, and
+    the cache below answers a repeat in under a millisecond, which is what lets the what-if slider
+    move the case through a volume that is already in memory. No model, no network.
+    """
+    from .explain import surface
+
+    case_id = case_id.removeprefix("SUB-")
+    if get_store().get_case(case_id) is None or _tenant_view(case_id) is not None:
+        raise HTTPException(status_code=404, detail=f"no scored commercial case {case_id}")
+    key = (case_id, get_store().latest_run(case_id), tuple(req.axes or ()), req.resolution)
+    hit = _SURFACE_CACHE.get(key)
+    if hit is not None:
+        return {**hit, "cached": True}
+    case, _a, hazard, impact, _events, rules = _enriched(case_id)
+    try:
+        out = surface(case, rules, req.axes, req.resolution, hazard, impact)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    _SURFACE_CACHE[key] = out
+    return out
+
+
 # `/cases/{id}/precedent` lives in insights_routes.py (Elastic hybrid + reranker over
 # pixie-precedent); it accepts both `size` and `k`.
 

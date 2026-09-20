@@ -80,6 +80,41 @@ export type WhatIf = {
   notes?: string[];
 };
 
+/** One fact axis of the decision space: its grid values, and where the case sits on it. */
+export type SurfaceAxis = {
+  fact: string;
+  label: string;
+  unit: "money" | "year" | "count";
+  min: number;
+  max: number;
+  values: number[];
+  /** 0-1 position of each grid value; the step nearest the case's own value is snapped onto it. */
+  t: number[];
+  ticks: string[];
+  at: number | null;
+  tAt: number | null;
+  provenance: string;
+  uncertainty: { lo: number; hi: number; tLo: number; tHi: number; text: string } | null;
+};
+
+export type Tier = "accept" | "refer" | "decline" | "open" | "routed";
+
+/** POST /cases/{id}/surface: the engine re-run over every combination of two or three facts. */
+export type Surface = {
+  caseId: string;
+  rulesId: string;
+  axes: SurfaceAxis[];
+  resolution: number;
+  shape: number[];
+  /** Flat, row-major over `axes`: the point at (i, j, k) is at i * shape[1] * shape[2] + j * shape[2] + k. */
+  grid: { lo: number[]; hi: number[]; tier: Tier[] };
+  thresholds: { decline: number; accept: number };
+  case: { lo: number; hi: number; tier: Tier; t: (number | null)[]; at: (number | null)[] };
+  points: number;
+  ms: number;
+  cached: boolean;
+};
+
 export type Precedent = {
   backend: string;
   basisExplained: string;
@@ -99,6 +134,26 @@ export type Precedent = {
     similarity: number;
     basis?: string[];
   }[];
+};
+
+/** One sentence of the spoken briefing, and the part of the page it talks about. */
+export type BriefingMark = {
+  anchor: "score" | "facts" | "flip" | "challenge" | "action";
+  text: string;
+  startSec: number;
+  endSec: number;
+};
+
+export type Briefing = {
+  caseId: string;
+  script: string;
+  voiceId: string;
+  model: string;
+  audio: string;
+  audioUrl: string;
+  durationSec: number;
+  marks: BriefingMark[];
+  cached: boolean;
 };
 
 export type Challenge = {
@@ -125,20 +180,28 @@ async function get<T>(path: string): Promise<T | null> {
 export const explainCase = (id: string) => get<Explain>(`/cases/${id}/explain`);
 export const sensitivityOf = (id: string) => get<Sensitivity>(`/cases/${id}/sensitivity`);
 export const precedentFor = (id: string) => get<Precedent>(`/cases/${id}/precedent`);
+/** Null when no voice key is configured: the page then stays silent, and everything still reads. */
+export const briefingFor = (id: string) => get<Briefing>(`/cases/${id}/briefing`);
 
-export async function whatIf(id: string, overrides: Record<string, number | string>): Promise<WhatIf | null> {
+async function post<T>(path: string, body: unknown, at = base): Promise<T | null> {
   try {
-    const res = await fetch(`${PROXY}/cases/${id}/whatif`, {
+    const res = await fetch(at + path, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ overrides }),
-      signal: AbortSignal.timeout(4000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000),
     });
-    return res.ok ? ((await res.json()) as WhatIf) : null;
+    return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;
   }
 }
+
+export const whatIf = (id: string, overrides: Record<string, number | string>) =>
+  post<WhatIf>(`/cases/${id}/whatif`, { overrides }, PROXY);
+
+/** The grid behind the 3D view. Read once on the server; the API caches it per desk run. */
+export const surfaceOf = (id: string, resolution = 11) => post<Surface>(`/cases/${id}/surface`, { resolution });
 
 export const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 export const signed = (n: number, d = 1) => `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n).toFixed(d)}`;
