@@ -165,8 +165,7 @@ until `packs/us/prefetch.py` has run. We left the failure visible rather than sk
 - **Run the backtest on a real book.** Nothing in the engine depends on the data being synthetic.
 - **The fairness audit on the renter price.** Break-in density correlates with income. Every
   location factor is capped and shrunk, and nobody has checked what the cap does across the city.
-- **Finish the parts that exist as endpoints.** The spoken briefing has audio and per-sentence timing
-  marks and no web player. The desk has run on 6 of 21 cases.
+- **Run the desk on the rest of the book.** The desk has run on 6 of 21 cases.
 
 ## Built with
 
@@ -186,7 +185,7 @@ expo-print, expo-haptics, expo-blur, expo-speech, @gorhom/bottom-sheet
 gemini-2.5-flash-preview-tts), backboard-sdk
 
 **Services:** federato, elasticsearch (9.x), kibana, composio (gmail, google calendar, google
-sheets, linear, notion), linq, sentry, backboard.io, elevenlabs (called over HTTP, no SDK)
+sheets, linear, notion), linq, sentry, backboard.io
 
 **Data:** federato snapshot, fema flood, usgs earthquakes, usfs wildfire, open-meteo, nominatim,
 city of toronto open data, toronto police open data, openfreemap, openstreetmap
@@ -234,10 +233,6 @@ One line each on why it qualifies. The verified-versus-unverified detail for eve
   values that Python sums and clamps, Maps grounding for a cited "what is around you" card, TTS for
   the quote read aloud, and code execution re-adding the receipt where the tick the UI shows is
   computed by our Python and not by the model.
-- **ElevenLabs.** The case read aloud with per-character timestamps mapped to one mark per sentence,
-  anchored to the part of the screen being discussed, composed only from the case's computed fields.
-  Seven briefings are generated and cached; the web player that consumes the marks is not built, so
-  today this is an endpoint rather than a button.
 - **Backboard.** Cross-case memory scoped to an assistant, holding what the desk learned about a
   broker, a peril and a region across cases, with a hard boundary: nothing memory returns enters the
   fact list the number check reads, so a remembered number cannot reach the ledger. Live calls were

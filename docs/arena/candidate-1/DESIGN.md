@@ -10,7 +10,7 @@ Atlas must win Federato first and Intact second from one engine, built solo with
 4. **The ground truth is thin and mostly off-guideline.** 14 declines, only one property (115, loss_history). 3 are `broker_withdrew` (not an underwriting decision). 17 of 27 bound property policies carry premium above the guideline's $175K ceiling, so the humans wrote outside the 2025 guideline routinely. A backtest that claims "agrees with humans 12/14" would be padding.
 5. **Only property has a guideline**, yet the carrier binds 75 non-property policies. Other lines are "outside this desk's appetite, route", not "decline".
 
-Constraints carried in: no number from a model; missing is never a pass; provenance on every value; cached external lookups; region-agnostic engine (AGENTS.md). Integration facts from INTEGRATIONS.md: compute H3 cells and boundary polygons server-side (no h3-js in Expo Go), react-native-maps only, Elastic aggregates a keyword `h3` field with a terms aggregation, Linq inbound payload logged raw first, model ids from config, ElevenLabs last with a cached mp3.
+Constraints carried in: no number from a model; missing is never a pass; provenance on every value; cached external lookups; region-agnostic engine (AGENTS.md). Integration facts from INTEGRATIONS.md: compute H3 cells and boundary polygons server-side (no h3-js in Expo Go), react-native-maps only, Elastic aggregates a keyword `h3` field with a terms aggregation, Linq inbound payload logged raw first, model ids from config.
 
 ## Usage (caller's view)
 

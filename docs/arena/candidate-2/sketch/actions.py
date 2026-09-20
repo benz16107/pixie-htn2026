@@ -1,6 +1,6 @@
-"""atlas.actions: the four real-world actions, all idempotent by event key, all recorded as events.
+"""atlas.actions: the three real-world actions, all idempotent by event key, all recorded as events.
 
-Priority (LOCKED): 1 Composio broker email, 2 Linq iMessage digest + reply loop, 3 Gemini places card, 4 ElevenLabs briefing.
+Priority (LOCKED): 1 Composio broker email, 2 Linq iMessage digest + reply loop, 3 Gemini places card.
 Every perform() writes an action_result event; a second perform() with the same key returns the stored result
 without calling the provider (the demo may click twice; the judge's phone gets one text).
 """
@@ -13,27 +13,27 @@ from pydantic import BaseModel
 
 from .case import CaseStore, CaseView, Event, Kind
 
-ActionKind = Literal["request_info", "notify", "briefing", "places_card"]
+ActionKind = Literal["request_info", "notify", "places_card"]
 
 
 class ActionP(BaseModel):
     kind: ActionKind
-    to: str | None                       # email or phone; None for briefing/places
-    body: str                            # rendered text (email body / iMessage / script); numbers checked
+    to: str | None                       # email or phone; None for places
+    body: str                            # rendered text (email body / iMessage); numbers checked
     subject: str | None = None
 
 
 class ActionResultP(BaseModel):
     ok: bool
-    provider: Literal["composio", "linq", "elevenlabs", "gemini", "cache"]
+    provider: Literal["composio", "linq", "gemini", "cache"]
     external_id: str | None = None
-    artifact: str | None = None          # path to mp3 / json card
+    artifact: str | None = None          # path to json card
     error: str | None = None
 
 
 class Actions:
     def __init__(self, store: CaseStore, *, composio_key: str | None, composio_user: str, gmail_account_id: str | None,
-                 linq_token: str | None, linq_chat_id: str | None, eleven_key: str | None, eleven_voice: str | None,
+                 linq_token: str | None, linq_chat_id: str | None,
                  gemini_key: str | None, gemini_model: str, artifacts: Path): ...
 
     @classmethod
@@ -72,12 +72,6 @@ class Actions:
         (a Google display requirement). points=0 always; it is context for the underwriter, not a score input."""
         raise NotImplementedError
 
-    # -- 4. ElevenLabs: the spoken queue briefing ----------------------------------------------------------
-    def briefing(self, top: list[CaseView]) -> ActionResultP:
-        """Script from the same digest text (numbers checked) -> text_to_speech.convert(model 'eleven_flash_v2_5')
-        -> artifacts/briefing-<hash>.mp3 served at GET /briefing.mp3. Cached by hash; if the key fails, the last
-        good mp3 plays and the result says provider='cache'."""
-        raise NotImplementedError
 
 
 if __name__ == "__main__":

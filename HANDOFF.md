@@ -15,8 +15,8 @@ to demo it; read this if the job is to change it.
 | `atlas-a1` … `atlas-a7` | Git worktrees used to run agents in parallel. Scratch. Nothing of Ben's lives there |
 | Runs on | macserver only. Ben demos from his laptop and phone over Tailscale |
 
-**Do not move the project to the laptop.** Everything (recorded agent runs, the hazard cache, the
-briefings, the Elastic indices, every key) lives here.
+**Do not move the project to the laptop.** Everything (recorded agent runs, the hazard cache,
+the Elastic indices, every key) lives here.
 
 ## 2. Bringing it up
 
@@ -73,7 +73,6 @@ it caught the Lead quoting $35,716,000 that no tool had produced.
       linq_routes.py  iMessage digest, tapbacks, receipt images, in-thread quote
       gemini_routes.py photo inventory, Maps grounding, TTS, code-execution check
       memory.py       Backboard assistant memory, RAG, System One judgements
-      briefing.py     ElevenLabs audio with per-sentence timing marks
       app.py          the FastAPI shell and the view builders
 
     web/    Next.js 16. The shipping design is the "trading desk" direction (was lane/d1)
@@ -82,8 +81,8 @@ it caught the Lead quoting $35,716,000 that no tool had produced.
     eval/   the pre-registered backtest and the per-model eval
     rules/  property_2025.yaml, the guideline the engine reads
 
-50 API routes. Key ones beyond CRUD: `/cases/{id}/explain`, `/whatif`, `/sensitivity`, `/surface`,
-`/precedent`, `/briefing`, `/memory`, `/override`, `/guideline` (GET/PUT), `/guideline/reset`,
+Key API routes beyond CRUD: `/cases/{id}/explain`, `/whatif`, `/sensitivity`, `/surface`,
+`/precedent`, `/memory`, `/override`, `/guideline` (GET/PUT), `/guideline/reset`,
 `/composio/cases/{id}/broker-reply/check`, `/demo/reset`.
 
 ## 5. Things that will bite you

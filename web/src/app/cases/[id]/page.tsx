@@ -10,7 +10,6 @@ import { Swimlanes } from "@/components/Swimlanes";
 import { PriceWaterfall, Waterfall } from "@/components/case/Waterfall";
 import { Views } from "@/components/case/Views";
 import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
-import { Briefing } from "@/components/case/Briefing";
 import { CaseNav } from "@/components/case/CaseNav";
 import { Deck } from "@/components/case/Deck";
 import { Override } from "@/components/case/Override";
@@ -95,10 +94,9 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             desk went with {verdict}
           </span>
         )}
-        <Briefing caseId={view.caseId} />
         <span className="ml-auto" />
         {view.kind === "commercial" && (
-          <span data-brief="action" className="shrink-0 pr-1">
+          <span className="shrink-0 pr-1">
             <Actions caseId={view.caseId} facts={flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
           </span>
         )}
@@ -141,11 +139,11 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
 
           {tenant ? (
             <>
-              <div data-brief="score" className="mt-2 flex min-h-0 flex-1 flex-col">
+              <div className="mt-2 flex min-h-0 flex-1 flex-col">
                 <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
               </div>
               {view.receipt && (
-                <div data-brief="facts" className="mt-2 max-h-[190px] overflow-auto border-t border-rule pt-2">
+                <div className="mt-2 max-h-[190px] overflow-auto border-t border-rule pt-2">
                   <Receipt r={view.receipt} />
                 </div>
               )}
@@ -178,7 +176,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               </>
             }
           >
-            <table data-brief="facts" className="w-full border-collapse">
+            <table className="w-full border-collapse">
               <caption className="sr-only">Every fact on this case, how sure the desk is of it, and the source it came from.</caption>
               <tbody>
                 {view.facts.map((f) => {
@@ -209,7 +207,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           </Rail>
         </aside>
 
-        <aside data-brief="challenge" className="min-h-0 overflow-y-auto" aria-label="Challenge and precedent">
+        <aside className="min-h-0 overflow-y-auto" aria-label="Challenge and precedent">
           {view.challenge ? (
             <Challenger c={view.challenge} deskVerdict={view.deskVerdict} rulesDecision={view.decision.kind} />
           ) : (

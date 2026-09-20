@@ -3,12 +3,12 @@
 ## Clock and constraints
 - Now Sat Sep 19 ~17:10 EDT. Submission edits close Sun 08:00. Sponsor judging Sun 09:45-11:45. **~5 minutes per demo**; one person can visit ~6-7 booths.
 - **SOLO builder** using Claude Code and Codex in parallel (2-3 coding agents at once). Strong in ML, backend, 3D/frontend. Machine: MacBook (32 GB) for building, iPhone for Expo Go.
-- Only ONE project can be submitted. Prizes already ticked on Devpost (only these can win): Federato, Intact, Rox, OpenAI, Huawei openJiuwen, Linq, Sentry, Composio, Elastic, Expo, Gemini (MLH), ElevenLabs (MLH), plus others that don't fit (Shopify, Baseten, Backboard, Browserbase, Tiger Data, MongoDB, Huawei OMNI, RBC, Zip). Verbatim prize texts: /Users/ben/Code/hackathons/htn-2026/TRACKS.md
+- Only ONE project can be submitted. Prizes already ticked on Devpost (only these can win): Federato, Intact, Rox, OpenAI, Huawei openJiuwen, Linq, Sentry, Composio, Elastic, Expo, Gemini (MLH), plus others that don't fit (Shopify, Baseten, Backboard, Browserbase, Tiger Data, MongoDB, Huawei OMNI, RBC, Zip). Verbatim prize texts: /Users/ben/Code/hackathons/htn-2026/TRACKS.md
 
 ## Ben's LOCKED product decisions (do not relitigate; design the best version of these)
 1. Federato first, Intact second, ONE shared risk engine.
 2. **Multi-agent underwriting desk** (Lead underwriter + Intake + Appetite + Hazard + Portfolio) with a **visible trace per agent** (swimlane UI). Custom orchestrator is fine (Huawei openJiuwen: JiuwenSwarm "encouraged, though this isn't required"; judged on multi-agent collaboration quality, scenario creativity, demo completeness, technical implementation, reusability).
-3. **Four real-world actions:** Composio (email the broker requesting missing data), Linq (iMessage the underwriter the top applications; reply "approve 3"/"refer 2" writes the decision), Gemini Maps grounding ("what's around this address" card), ElevenLabs (spoken queue briefing). Priority in that order.
+3. **Three real-world actions:** Composio (email the broker requesting missing data), Linq (iMessage the underwriter the top applications; reply "approve 3"/"refer 2" writes the decision), Gemini Maps grounding ("what's around this address" card). Priority in that order.
 4. **Intact consumer side = Expo app** (Expo Go, no native build): Toronto tenant quote, address -> hex risk map -> 3 questions -> instant approve/refer from the SAME engine -> "why this price" receipt -> "View as underwriter" opens the same case on web.
 5. **Demo wow:** (a) backtest of the desk against the human underwriters' real decisions; (b) plain-English question box that shows the Federato query the Intake agent writes.
 
@@ -57,7 +57,7 @@ All lookups should run once and cache to disk.
 ## Existing drafts to improve on (not to copy blindly)
 - /Users/ben/Code/hackathons/htn-2026/federato/PLAN.md (my current plan incl. LOCKED section, scoring rules, timeline, demo).
 - /Users/ben/Code/hackathons/htn-2026/rbc/DESIGN.md (the "no number from a model" discipline, verify-before-display, interval thinking) is the house style.
-- Integration facts (OpenAI Agents SDK, Sentry, Linq, Composio, ElevenLabs, Gemini Maps grounding, Expo Go maps, Elastic geohex, H3): /Users/ben/Code/hackathons/htn-2026/federato/INTEGRATIONS.md (being written now; read it if present, and verify anything you rely on that isn't there).
+- Integration facts (OpenAI Agents SDK, Sentry, Linq, Composio, Gemini Maps grounding, Expo Go maps, Elastic geohex, H3): /Users/ben/Code/hackathons/htn-2026/federato/INTEGRATIONS.md (being written now; read it if present, and verify anything you rely on that isn't there).
 
 ## Repo scaffold (already created, no feature code)
 /Users/ben/Code/hackathons/htn-2026/atlas/: api/ (uv, Python 3.12, FastAPI, src/atlas_api/), web/ (Next.js app router, TS, Tailwind), app/ (Expo tabs template), packs/us, packs/toronto, data/federato -> federato data, docs/federato -> docs, .env (Federato creds; other keys coming).

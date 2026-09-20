@@ -94,7 +94,6 @@ export interface QuoteView {
   hexes: Hex[]; center: [number, number];
   listSummary: string;                     // the full non-map path, screen-reader first
   underwriterUrl: string;                  // https://<web>/cases/TQ-7f3a
-  audioUrl?: string;                       // ElevenLabs "read my quote"
 }
 
 // Endpoints (FastAPI). Every GET is served from cache when ATLAS_OFFLINE=1.
@@ -112,7 +111,6 @@ export const routes = {
   override: "POST /cases/{id}/override {points, reason}", // CaseOverride; DELETE undoes it
   digest: "POST /actions/digest {n}",                   // OutboxItem
   linqWebhook: "POST /webhooks/linq",                   // 200 always; raw payload logged first
-  briefing: "GET /briefing.mp3",                        // cached ElevenLabs audio
   surroundings: "POST /cases/{id}/surroundings",        // SurroundingsCard
   health: "GET /health",                                // Sentry uptime monitor target
 } as const;

@@ -30,6 +30,6 @@ battery, and prints every URL.
 
 ## What cannot break
 
-The recorded runs, the enrichment layers, the briefings and the precedent fallback are all on disk
+The recorded runs, the enrichment layers and the precedent fallback are all on disk
 on macserver. With the internet down but the tailnet up, the whole demo still plays. Only the live
 model runs and the sponsor calls need the outside world.

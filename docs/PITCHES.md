@@ -1,6 +1,6 @@
 # Pixie: sponsor pitches
 
-Twelve 5-minute pitches for Sunday judging. Every number below was read off a source in this repo
+Eleven 5-minute pitches for Sunday judging. Every number below was read off a source in this repo
 or off the running system on 2026-09-19, and the source is named. Sources of truth:
 `docs/TRACKS.md` (verified vs unverified per track), `docs/ARCHITECTURE.md`, `docs/SENTRY.md`,
 `docs/ELASTIC.md`, `docs/LINQ.md`, `docs/COMPOSIO.md`, `docs/EXPO-GEMINI.md`, `docs/OPENAI.md`,
@@ -21,9 +21,6 @@ Cut from the bottom of the route, in this order, one at a time:
 2. **Expo.** It needs the phone, the tunnel and `EXPO_PUBLIC_API_URL` pointed at it. Most rig for
    the time.
 3. **Gemini.** One card, three minutes.
-4. **ElevenLabs.** Three minutes. Built, on disk, and now playable: "Read this case" on
-   `/cases/138` reads it in Ben's own cloned voice and the screen rings whatever is being said.
-
 Never cut Federato, Intact, Rox or OpenAI.
 
 ---
@@ -43,14 +40,13 @@ Never cut Federato, Intact, Rox or OpenAI.
 | 9 | Elastic | Live ES\|QL that matches the agent's number | `pixie-precedent` holds 127 docs, 14 of them declines | `/cases/138` precedent panel | 10:49 |
 | 10 | Expo | Mobile craft, with VoiceOver on | Reduce Motion is honoured in 3 places, not one | Expo app, VoiceOver on | 10:57 |
 | 11 | Gemini | The one card on the page that is not our arithmetic | Fire Station 332, 260 Adelaide St W, with a Google Maps citation | `/gemini/context` card | 11:05 |
-| 12 | ElevenLabs | Audio first | 5 sentence marks on case 138, each anchored to a part of the screen | Briefing playing next to `/cases/138` | 11:13 |
-| | Buffer | Return to anyone who was busy, answer follow-ups | | | 11:21-11:45 |
+| | Buffer | Return to anyone who was busy, answer follow-ups | | | 11:13-11:45 |
 
 ---
 
 ## Route rules
 
-- Each stop gets 8 minutes: 5 to pitch, 3 to walk and reset. Twelve stops use 96 of 120 minutes.
+- Each stop gets 8 minutes: 5 to pitch, 3 to walk and reset. Eleven stops use 88 of 120 minutes.
 - If a queue is longer than 8 minutes at a top-4 sponsor, take the next stop and come back.
 - **Reset between stops.** `curl -X POST localhost:8000/demo/reset` puts the queue back to its
   opening state (`docs/RUNBOOK.md`). The outbox is idempotent, so a second click on 138 sends
@@ -59,7 +55,7 @@ Never cut Federato, Intact, Rox or OpenAI.
   `ATLAS_ACTIONS=dry`.
 - Send each Linq digest just before its pitch, not in advance.
 - Before 09:30, work the checklist in `docs/RUNBOOK.md` section 5: tests, production web build,
-  demo reset, warm the briefings, phone on the same Wi-Fi, backup video on the laptop.
+  demo reset, phone on the same Wi-Fi, backup video on the laptop.
 
 ---
 
@@ -591,45 +587,3 @@ for everything it says, and our arithmetic still owns the price."
   the card is advisory.
 - *Is it live?* Yes, and it caches to disk by request, so showing the same block twice costs one
   call. Warm the cache before the booth.
-
----
-
-## 12. ElevenLabs
-
-**What they asked for.** Natural, human-sounding audio, and projects that give your project a voice.
-
-**The one thing only Pixie can say.** The briefing is not narration over a screenshot. Every sentence
-carries a start and end second and an anchor naming the part of the screen it is about, so the audio
-and the page stay in step.
-
-**The screen.** `/cases/138` with the briefing playing beside it.
-
-**The number.** Case 138's briefing is five sentences and five marks: two anchored to the score, one
-to the flip point, two to the challenge. The renter briefing for 565 McRoberts Ave is four.
-
-**The limitation I say first.** The voice is a clone of mine, so it is a voice we had rights to and
-one judge in the room can verify by ear. Every briefing is cached to disk: if I ask for a case
-nobody has opened tonight, it takes a few seconds to synthesise, and I would rather say that than
-have it look instant and be fake.
-
-| Time | Say | Screen | Fallback |
-|---|---|---|---|
-| 0:00-0:40 | Press **Read this case** before speaking. It reads case 138 in my own cloned voice while the page rings each part as it is mentioned. Then: "That is the case, read aloud, stepping through the page as it goes." | `/cases/138`, audio playing | Cached mp3 from `var/briefings` |
-| 0:40-1:40 | "The endpoint returns the mp3 and a start and end second for every character. We fold that into one mark per sentence and tag each mark with what it is talking about: score, facts, flip, challenge, action. So the sentence about the $50,000 flip point lands while you are looking at the slider." | The marks JSON next to the waterfall | The JSON |
-| 1:40-2:30 | "The script is composed from the case's own computed fields, so the voice cannot say a number the engine did not produce. Change the decision and the audio changes with it." | The script next to the case facts | |
-| 2:30-3:10 | "It works on the consumer side too. The renter quote reads itself: the price, the base, and the line that moves it most, with where that line came from." | The renter briefing | The mp3 |
-| 3:10-4:20 | Condensed product story: the interval, the case against, the broker email. | `/cases/138`, then `/live` | Replay |
-| 4:20-5:00 | "Honest scope: the audio is cached per case, so a case nobody has opened takes a few seconds to synthesise." Then press **Script** and click a sentence to show the highlight moving with the sound off. Closing line. | `/cases/138` | |
-
-**Opening line.** (After the audio.) "That is the case, read aloud, in step with the page."
-
-**Closing line.** "Per-sentence timings anchored to parts of the screen, generated from the same
-computed fields the page renders, so the voice can only say what the engine can back up."
-
-**Likely questions.**
-- *Is it generated live?* It generates on request and caches to disk by script, so the same case
-  costs one call. Warm them before the booth; the runbook lists which ones.
-- *Which model and voice?* `eleven_turbo_v2_5`, with the voice id from the environment, overridable
-  with `ELEVENLABS_VOICE_ID`.
-- *Why would an underwriter want audio?* Hands-free review between calls, and on the renter side it
-  is an accessibility feature next to VoiceOver.

@@ -20,7 +20,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 **Night rules:**
 - A milestone missed by more than 30 minutes triggers the cut order (section 9), not a later bedtime.
 - Every merge runs `uv run pytest -q` and `npm --prefix web run build`. Red means no merge.
-- After 02:15, extras (Gemini, ElevenLabs, polish) only if tests stay green; after 06:00, only one-line fixes.
+- After 02:15, extras (Gemini, polish) only if tests stay green; after 06:00, only one-line fixes.
 
 ---
 
@@ -36,7 +36,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | 22:30-00:00 | Commit `eval/BACKTEST.md` **before** the first backtest run; write demo script v1 | **T9** `ask()` (plain English to query, lint, retry); **T10** routes for backtest and map | **W6** ask box; **W7** backtest page; **W5** map, timeboxed to 23:45 | **C6** backtest (22:30-23:00); **C7** `tenant.yaml` + `quote_tenant` (23:00-23:15); **E1** Expo scaffold on mocks (from 23:15) | **M3 00:00 (Federato complete)**: section 6 beats 1-4 run in a clean browser; the backtest page shows measured numbers. Tag `demo-safe-2` |
 | 00:00-01:30 | Test actions end to end on real accounts; test the Expo app on the phone | **T11** Composio broker email via the outbox; **T12** Linq digest out + webhook in + `apply_command`; **T13** SSE push of human decisions | **W8** Toronto case view + `/privacy` + `/terms`; queue live-update UI | **E2-E5** Expo: address, map (server polygons), 3 questions, decision, receipt, list-only path, "View as underwriter" | **M4 01:30**: the broker email arrives; the digest arrives on the iPhone; replying "approve 1" flips the web row within 3 s; an Expo quote completes in Expo Go |
 | 01:30-02:15 | **Precompute**: desk run on the deep-dive cases (cost cap on), 3 cached questions, backtest, 3 demo tenant quotes; record the replay; copy `var/atlas-demo.sqlite`; offline test; rehearse once | Fix list | Fix list | Offline check (`ATLAS_OFFLINE=1`, Wi-Fi off) | **Feature freeze 02:15.** Tag `demo-safe-3` |
-| 02:15-04:00 | **No sleep (Ben's call).** Pitch rehearsal per sponsor (`PITCHES.md`); fix what rehearsal breaks | Gemini surroundings card (C8 moves here); Sentry extras (Session Replay) | Web map polish if it was cut; empty and error states | ElevenLabs briefing + "Read my quote"; Expo accessibility audit | Extras land on `main` only if the tests stay green |
+| 02:15-04:00 | **No sleep (Ben's call).** Pitch rehearsal per sponsor (`PITCHES.md`); fix what rehearsal breaks | Gemini surroundings card (C8 moves here); Sentry extras (Session Replay) | Web map polish if it was cut; empty and error states | Expo accessibility audit | Extras land on `main` only if the tests stay green |
 | 04:00-06:00 | Record a 60-90 s clip per sponsor pitch as a backup; second full offline run | Only fixes from rehearsal | Only fixes from rehearsal | README, Intact README, Devpost drafts; `CODEX.md` pass | Tag `demo-safe-4` |
 | 06:00-07:00 | Rerun the precompute if anything changed; record the full backup video | Only fixes Ben names | Only fixes Ben names | `INCIDENTS.md` pass | **Code freeze 07:00** |
 | 07:00-07:45 | Devpost write-up, README (with the Intact section), screenshots, video; submit | | | | **Submitted 07:45** (15 min buffer) |
@@ -92,7 +92,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | C6 | `backtest()` per `eval/BACKTEST.md` (B1-B4, `REASON_TO_LANE`, an as-of leakage rule) | Two runs produce byte-identical output; a leakage test passes |
 | C7 | `rules/tenant.yaml` + `quote_tenant` on the same `assess()`; persist `TQ-*` cases; the receipt | A basement unit in a flooding study area refers; the upper unit at the same address approves; **receipt lines sum exactly to the total** |
 | E1-E5 | Expo Router app in Expo Go: Address (text, "use my location") → Map (react-native-maps Polygons from the server, "Skip the map" always visible) → 3 questions → Decision + Receipt → About (sources, fairness, limits) → "View as underwriter" (expo-web-browser). Accessibility: `accessibilityLabel` everywhere, list-only path, dynamic type, 44 pt targets, reduced motion. `@sentry/react-native` JS errors | Runs on the iPhone over the tunnel; **no h3-js in `package.json`**; VoiceOver completes a quote without the map |
-| C8 (night) | Gemini Maps-grounding surroundings card (cached, it only adds a note and never changes a number) + ElevenLabs briefing to a cached mp3 | The card shows on 138 with place citations; the mp3 plays offline |
+| C8 (night) | Gemini Maps-grounding surroundings card (cached, it only adds a note and never changes a number) | The card shows on 138 with place citations |
 
 ---
 
@@ -106,7 +106,6 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 - [ ] **Elastic:** Cloud trial; URL + API key; create `atlas-exposure` and `toronto-events` (geo_point + keyword h3 fields). Try one `geohex_grid` query only to learn the licence answer.
 - [ ] **Sentry:** one Python project (agent spans, tracing, Logs) + one React Native project for Expo JS errors. Web Session Replay is COULD.
 - [ ] **Gemini:** key; one Maps-grounding call with a US point. If it's unavailable, drop it (it's at the bottom of the cut order).
-- [ ] **ElevenLabs:** key; one voice id; render a fallback `briefing.mp3` early (the free tier may block the API).
 - [ ] **Expo Go** on the iPhone; `npx expo start --tunnel` as the LAN fallback.
 - [ ] **Offline mode:** `ATLAS_OFFLINE=1` makes every client read only from the store cache and fail loudly on a miss.
 - [ ] **Hardware:** phone charger, a hotspot for venue-Wi-Fi failure, and a second browser profile logged into the demo broker inbox.
@@ -158,7 +157,6 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | 9 | **Elastic** (Quest 3S / Bose) | Exposure index (terms aggregation on keyword H3) answering the Portfolio agent; Toronto events index; ES\|QL in Kibana | The Portfolio lane's tool call; Kibana matching the case page | loader script |
 | 10 | **Expo** ($150) | Expo Router app in Expo Go, react-native-maps polygons, haptics, accessibility | The app on the phone | `app/` |
 | 11 | **Gemini** (swag) | The Hazard agent's surroundings card via Maps grounding (advisory only) | Card on 138 with cited places | cached card |
-| 12 | **ElevenLabs** (earbuds) | Spoken queue briefing; "Read my quote" in the Expo app | Tap, and it speaks | cached mp3 |
 
 **Short pitches (the full 5-minute pitch for each sponsor is in `PITCHES.md`):**
 - **Federato:** "21 open submissions, 6 of them property, and none has a premium. Atlas scores each as a range. Where the range crosses a decision line, the desk investigates, and only there. Watch 138: Intake finds the insured value through the insured's headquarters, estimates premium from comparable bound policies, Hazard skips earthquake for Florida and checks FEMA, and Portfolio checks what we already hold in that hurricane cell. What's left only the broker can answer, so it emails the broker. Every number is code. And here's the backtest against your underwriters, with the small n on screen."
@@ -168,7 +166,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 - **Huawei openJiuwen:** "A desk, not a chain. Specialists ask each other questions, code detects when they disagree, and the Lead resolves from options the guideline allows. It only goes deep where information can change the decision. Swap the rules file and the region pack, and the same desk reviews a Toronto tenant referral."
 - **Linq:** "The underwriter never opens the app. The top three arrive by iMessage. Reply 'approve 1' and it's written to the case, with the audit trail."
 - **Sentry:** "Every agent run is a Sentry trace with agent and tool spans. Here's the slow lookup a trace showed us, and what we changed" (read from `INCIDENTS.md`).
-- **Composio, Elastic, Expo, Gemini, ElevenLabs:** one line each, from the table above, on their own screen.
+- **Composio, Elastic, Expo, Gemini:** one line each, from the table above, on their own screen.
 
 **Booth route (09:45-11:45, about 6-7 stops):** Federato → Intact → Rox → OpenAI → Huawei → Linq → Sentry, then Composio and Elastic if time allows.
 
@@ -185,7 +183,7 @@ This plan was synthesized in an architecture arena: two independent designs (Opu
 | 3:00-4:10 | Phone: a Toronto address → map → 3 questions → approve or refer → receipt → "View as underwriter" opens the same case on the laptop | Expo Go + web | A pre-filled address; if the tunnel fails, the hotspot; the recorded clip as the last resort |
 | 4:10-5:00 | Linq: the digest is already on the phone; reply "approve 1"; the queue row flips live. Close: "Every number is code, every decision is traceable, and it runs on your schema." | Phone + queue | Replay the saved Linq payload to the webhook, labelled as simulated |
 
-Messy-data details, the Gemini card, the ElevenLabs briefing, and the Elastic query in Kibana are kept for their booths, or shown if a judge asks.
+Messy-data details, the Gemini card, and the Elastic query in Kibana are kept for their booths, or shown if a judge asks.
 
 ---
 
@@ -196,7 +194,7 @@ Messy-data details, the Gemini card, the ElevenLabs briefing, and the Elastic qu
 2. The problem, with the data facts: 21 open, missing premium, the headquarters path, duplicate brokers.
 3. How it works: interval scoring, flippers, the desk (roster, asks, conflicts, the Lead), schema-aware queries, enrichment sources.
 4. Proof: backtest numbers with n and the pre-registration commit.
-5. Actions: Composio, Linq, Gemini, ElevenLabs.
+5. Actions: Composio, Linq, Gemini.
 6. The Intact side: tenant quote, fairness guardrails, accessibility.
 7. Built with: one line per sponsor on what it does in Atlas, with a link to `CODEX.md`.
 8. Limitations: synthetic data, small n, illustrative tenant prices, Gemini advisory only.
@@ -234,16 +232,15 @@ Messy-data details, the Gemini card, the ElevenLabs briefing, and the Elastic qu
 - **Tier 0, never cut:** the Federato client and schema-aware queries, the case with provenance, the interval engine, verified explanations, the queue and case page, the desk with visible lanes (replay), and enrichment before/after.
 - **Tier 1:** the backtest page, the ask box, portfolio impact (in memory if needed), the Composio broker email, and the Expo tenant quote with its receipt and "View as underwriter".
 - **Tier 2:** the Linq loop, Elastic as the index, the web map, and Sentry beyond agent spans.
-- **Tier 3:** the Gemini card, ElevenLabs audio, geohex_grid, web Session Replay.
+- **Tier 3:** the Gemini card, geohex_grid, web Session Replay.
 
 **Cut order when a milestone slips by 30 minutes** (first to go at the top):
-1. ElevenLabs
-2. Gemini
-3. Web map (keep the portfolio line)
-4. Elastic (use the in-memory index)
-5. Linq (use a labelled fixture replay)
-6. The Expo map screen (keep the list path; the app still quotes)
-7. Live desk mode (replay only)
+1. Gemini
+2. Web map (keep the portfolio line)
+3. Elastic (use the in-memory index)
+4. Linq (use a labelled fixture replay)
+5. The Expo map screen (keep the list path; the app still quotes)
+6. Live desk mode (replay only)
 
 ---
 

@@ -105,9 +105,9 @@ column twitches when a what-if re-scores.
 
 ## Motion
 
-Four transitions, all 150–220ms, all on `transform` or `opacity` or `color`: the interval bar
-narrowing when evidence lands, lane cards arriving with `@starting-style`, the help sheet rising
-from the status bar it belongs to, and the briefing ringing the section it is talking about.
+Three transitions, all 150–220ms, all on `transform` or `opacity` or `color`: the interval bar
+narrowing when evidence lands, lane cards arriving with `@starting-style`, and the help sheet rising
+from the status bar it belongs to.
 `prefers-reduced-motion: reduce` removes all of them; a check under emulated reduce found zero
 running animations.
 

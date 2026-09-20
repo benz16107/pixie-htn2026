@@ -80,14 +80,6 @@ limitation to name before the judge finds it. Full five-minute scripts are in `.
 - **Number** six screens, four native capabilities: camera, haptics, print/share, audio
 - **Limit** Expo Go only, no native build, so no mobile crash reporting
 
-## ElevenLabs
-- **Open** `/cases/138` → Read this case
-- **Only we can say** the audio drives the screen. Every sentence carries a start and end second and
-  the part of the page it is about.
-- **Number** case 138 is five marked sentences; the renter briefing is four
-- **Limit** it is a clone of my own voice, and briefings are cached per case, so a case nobody has
-  opened takes a few seconds
-
 ## Backboard
 - **Open** `curl http://macserver:8000/cases/141/memory`, then add `?live=true`
 - **Only we can say** the desk remembers across cases and the boundary is mechanical: memory can

@@ -140,30 +140,7 @@ Sources: [Composio executing tools docs](https://docs.composio.dev/docs/tools-di
 
 ---
 
-## 5. ElevenLabs text-to-speech
-
-**Works — verified.**
-
-```python
-from elevenlabs.client import ElevenLabs
-
-client = ElevenLabs(api_key="...")
-audio = client.text_to_speech.convert(
-    voice_id="<voice_id>",
-    model_id="eleven_flash_v2_5",   # low-latency; eleven_multilingual_v2 for quality, eleven_v3 for expressiveness
-    text="Underwriting decision is ready.",
-)
-# or client.text_to_speech.stream(...) for <1s-latency streaming MP3 chunks
-```
-Output is MP3 by default; all models support streaming.
-
-**Free tier (2026):** 10,000 credits/month, non-commercial only, no API-level restriction beyond credit cap noted in sources (some 2026 guides say "no API access" on free — conflicting with the fact API code samples exist; treat free-tier API access as **unverified**, budget for a paid key for the hackathon to be safe). Cost: `eleven_multilingual_v2` = 1 credit/char, Flash models = 0.5 credits/char. Per-generation cap of 2,500 characters on free tier (~2 min audio). No credit rollover.
-
-Sources: [ElevenLabs TTS overview](https://elevenlabs.io/docs/overview/capabilities/text-to-speech) · [Stream speech API ref](https://elevenlabs.io/docs/api-reference/text-to-speech/stream) · [Create speech API ref](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)
-
----
-
-## 6. Gemini API — Grounding with Google Maps
+## 5. Gemini API — Grounding with Google Maps
 
 **Exists — verified.**
 
@@ -190,7 +167,7 @@ Sources: [Grounding with Google Maps](https://ai.google.dev/gemini-api/docs/maps
 
 ---
 
-## 7. Expo Go — maps, H3, location, router
+## 6. Expo Go — maps, H3, location, router
 
 **Mixed — verified per sub-item.**
 
@@ -203,7 +180,7 @@ Sources: [react-native-maps Expo docs](https://docs.expo.dev/versions/latest/sdk
 
 ---
 
-## 8. Elastic — geo_point / geohex_grid / geo_distance
+## 7. Elastic — geo_point / geohex_grid / geo_distance
 
 **Works — mostly verified, license unresolved.**
 
@@ -239,7 +216,7 @@ Sources: [Geohex grid aggregation](https://www.elastic.co/docs/reference/aggrega
 
 ---
 
-## 9. H3 in Python (v4 API)
+## 8. H3 in Python (v4 API)
 
 **Works — verified.**
 
@@ -264,5 +241,4 @@ Sources: [h3-py PyPI](https://pypi.org/project/h3/) · [h3-py GitHub](https://gi
 4. **Linq's inbound webhook payload shape (and whether tapbacks fire their own event) is unverified** — pull the live webhook reference doc and do a real send/react round-trip before wiring the Intake agent's inbound handler, rather than coding against the shape a search engine guessed at.
 5. **Composio Gmail multi-account routing is a repeat of a gotcha you've hit before on Instagram** — don't trust default `user_id`-only routing if more than one Gmail account could be connected; pass `connected_account_id` explicitly and verify the send lands on the right account.
 6. **Model names for both OpenAI (`gpt-6-astra`, `gpt-5.6-luna`/`gpt-5.6-sol`) and Gemini (3.8/3.7/3.6 Flash etc.) are past this session's knowledge cutoff and look unusual** — both were confirmed via live doc fetches from official domains, but cross-check against your actual API dashboard/model picker at build time in case of a doc-vs-availability mismatch.
-7. **ElevenLabs free-tier API access is contradicted between sources** (some 2026 guides say no API access on free tier). Get a paid key ahead of the event rather than discovering the block mid-hackathon.
 8. **Sentry's OpenAI Agents integration may not span-out handoffs separately** — verify the per-agent trace UI actually shows Lead→Hazard as a distinct step before building demo narrative around it; the fetched docs only confirmed agent invocations, tool calls, and token counts as tracked.

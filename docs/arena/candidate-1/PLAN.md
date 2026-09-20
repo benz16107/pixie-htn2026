@@ -6,7 +6,7 @@ Lanes:
 - **B** = Ben. Integrator, keys, answer key, prompt tuning, merges, demo.
 - **A1** = Claude Code, backend core (`api/`): Federato client, case, engine, desk, actions.
 - **A2** = Claude Code, front ends: `web/` first, then `app/` (Expo) from 00:15.
-- **A3** = Codex, data and proof: region packs, prefetch caches, Elastic, backtest, tests, Gemini/ElevenLabs wrappers. Every A3 task is logged in `CODEX.md` with its commit (OpenAI evidence).
+- **A3** = Codex, data and proof: region packs, prefetch caches, Elastic, backtest, tests, Gemini wrappers. Every A3 task is logged in `CODEX.md` with its commit (OpenAI evidence).
 
 Branch rule: each agent works in its own git worktree on `lane/a1`, `lane/a2`, `lane/a3`. Ben merges to `main` at every milestone and tags `demo-safe-N`. The contract (`api` pydantic models, exported to `shared/api.d.ts`) changes only through A1, and A1 posts fixture JSON (`api/fixtures/*.json`) at 18:45 so A2 never waits on a live backend.
 
@@ -22,7 +22,7 @@ Branch rule: each agent works in its own git worktree on `lane/a1`, `lane/a2`, `
 | 20:15-20:45 | Dinner | T5 FastAPI routes `/queue`, `/cases/{id}` from the engine; Sentry FastAPI + logs | W3 wired to the live API | C3 continued: enrichment on/off chip data | |
 | 20:45-22:45 | Prompt the five agents on 138, 143, 126; watch lanes; adjust `DeskPolicy` | T6 `DeskEvent`, `CaseLog`, `CaseFile.fold`; T7 five agents (Agents SDK, output_type), scheduler, conflicts, `verify_numbers`; T8 replay recorder | W4 swimlane component (lanes, ask/answer arrows, tool chips, interval animation) on SSE, replay speed control | C4 Elastic: `atlas-exposure` + `toronto-events` loaders, `ExposureIndex` both impls, equality test; C5 Toronto hex scores with shrinkage | **M2 22:45**: `POST /desk/run {caseIds:[138,143,126]}` completes live in under 60 s each; lanes render live and in replay; at least one Ask between two specialists appears |
 | 22:45-00:15 | Freeze the backtest definitions: commit `eval/BACKTEST.md` BEFORE the first run. Draft demo script v1 | T9 `ask()` NL path (lint, run, retry); T10 wire backtest to API | W5 map page (book hexes by TIV and peril, case pin, portfolio impact line); W6 ask box (attempts, payload JSON, rows); W7 backtest page | C6 `backtest()` metrics B1-B4 with as_of leakage rule; C7 `rules/tenant.yaml` + `packs/toronto` layers + `quote_tenant` + tests | **M3 00:15 (Federato complete)**: demo beats 1-4 of section 6 run from a clean browser; backtest page shows measured numbers; tag `demo-safe-2` |
-| 00:15-01:45 | Actions end to end on real accounts; phone testing of Expo | T11 Outbox + Composio broker email; T12 Linq digest out + webhook in + `apply_command`; T13 SSE push of human decisions to the queue | E1-E5 Expo app: address, map, 3 questions, decision, receipt, list path, "View as underwriter", "Read my quote" | C8 Gemini surroundings card + ElevenLabs `speak` with caches; C9 Sentry web Session Replay + Expo JS errors + uptime monitor on `/health` | **M4 01:45**: broker email arrives in the demo inbox; digest arrives on Ben's iPhone; reply "approve 1" flips the web row within 3 s; Expo quote completes on the phone in Expo Go |
+| 00:15-01:45 | Actions end to end on real accounts; phone testing of Expo | T11 Outbox + Composio broker email; T12 Linq digest out + webhook in + `apply_command`; T13 SSE push of human decisions to the queue | E1-E5 Expo app: address, map, 3 questions, decision, receipt, list path, "View as underwriter", "Read my quote" | C8 Gemini surroundings card with caches; C9 Sentry web Session Replay + Expo JS errors + uptime monitor on `/health` | **M4 01:45**: broker email arrives in the demo inbox; digest arrives on Ben's iPhone; reply "approve 1" flips the web row within 3 s; Expo quote completes on the phone in Expo Go |
 | 01:45-02:30 | Full precompute: desk run on all deep dives, 3 canned questions, backtest, tenant quotes for 3 demo addresses; record replay; rehearse once | Fix list from rehearsal | Fix list from rehearsal | Offline check: `ATLAS_OFFLINE=1`, Wi-Fi off, the whole demo runs | **Feature freeze 02:15.** Tag `demo-safe-3` |
 | 02:30-06:00 | **Sleep 3.5 h** | idle | idle | Bounded overnight tasks on `lane/a3-night` only: O1 Expo accessibility audit (labels, 44 pt, dynamic type), O2 README and Intact README drafts, O3 extra tests. No merges | Sentry uptime monitor watches the tunnel overnight |
 | 06:00-07:00 | Merge chosen overnight work; rerun precompute if anything in the engine changed; record the backup video (5 min, screen + phone) | Only fixes Ben names | Only fixes Ben names | CODEX.md and INCIDENTS.md evidence pass | **Code freeze 07:00.** Tag `submitted` |
@@ -72,7 +72,7 @@ Each task is small enough to paste into a coding agent. "Accept" is the test tha
 | E1 | Expo Router screens: Address (text + "use my location"), Map, Questions (3), Decision + Receipt, About (sources, fairness, limits) | QuoteView | `app/app/*` | runs in Expo Go on Ben's iPhone via the tunnel URL |
 | E2 | Map screen: `react-native-maps` Polygons from `hexes` (server-side boundaries), legend, a "Skip the map" button always visible | Hex[] | `MapScreen.tsx` | no h3-js dependency in `package.json` |
 | E3 | Receipt: base, each line with multiplier, dollar effect, "capped" badge, source; recommendation (e.g. sewer backup add-on); next step; illustrative label | QuoteView | `Receipt.tsx` | total equals base times capped product (asserted in a unit test on the API side) |
-| E4 | Accessibility: `accessibilityLabel` on every control, list-only summary screen, dynamic type, 44 pt targets, reduced motion, contrast AA; "Read my quote" plays `audioUrl` (expo-audio) | | | VoiceOver walkthrough completes the quote without the map |
+| E4 | Accessibility: `accessibilityLabel` on every control, list-only summary screen, dynamic type, 44 pt targets, reduced motion, contrast AA; "Read my quote" uses Gemini speech with an on-device fallback | | | VoiceOver walkthrough completes the quote without the map |
 | E5 | "View as underwriter" opens `underwriterUrl` (expo-web-browser); haptic on decision; Sentry `@sentry/react-native` JS errors | | | tap opens the web case page with Toronto layers in the lanes |
 
 ### A3 Codex (data and proof)
@@ -86,7 +86,7 @@ Each task is small enough to paste into a coding agent. "Accept" is the test tha
 | C5 | Toronto hex scores: B&E per res-9 cell over grid_disk k=1, credibility shrink toward neighbourhood mean (k=20), percentile levels 0-4 | C1 | `packs/toronto/layers.py` | 3 demo addresses produce different factors; a cell with 1 event does not exceed x1.03 |
 | C6 | `backtest()` per `eval/BACKTEST.md`: B1, B1b, B2, B3, B4, answer key; as_of leakage rule | engine | `proof.py`, `cache/backtest.json` | a leakage test: moving a claim's date_of_loss after as_of changes nothing in the input case |
 | C7 | `rules/tenant.yaml`, Toronto layers wired to `profile`, `quote_tenant`, geocoding from address points | C1, C5 | `engine.py` addition | basement unit in a study area refers; upper unit same address approves; receipt total test |
-| C8 | `surroundings()` (Gemini Maps grounding, cached) and `speak()` (ElevenLabs, cached mp3, pre-rendered fallback file) | actions.py | `actions.py` | card for 138 shows places with Maps links; `/briefing.mp3` plays offline |
+| C8 | `surroundings()` (Gemini Maps grounding, cached) | actions.py | `actions.py` | card for 138 shows places with Maps links |
 | C9 | Sentry: web Session Replay + tracing, API logs + tracing + OpenAIAgentsIntegration, Expo JS errors, uptime monitor on `/health`, cron monitor on the precompute job | DSNs | configs | a thrown test error appears in each project; one agent run shows agent and tool spans |
 | O1-O3 | Overnight, branch only: accessibility audit fixes for Expo; README drafts; more tests | | `lane/a3-night` | Ben reviews at 06:00 |
 
@@ -106,7 +106,6 @@ B1 keys and accounts (section 3). B2 answer key by 19:15. B3 Linq live test by 1
 - [ ] **Elastic**: Cloud trial; `ELASTIC_URL` and API key; create `atlas-exposure` and `toronto-events` with `geo_point` and keyword `h3_*` fields. Try one `geohex_grid` query to learn the licence answer (optional extra only).
 - [ ] **Sentry**: three projects (api-python, web-nextjs, app-react-native); DSNs in `.env`; enable Logs; uptime monitor on `/health` once the tunnel is up.
 - [ ] **Gemini**: API key; one Maps grounding call from the venue network with a US lat/lng and a Toronto lat/lng. If the tool is unavailable in the region, card shows "unavailable" and Gemini drops in the cut order.
-- [ ] **ElevenLabs**: key (paid if the free tier blocks the API); pick one voice id; render and commit a fallback `briefing.mp3`.
 - [ ] **Expo Go** on the iPhone, same account; `npx expo start --tunnel` works as a fallback if LAN is blocked.
 - [ ] **Caching**: `cache/` holds Federato snapshot and query cache, layers, events, TTS, Gemini cards, backtest. `ATLAS_OFFLINE=1` makes every client read only from cache and fail loudly on a miss.
 - [ ] **Hardware**: phone charger, hotspot as the venue-Wi-Fi fallback, a second browser profile logged into the demo inbox.
@@ -147,7 +146,6 @@ B1 keys and accounts (section 3). B2 answer key by 19:15. B3 Linq live test by 1
 | **Elastic** | Exposure index (terms on keyword H3 cells) answering the Portfolio agent's concentration question; Toronto events index driving the break-in layer; ES|QL in Kibana | Portfolio lane tool call hitting Elastic; Kibana ES|QL result matching the case page | `scripts/load_elastic.py` |
 | **Expo** | Expo Router app in Expo Go with react-native-maps polygons, haptics, expo-audio, accessibility | The app on the phone | `app/` |
 | **Gemini** | Hazard agent's surroundings card via Maps grounding with place citations; can only add an inspection subjectivity | Card on 138 with cited places | cached cards |
-| **ElevenLabs** | Spoken queue briefing (web) and "Read my quote" (Expo, accessibility) | Tap, it speaks | `cache/tts/` |
 
 ### 60-second booth pitches
 
@@ -160,7 +158,7 @@ B1 keys and accounts (section 3). B2 answer key by 19:15. B3 Linq live test by 1
 - **Sentry**: "Every agent run is a Sentry trace with agent and tool spans. Here is the slow Hazard lookup we found in a trace and moved to the prefetch cache, and the overnight uptime alert on our tunnel (INCIDENTS.md)."
 - **Composio**: "When only the broker can resolve a decision, the agent writes and sends the request through Composio Gmail, listing just the fields that matter and why."
 - **Elastic**: "Portfolio concentration is an Elastic aggregation over H3 cells of our active book; the Toronto break-in layer is an aggregation over 86K police points. Same query in ES|QL here."
-- **Expo / Gemini / ElevenLabs**: one-line add-ons on the Intact or Federato demo: the app itself; the surroundings card; the spoken briefing and read-aloud receipt.
+- **Expo / Gemini**: one-line add-ons on the Intact or Federato demo: the app itself; the surroundings card.
 
 ---
 
@@ -177,7 +175,7 @@ B1 keys and accounts (section 3). B2 answer key by 19:15. B3 Linq live test by 1
 | 3:35-4:25 | Phone: Toronto address, map, 3 questions, refer or approve, receipt, "Read my quote", then "View as underwriter" opens the same case on the laptop | Expo Go + web | pre-filled demo address; if the tunnel fails, phone on hotspot; if Expo fails, the recorded clip |
 | 4:25-5:00 | Linq: "the underwriter's morning": digest already on the phone, reply "approve 1", the queue row flips live. Close: "Every number is code, every decision is traceable, and it runs on your schema." | Phone + queue | if Linq is down, `POST /webhooks/linq` with the saved fixture from a terminal alias, labelled as simulated |
 
-Spoken briefing (ElevenLabs) and the Gemini card are shown only at their booths or if a judge asks.
+The Gemini card is shown only at its booth or if a judge asks.
 
 ---
 
@@ -188,9 +186,9 @@ Spoken briefing (ElevenLabs) and the Gemini card are shown only at their booths 
 2. The problem, with the data facts (21 open, missing premium, the hq path, duplicate brokers).
 3. How it works: interval scoring, flippers, the desk (roster, asks, conflicts, Lead), schema-derived queries, enrichment sources.
 4. Proof: backtest numbers with n, the pre-registration commit.
-5. Actions: Composio, Linq, Gemini, ElevenLabs.
+5. Actions: Composio, Linq, Gemini.
 6. The Intact side: tenant quote, fairness guardrails, accessibility.
-7. Built with: OpenAI Agents SDK, Codex (link CODEX.md), Elastic, Sentry, Expo, Gemini, ElevenLabs, Linq, Composio. One line per sponsor on what it does in Atlas.
+7. Built with: OpenAI Agents SDK, Codex (link CODEX.md), Elastic, Sentry, Expo, Gemini, Linq, Composio. One line per sponsor on what it does in Atlas.
 8. Limitations: synthetic data, small n, illustrative tenant prices, Gemini advisory only.
 
 **Intact README section** (criterion 4, verbatim headings): The problem; How AI is used (the model explains and recommends add-ons; prices and decisions are code; the desk reviews referrals); User journey and key features (address, map or list, three questions, instant approve or refer, receipt, read aloud, view as underwriter); Fairness guardrails (peril-matched layers only, caps, shrinkage, no demographic inputs, excluded crime types); Assumptions and limitations (illustrative base rate, Toronto only, TPS offsets points to intersections, data dates); Built at Hack the North (first commit time, CODEX.md).
@@ -220,9 +218,9 @@ Spoken briefing (ElevenLabs) and the Gemini card are shown only at their booths 
 - **Tier 0, never cut**: Federato client + schema-derived queries, case with provenance, interval engine, explanations with verification, queue + case page, desk with visible lanes (replay), enrichment before/after.
 - **Tier 1**: backtest page, ask box, portfolio impact (in-memory if needed), Composio broker email, Expo tenant quote with receipt and "View as underwriter".
 - **Tier 2**: Linq loop, Elastic as the index, map page, Sentry beyond errors.
-- **Tier 3**: Gemini card, ElevenLabs audio, Composio reply polling, geohex_grid.
+- **Tier 3**: Gemini card, Composio reply polling, geohex_grid.
 
-**Cut order when a milestone slips by 30 minutes** (first to go at the top): Composio reply polling, ElevenLabs, Gemini, web map page (keep the portfolio line in the case page), Elastic (in-memory index), Linq, Expo map screen (keep the list path; the app still quotes), live desk mode (replay only).
+**Cut order when a milestone slips by 30 minutes** (first to go at the top): Composio reply polling, Gemini, web map page (keep the portfolio line in the case page), Elastic (in-memory index), Linq, Expo map screen (keep the list path; the app still quotes), live desk mode (replay only).
 
 ---
 

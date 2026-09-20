@@ -4,7 +4,7 @@
 
 1. **[RUNBOOK.md](RUNBOOK.md)** — where it runs, what to open, what to do when something breaks,
    and the answers to the questions judges ask. Read this one first.
-2. **[PITCHES.md](PITCHES.md)** — twelve five-minute pitches, one per sponsor, every number sourced.
+2. **[PITCHES.md](PITCHES.md)** — eleven five-minute pitches, one per sponsor, every number sourced.
 3. **[TRACKS.md](TRACKS.md)** — one row per track: what we built, why, and what is verified versus
    what is not. Read the last column before claiming anything on stage.
 4. **[DEVILS-ADVOCATE.md](DEVILS-ADVOCATE.md)** — the five hardest objections and the honest answers.

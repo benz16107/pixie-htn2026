@@ -75,7 +75,6 @@ the commented tunnel line only if the phone is on cellular.
    no model calls, so nothing can stall. **Run live** does the real thing (about 60 s, $0.07).
 2. `/cases/138`: the score waterfall, then the **Decision space** tab for the same decision in 3D
    (drag the premium slider and the case walks across the accept boundary), then the Challenger.
-   **Read this case** plays the briefing in Ben's voice and the screen highlights what is being said.
 3. The phone for the renter quote.
 4. `/backtest` for the honest numbers, including what enrichment did and did not change.
 
@@ -91,7 +90,7 @@ Speed control is 1x / 2x / 4x in the top bar. Keys 1-6 jump between sections. Sp
 |---|---|
 | A page 500s | The API restarted. Wait 10 s and reload; the proxy answers 503 with a reason while it boots. |
 | The live run stalls | Switch to **Run the demo** (replay). Every recorded run is in SQLite and needs no network. |
-| Wi-Fi dies | Everything except the sponsor calls runs locally. Enrichment reads from `cache/layers` (350 files), briefings from `var/briefings`, precedent falls back to in-memory when Elastic is unreachable. |
+| Wi-Fi dies | Everything except the sponsor calls runs locally. Enrichment reads from `cache/layers` (350 files), precedent falls back to in-memory when Elastic is unreachable. |
 | The desk state looks wrong | `curl -X POST localhost:8000/demo/reset` puts the queue back to its opening state. |
 | Expo Go cannot connect | Phone and laptop must share Wi-Fi. Restart with `EXPO_TOKEN=... npx expo start --lan`. |
 | Elastic is down | `backend: "memory"` appears on the precedent and insights panels. Say so; the numbers are the same book. |
@@ -116,8 +115,6 @@ Speed control is 1x / 2x / 4x in the top bar. Keys 1-6 jump between sections. Sp
 - [ ] `cd api && SENTRY_DSN_API= uv run pytest -q` green
 - [ ] `cd web && npm run build` green, then serve the production build, not `next dev`
 - [ ] `curl -X POST localhost:8000/demo/reset`
-- [ ] Warm the briefings: hit `/cases/{id}/briefing` for 138, 126, 141, 134, 133, 143 and the
-      Toronto case once each (they cache to disk). Changing `ELEVENLABS_VOICE_ID` invalidates them.
 - [ ] Check the tunnel: `PUBLIC_URL` in `.env`, `EXPO_PUBLIC_API_URL` in `app/.env`, and the Sentry
       uptime monitor all point at the cloudflared URL. If cloudflared restarted, all three are stale.
 - [ ] Phone on the same Wi-Fi, Expo Go open, screen brightness up

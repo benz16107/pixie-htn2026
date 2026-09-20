@@ -1,4 +1,4 @@
-"""Real-world actions: one outbox, four channels. Priority: Composio > Linq > Gemini > ElevenLabs.
+"""Real-world actions: one outbox, three channels. Priority: Composio > Linq > Gemini.
 
 Every action is an OutboxItem with an idempotency key, so a retried desk run, a double-clicked button
 or a replayed demo never sends twice. Every send is dry-run-able (ATLAS_ACTIONS=dry|live) and every state
@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-Channel = Literal["composio_gmail", "linq_imessage", "gemini_maps", "elevenlabs_tts"]
+Channel = Literal["composio_gmail", "linq_imessage", "gemini_maps"]
 Status = Literal["proposed", "sent", "failed", "skipped_duplicate", "dry_run"]
 
 
@@ -20,7 +20,7 @@ class OutboxItem:
     case_ids: tuple[str, ...]
     rendered: dict[str, Any]       # subject/body/text; numbers verified against facts before render
     status: Status
-    external_id: str | None        # gmail message id / linq message id / mp3 path
+    external_id: str | None        # gmail message id / linq message id
     error: str | None
 
 
@@ -104,12 +104,4 @@ class SurroundingsCard:
 def surroundings(site_id: str, lat: float, lng: float, question: str) -> SurroundingsCard:
     """client.interactions.create(model=GEMINI_MODEL, input=question, tools=[{type: google_maps, latitude, longitude}]).
     Cached by (site_id, question). If the region blocks the tool, card says 'unavailable' and nothing else changes."""
-    raise NotImplementedError
-
-
-# ---- 4. ElevenLabs: spoken briefing / read my quote -----------------------------------------------
-
-def speak(text: str, voice_id: str, purpose: Literal["queue_briefing", "quote_receipt"]) -> str:
-    """text_to_speech.convert(model_id='eleven_flash_v2_5'); mp3 cached at cache/tts/<sha(text)>.mp3.
-    Text is built from verified facts only. Returns a URL path. A pre-rendered mp3 ships in the repo."""
     raise NotImplementedError

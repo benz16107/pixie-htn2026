@@ -12,14 +12,14 @@ Rules for all agents (already in `AGENTS.md`): no number from a model, missing i
 
 | Time | Ben | A (backend) | B (web) | C (Codex) | Milestone / done when |
 |---|---|---|---|---|---|
-| 17:45-18:30 | Setup checklist (section 3): Linq signup FIRST, Composio Gmail auth, Elastic trial, Sentry x3, OpenAI model id check, Gemini, ElevenLabs, cloudflared tunnel, Expo Go on phone. Commit `.env.example` | A1 `case.py` + SQLite store + fixture ledger; A2 `federato.py` client + schema cache + `check()` | B1 web shell, tokens, `/cases/[id]` renders the fixture as swimlanes from `api.ts` types | C1 Toronto downloads kicked off (TPS x3, address points, fire stations, hydrants, basement study, TRCA floodline) into `packs/toronto/raw/`; C2 `evals/test_fold.py` against the fixture | **M0 18:30** `uv run pytest` green; one live Federato query returns rows; the fixture swimlane renders 5 lanes |
+| 17:45-18:30 | Setup checklist (section 3): Linq signup FIRST, Composio Gmail auth, Elastic trial, Sentry x3, OpenAI model id check, Gemini, cloudflared tunnel, Expo Go on phone. Commit `.env.example` | A1 `case.py` + SQLite store + fixture ledger; A2 `federato.py` client + schema cache + `check()` | B1 web shell, tokens, `/cases/[id]` renders the fixture as swimlanes from `api.ts` types | C1 Toronto downloads kicked off (TPS x3, address points, fire stations, hydrants, basement study, TRCA floodline) into `packs/toronto/raw/`; C2 `evals/test_fold.py` against the fixture | **M0 18:30** `uv run pytest` green; one live Federato query returns rows; the fixture swimlane renders 5 lanes |
 | 18:30-19:45 | Write `evals/answer_key.yaml` (10 cases, section 4) BEFORE the engine scores anything | A3 `CaseBuilder` both hydration paths + `estimate_premium` + `infer_business_type`; A4 `appetite.py` + `packs/us/appetite.yaml`; A5 `Desk.run_deterministic` + `/queue` + CLI table | B2 `/queue` table (rank, verdict badge, factor chips, estimated badge, gaps count) | C3 `evals/test_answer_key.py`, `test_query_check.py`; C4 `packs/us/warm.py` warms the hazard cache for all 70 locations (FEMA, USGS, USFS, Open-Meteo, Nominatim at 1 req/s) | **M1 19:45** all 158 ranked deterministically with templated explanations; answer-key tests run (failures allowed, listed). Federato MVP met |
 | 19:45-21:30 | Prompt files `api/prompts/*.md` (5 agents); tune on cases 126, 138, 143 | A6 `desk.py`: roster, tool closures, depth policy, conflicts gate, numbers check, SSE tail; A7 `Intake.ask` with retries | B3 live swimlane via SSE (arrows from `refs`, query JSON viewer, retry badge, conflict card with resolution); B4 ask box showing `attempts[]` | C5 Toronto ETL to `hex_scores.json` (res 9, shrinkage, percentiles, multipliers) + `zones` + `assets`; C6 Elastic loaders for `atlas-locations` and the Toronto indexes | **M2 21:30** `POST /cases/sub-126/run` streams 5 lanes live; ask box answers "Florida property over $50M TIV with no sprinklers" showing the query and one retry |
 | 21:30-22:00 | Dinner while A/B/C run. Check M2 output on 3 cases for hallucinated numbers | A8 `risk.py` US pack over the warmed cache + `portfolio.py` (Elastic, fallback in-memory) wired into the desk | B5 map page (MapLibre + deck.gl H3HexagonLayer): portfolio hexes, case pin, what-if chip, before/after score chip | C7 `backtest.py` + `latest.json` v1 | |
 | 22:00-23:00 | Read the backtest numbers; decide the stage sentence; write demo script v1 | A9 Sentry: spans on `federato.query`, `hazard.<lookup>`, `elastic.<op>`, `desk.run`; logs for cache misses and query retries; first INCIDENTS.md entry from a real trace | B6 backtest page (recall by reason, loss ratio by bucket, enrichment moved N) | C8 `evals/test_receipt_sums.py`, `test_numbers_check.py`; precompute script `scripts/precompute.py` | **M3 23:00** enrichment visibly moves rank on >= 3 open cases; map shows hexes; backtest page shows real numbers |
 | 23:00-00:30 | Live tests: Composio email lands in the broker mailbox; Linq digest arrives on Ben's phone; reply "approve 2" updates the web queue | A10 `actions.py`: Composio request_info, Linq digest + webhook + ack, idempotency | B7 action buttons + status chips; queue live update on `decision` events; `underwriter` lane | C9 Expo app: `quote/index` (address search), `quote/map`, `quote/questions`, `quote/[caseId]` receipt, list-only path, VoiceOver labels, 44 pt targets. Uses `api.ts` and mock JSON until A11 lands | **M4 00:30** Federato complete incl. two live actions; `demo-safe-1` tag |
 | 00:30-02:15 | Run the app on the phone via the tunnel; walk the list-only path with VoiceOver; fix copy | A11 `Consumer.quote`, `packs/toronto/tenant.yaml`, `/geocode` over address points, `/quote`, Toronto pack lookups, `hexes()` polygons | B8 `/cases/[id]` handles `region=toronto` (three lanes, receipt panel, "Open on phone" QR); privacy + terms pages | C10 Expo polish: reduced-motion, dynamic type, aria-live summary; `app/README.md` | **M5 02:15** address -> hexes -> 3 questions -> decision -> receipt -> "View as underwriter" opens the same case on web |
-| 02:15-02:45 | **Feature freeze.** `scripts/precompute.py` runs the desk on all 21 open cases (live LLM) and the backtest; commit `demo-safe-2`; export DB copy `var/atlas-demo.sqlite` | A12 fix list from Ben only | B9 fix list only | C11 (overnight, branches only) Gemini places card + ElevenLabs briefing behind flags; README + Devpost drafts; CODEX.md fill-in | |
+| 02:15-02:45 | **Feature freeze.** `scripts/precompute.py` runs the desk on all 21 open cases (live LLM) and the backtest; commit `demo-safe-2`; export DB copy `var/atlas-demo.sqlite` | A12 fix list from Ben only | B9 fix list only | C11 (overnight, branches only) Gemini places card behind flags; README + Devpost drafts; CODEX.md fill-in | |
 | 02:45-05:45 | **Sleep 3 h** | idle | idle | branches only, no merges | |
 | 05:45-06:45 | Review C11 branches; merge if tests green; rehearsal 1 with a timer; record backup video (screen + phone) | Gemini/Eleven merge fixes | Screenshot pass for Devpost | Devpost text polish | **Code freeze 06:45** |
 | 06:45-07:30 | README (Intact criterion 4), INCIDENTS.md, CODEX.md, Devpost form, repo public, prize list ticked | | | | **Submitted 07:30**; 07:30-08:00 buffer for Devpost edits only |
@@ -67,7 +67,7 @@ Format: inputs -> outputs; acceptance test.
 - **C8 unit tests.** Receipt sums; `check_numbers` catches "$36M" when the factor says 35,716,000 (rounding table on).
 - **C9 Expo app.** Test: runs in Expo Go over the tunnel; every control has `accessibilityLabel`; list-only path completes a quote without the map; polygons come from `hexes`, no h3-js import.
 - **C10 Expo polish.** Test: `prefers-reduced-motion` disables the fly-to; dynamic type at 200% keeps buttons on screen.
-- **C11 overnight branch.** Gemini places card (deep tier only, points 0, sources shown under the text), ElevenLabs briefing to `artifacts/briefing.mp3` with cached fallback, README and Devpost drafts. No merges until Ben reviews.
+- **C11 overnight branch.** Gemini places card (deep tier only, points 0, sources shown under the text), README and Devpost drafts. No merges until Ben reviews.
 
 ### Lane Ben
 - **Ben1** setup (section 3). **Ben2** answer key. **Ben3** prompts. **Ben4** hallucination read on 3 cases (any number not in the factor list is a bug in `check_numbers`, file it). **Ben5** backtest stage sentence. **Ben6** live provider tests (email, Linq round trip). **Ben7** phone run + VoiceOver walk. **Ben8** precompute + tag. **Ben9** sleep. **Ben10** branch review + rehearsal + backup video. **Ben11** docs + submit. **Ben12** morning rehearsal + warm-up.
@@ -83,10 +83,9 @@ Format: inputs -> outputs; acceptance test.
 5. **Sentry**: three projects (python, nextjs, react-native); DSNs in `.env`, `web/.env.local`, `app/app.json extra`. Enable Logs and Tracing; AI agent monitoring appears automatically with `openai-agents` installed.
 6. **Elastic**: Cloud trial; `ELASTIC_URL`, `ELASTIC_API_KEY`; run the licence check (`terms` on a keyword field with `sum`) before C6 starts.
 7. **Gemini**: `GEMINI_API_KEY`, `GEMINI_MODEL` from the picker; one Maps-grounded call from this network to confirm availability in Canada.
-8. **ElevenLabs**: `ELEVENLABS_API_KEY`, a voice id; one 200-character convert to confirm API access on the tier; if blocked, keep the cached-mp3 path only.
-9. **Expo Go** installed on the iPhone; `npx expo start --tunnel` once to confirm the phone loads the template.
-10. **Caching**: `packs/us/cache/`, `packs/toronto/cache/`, `cache/federato/` gitignored but copied into `var/demo-cache.tgz` at freeze. `ATLAS_OFFLINE=1` makes every client raise on a cache miss instead of calling out; the rehearsal runs with it on.
-11. `.env.example` lists every key above with a comment; `AGENTS.md` unchanged.
+8. **Expo Go** installed on the iPhone; `npx expo start --tunnel` once to confirm the phone loads the template.
+9. **Caching**: `packs/us/cache/`, `packs/toronto/cache/`, `cache/federato/` gitignored but copied into `var/demo-cache.tgz` at freeze. `ATLAS_OFFLINE=1` makes every client raise on a cache miss instead of calling out; the rehearsal runs with it on.
+10. `.env.example` lists every key above with a comment; `AGENTS.md` unchanged.
 
 ---
 
@@ -137,7 +136,6 @@ Format: inputs -> outputs; acceptance test.
 | Elastic | `portfolio.py`, Toronto indexes | Portfolio hexes on the map; what-if chip; Toronto hex scores behind every quote | "Elastic is the geo layer: 76 active policies aggregated per H3 cell with a terms aggregation, and 6,000 Toronto cells of loss-matched incidents behind the consumer price. The Portfolio agent's tool is an Elastic query." | Index mappings in README |
 | Expo | `app/` | The phone demo | "Expo Router, react-native-maps in Expo Go, polygons computed server-side, VoiceOver-complete list path, reduced motion respected." | `app/README.md` |
 | Gemini (MLH) | `actions.places_card` | The "around this address" card with Maps citations on a deep-tier case | "Maps grounding gives the underwriter what a satellite view would: the fuel depot next door, the creek behind the lot, with Google Maps citations. It never scores; it informs." | Card on the case page |
-| ElevenLabs (MLH) | `actions.briefing` | Play the 40-second morning briefing | "The same digest, spoken, for the underwriter's commute." | `artifacts/briefing.mp3` |
 
 ---
 
@@ -202,9 +200,9 @@ Plus: accessibility statement, data sources with licences and dates, privacy and
 
 **MUST** (Federato + the multi-agent proof): A1-A9, B1-B6, C2-C4, C7; the backtest; the ask box; enrichment before/after.
 **SHOULD** (money and interviews): A10 Composio + Linq, B7; A11 + C9 consumer app + B8 (Intact, Expo); Elastic (C6) with fallback; Sentry incidents.
-**COULD**: Gemini card, ElevenLabs briefing, the fairness scatter page, "what would change my price" actions, French strings.
+**COULD**: Gemini card, the fairness scatter page, "what would change my price" actions, French strings.
 
-Cut order when late (first cut first): ElevenLabs -> Gemini -> fairness scatter -> Elastic (fallback already identical) -> Linq inbound (keep outbound digest) -> Expo polish C10 -> Expo app (web `/quote` mirror stays, Intact still submittable) -> map what-if chip. **Never cut**: the ledger and lanes, deterministic scoring, enrichment before/after, the backtest, the ask box, Composio email.
+Cut order when late (first cut first): Gemini -> fairness scatter -> Elastic (fallback already identical) -> Linq inbound (keep outbound digest) -> Expo polish C10 -> Expo app (web `/quote` mirror stays, Intact still submittable) -> map what-if chip. **Never cut**: the ledger and lanes, deterministic scoring, enrichment before/after, the backtest, the ask box, Composio email.
 
 ---
 

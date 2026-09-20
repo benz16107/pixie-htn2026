@@ -14,7 +14,6 @@
  *   POST /quote {address|lat,lng, unit, contents, deductible, claims_5y, sewer_backup}  -> QuoteView
  *   GET  /quote/{caseId}                            -> QuoteView
  *   GET  /geocode?q=                                -> {label, lat, lng}[]   (Toronto address points; Nominatim fallback)
- *   GET  /briefing.mp3                              -> audio/mpeg (ElevenLabs artifact or cached)
  *   POST /webhooks/linq                             -> {ok}  (raw stored first)
  */
 
@@ -45,7 +44,7 @@ export type Payload =
   | { kind: "conflict"; kind2: "target_vs_fail" | "hazard_vs_appetite" | "portfolio_vs_appetite" | "estimate_vs_stated";
       a: string; b: string; resolution?: string; reason?: string }
   | { kind: "decision"; verdict: Verdict; explanation: string; top_factors: string[]; by: "desk" | "underwriter" | "deterministic" }
-  | { kind: "action"; action: "request_info" | "notify" | "briefing" | "places_card"; to?: string; body: string; subject?: string }
+  | { kind: "action"; action: "request_info" | "notify" | "places_card"; to?: string; body: string; subject?: string }
   | { kind: "action_result"; ok: boolean; provider: string; external_id?: string; artifact?: string; error?: string }
   | { kind: "inbound"; channel: "linq"; raw: unknown; parsed?: { verb: string; n: number } }
   | { kind: "note"; text: string }

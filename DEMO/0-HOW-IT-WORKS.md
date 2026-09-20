@@ -175,7 +175,6 @@ and documented as invented.
 | **Linq** | The underwriter triages and decides by iMessage | no decisions away from the desk |
 | **Gemini** | Reads a room photo into an item list; names what is near an address | renters guess their contents value |
 | **Expo** | The phone app itself | no customer side |
-| **ElevenLabs** | Reads a case aloud with timing that drives the screen | a quieter demo |
 | **Backboard** | Remembers across cases, so the desk recognises a near-duplicate | each case starts from nothing |
 
 ---

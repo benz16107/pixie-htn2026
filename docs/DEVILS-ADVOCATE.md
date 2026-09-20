@@ -63,9 +63,9 @@ precedent from the book, the counter-argument, and a drafted broker email. The u
 **Remedy.** Measure it. Time-to-decision with and without the desk, on the same cases, with a real
 underwriter. That is a study, not a hackathon demo.
 
-### 5. "This is eleven sponsor APIs in a trenchcoat"
+### 5. "This is a collection of sponsor integrations"
 
-**The objection.** Elastic, Composio, Linq, Sentry, Gemini, Expo, OpenAI, ElevenLabs, Backboard.
+**The objection.** Elastic, Composio, Linq, Sentry, Gemini, Expo, OpenAI, Backboard.
 Integration count is not a product.
 
 **What we say.** Fair challenge, so here is the test we applied: does removing it break something a
@@ -82,12 +82,11 @@ verified-versus-unverified column, because pretending otherwise is the fastest w
 
 1. **The desk has only run on six cases.** The other fifteen show rules-only decisions with no agent
    lanes. A judge who clicks the wrong row sees an empty trace.
-2. **No web player for the spoken briefing.** The audio and its timing marks exist; nothing plays it.
-3. **Sentry alerts and uptime were never created** (the token lacked the scope).
-4. **The fairness question on the renter price is unanswered.** Break-in density correlates with
+2. **Sentry alerts and uptime were never created** (the token lacked the scope).
+3. **The fairness question on the renter price is unanswered.** Break-in density correlates with
    income. We cap and shrink every location factor, and we have not audited what the cap does across
    the city.
-5. **`ATLAS_ACTIONS=live` on the demo machine** means a stray click sends a real email.
+4. **`ATLAS_ACTIONS=live` on the demo machine** means a stray click sends a real email.
 
 ## What would falsify the whole idea
 

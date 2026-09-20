@@ -30,8 +30,6 @@ clicking into one and hoping.
 | Score waterfall | Read left to right. Hover a bar for its rule text and source |
 | Waterfall / Decision space tabs | The second is the same decision in 3D. Drag to orbit, arrow keys work too |
 | Premium slider | Drag it. The decision changes live, and the flip marker shows where |
-| Read this case | Plays the briefing in your cloned voice; the screen rings whatever is being said |
-| Script | Lists every sentence with timecodes. Click one to jump. Works with the sound off |
 | The case against | The Challenger's argument, its risks, and what would change its mind |
 | We wrote N like this | Elastic precedent. The `[elastic]` badge says it came from the index, not memory |
 | Folds at the bottom | Facts, factor bands, agent lanes, site and portfolio. They open full width |
