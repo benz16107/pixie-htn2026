@@ -1,7 +1,7 @@
 import type { DecisionView, Interval } from "@/contract";
 import { API, PROXY } from "./live";
 
-export type StepKind = "factor" | "cap" | "hazard" | "portfolio" | "clamp";
+export type StepKind = "factor" | "cap" | "hazard" | "portfolio" | "clamp" | "human";
 export type PriceKind = "base" | "multiplier" | "flat";
 
 /** Tenant cases price in dollars rather than points, so their waterfall is a running total. */

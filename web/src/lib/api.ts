@@ -87,6 +87,18 @@ async function post(path: string, body: unknown): Promise<{ ok: boolean; status:
   }
 }
 
+/** Unlike post(), this keeps the API's `detail`: the override bound is only a bound if you see it. */
+async function send(path: string, init: RequestInit): Promise<{ ok: boolean; detail: string }> {
+  if (FIXTURES_ONLY) return { ok: true, detail: "dry run (fixtures)" };
+  try {
+    const res = await fetch(BASE + path, { ...init, signal: AbortSignal.timeout(8000) });
+    const body = (await res.json().catch(() => ({}))) as { detail?: string };
+    return { ok: res.ok, detail: res.ok ? "" : (body.detail ?? `API returned ${res.status}`) };
+  } catch {
+    return { ok: false, detail: "API unreachable" };
+  }
+}
+
 export const api = {
   queue: async (view: "open" | "all") =>
     (await get<QueueRow[]>(`/queue?view=${view}`, () => {
@@ -112,4 +124,7 @@ export const api = {
   precedent: (id: string) => get<PrecedentResult>(`/cases/${id}/precedent`, () => undefined),
   declines: () => get<DeclinesInsight>(`/insights/declines`, () => undefined),
   percentile: (id: string) => get<Percentile>(`/cases/${id}/percentile`, () => undefined),
+  override: (caseId: string, points: number, reason: string) =>
+    send(`/cases/${caseId}/override`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ points, reason }) }),
+  clearOverride: (caseId: string) => send(`/cases/${caseId}/override`, { method: "DELETE" }),
 };

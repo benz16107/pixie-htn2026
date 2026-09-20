@@ -24,11 +24,27 @@ export type DecisionView =
   | { kind: "open"; straddles: number; flippers: { fact: string; resolver: string }[] }
   | { kind: "routed"; to: string; because: string };
 
+/** A human's bounded adjustment of the engine's interval (docs/OVERRIDE.md). It never replaces the
+ *  engine's numbers: `engineScore`/`engineDecision` are the desk's, `score`/`decision` the human's. */
+export interface CaseOverride {
+  points: number;                       // signed, at most ±bound
+  reason: string;
+  by: string;                           // "underwriter"
+  at: number;                           // epoch seconds
+  bound: number;                        // 5, a product decision (api/src/atlas_api/override.py)
+  provenance: "human";
+  engineScore: Interval;
+  engineDecision: DecisionView;
+  score: Interval;
+  decision: { kind: string; because: string[]; by: "human" };
+}
+
 export interface QueueRow {
   caseId: string; insured: string; line: string; state: string; status: string;
   score: Interval | null; decision: DecisionView; valueAtStake: number;   // null when no guideline scores this row
   issues: { kind: string; severity: "info" | "warn" | "block" }[];
   deepDived: boolean; enrichmentDelta: number | null;   // midpoint with minus without external layers
+  override?: CaseOverride;
 }
 
 export interface RiskFactorView { peril: string; line: string; applied: number; capped: boolean; source: string; citation: string }
@@ -43,6 +59,7 @@ export interface CaseView {
   explanation: string; explanationVerified: boolean;
   issues: { kind: string; severity: string; text: string }[];
   actions: { key: string; channel: string; status: string; at: string }[];
+  override?: CaseOverride;
   surroundings?: { summary: string; places: { name: string; url: string }[] };
   site: { lat: number; lng: number };
 }
@@ -92,6 +109,7 @@ export const routes = {
   mapTenant: "GET /map/toronto?lat&lng&k=3",            // Hex[] break-ins (shrunk)
   quote: "POST /quote/tenant",                          // QuoteView
   requestInfo: "POST /actions/{caseId}/request-info",   // OutboxItem
+  override: "POST /cases/{id}/override {points, reason}", // CaseOverride; DELETE undoes it
   digest: "POST /actions/digest {n}",                   // OutboxItem
   linqWebhook: "POST /webhooks/linq",                   // 200 always; raw payload logged first
   briefing: "GET /briefing.mp3",                        // cached ElevenLabs audio

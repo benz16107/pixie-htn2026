@@ -140,6 +140,12 @@ function QueueRowView({ r }: { r: Ranked }) {
       <td className="py-2 pr-4">
         <DecisionChip decision={r.decision} />
         {moved && <span className="ml-1.5 font-mono text-[10px] text-ochre">desk: {r.deskVerdict!.replaceAll("_", " ")}</span>}
+        {r.override && (
+          <span title={`${r.override.by}: ${r.override.reason}`} className="ml-1.5 font-mono text-[10px]">
+            uw {r.override.points > 0 ? "+" : "−"}
+            {Math.abs(r.override.points)} → {r.override.decision.kind}
+          </span>
+        )}
       </td>
       <td className="min-w-0 py-2">
         <span className="flex items-center gap-2">

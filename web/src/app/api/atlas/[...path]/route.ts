@@ -48,3 +48,13 @@ export async function POST(req: Request, ctx: RouteContext<"/api/atlas/[...path]
   }
   return new Response(res.body, { status: res.status, headers: { "content-type": res.headers.get("content-type") ?? "application/json" } });
 }
+
+export async function DELETE(req: Request, ctx: RouteContext<"/api/atlas/[...path]">) {
+  const { path } = await ctx.params;
+  try {
+    const res = await fetch(target(req, path), { method: "DELETE" });
+    return new Response(res.body, { status: res.status, headers: { "content-type": res.headers.get("content-type") ?? "application/json" } });
+  } catch (e) {
+    return down(e);
+  }
+}

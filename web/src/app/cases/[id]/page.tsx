@@ -13,6 +13,7 @@ import { PriceWaterfall, Waterfall } from "@/components/case/Waterfall";
 import { Views } from "@/components/case/Views";
 import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
 import { Briefing } from "@/components/case/Briefing";
+import { Override } from "@/components/case/Override";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
 
@@ -262,11 +263,14 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       <div className="border-t border-rule bg-land px-6 py-2.5">
         <div className="flex items-baseline gap-4">
           <span className="kicker shrink-0">
-            Interval <span className="num text-ink">{view.score ? `${view.score.lo}-${view.score.hi}` : "—"}</span>
+            {view.override ? "Engine interval" : "Interval"} <span className="num text-ink">{view.score ? `${view.score.lo}-${view.score.hi}` : "—"}</span>
           </span>
           <div className="w-[220px] shrink-0">
             <IntervalBar score={view.score} compact />
           </div>
+          {view.kind === "commercial" && view.score && (
+            <Override caseId={view.caseId} current={view.override} bound={view.override?.bound ?? 5} />
+          )}
           <p className="min-w-0 flex-1 font-serif text-[13.5px] leading-snug">
             {view.explanation}
             {view.explanationVerified && <span className="ml-1.5 font-sans text-[11px] text-moss">✓ every number checked against the facts</span>}

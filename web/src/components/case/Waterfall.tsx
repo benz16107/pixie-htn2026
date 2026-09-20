@@ -43,8 +43,12 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
   const fromHi = prev?.runningHi ?? 0;
   const split = Math.abs(s.runningHi - s.runningLo) > 0.01;
   const wasSplit = Math.abs(fromHi - fromLo) > 0.01;
-  const tone =
-    s.kind === "cap"
+  // The human's step is the only ink-filled bar on the chart, and the only one behind a dashed
+  // divider: everything left of it is the engine's, the last one is the underwriter's (docs/OVERRIDE.md).
+  const human = s.kind === "human";
+  const tone = human
+    ? "bg-ink"
+    : s.kind === "cap"
       ? "border border-dashed border-ochre bg-[repeating-linear-gradient(45deg,var(--color-ochre-soft)_0_5px,transparent_5px_10px)]"
       : s.pointsHi < 0
         ? "bg-rust"
@@ -86,10 +90,15 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
       <span className="num absolute inset-x-0 text-center text-[10.5px]" style={{ bottom: y(Math.max(s.runningHi, fromHi)), transform: "translateY(-15px)" }}>
         {s.kind === "cap" ? <span className="text-ochre">{pts}</span> : pts}
       </span>
-      <span className="absolute inset-x-[-8px] bottom-[-34px] text-center font-mono text-[9.5px] leading-tight text-dim">{s.label}</span>
+      {human && <span aria-hidden className="absolute inset-y-0 left-0 border-l border-dashed border-ink" />}
+      <span className={`absolute inset-x-[-8px] bottom-[-34px] text-center font-mono text-[9.5px] leading-tight ${human ? "text-ink" : "text-dim"}`}>
+        {human && <span className="block tracking-[0.12em] text-ink">HUMAN</span>}
+        {s.label}
+      </span>
 
       <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm bg-ink px-2.5 py-2 text-[11px] leading-snug text-paper opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
         <b className="block font-semibold">{s.label}: {pts} points</b>
+        {human && <span className="block text-ochre">The underwriter's number, not the engine's.</span>}
         {s.value && <span className="block">{s.value}</span>}
         {s.rule && <span className="mt-1 block text-land/80">{s.rule}</span>}
         {s.source && <span className="mt-1 block font-mono text-[10px] text-land/70">{s.source}</span>}

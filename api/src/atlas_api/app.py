@@ -349,6 +349,8 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
                deepDived=any(e.actor not in ("system", "lead") for e in events),
                enrichmentDelta=0 if view["score"] is None else round(a.score.mid - bare.score.mid))
     store.put_case(case_id, {"queue": row, "case": view})
+    from . import override
+    override.refresh(store, case_id)   # the human's points ride along with the engine's new interval
 
 
 class _FixedImpact:
@@ -679,13 +681,17 @@ def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
     """T14: drop the action events, outbox rows and human decisions, keep the recorded desk run and
     restore the stored view from it. Running it twice leaves the same state."""
     store = get_store()
-    ids = case_ids or [c["queue"]["caseId"] for c in store.list_cases() if store.latest_run(c["queue"]["caseId"])]
+    from . import override
+
+    ids = case_ids or [c["queue"]["caseId"] for c in store.list_cases()
+                        if store.latest_run(c["queue"]["caseId"]) or c["queue"].get("override")]
     cleared = {}
     for cid in ids:
         events = store.delete_events(cid, {"action", "action_result"})
         events += store.delete_actor(cid, "human")
         outbox = store.delete_outbox(cid)
         apply_desk_run(store, _world, cid)
+        override.refresh(store, cid)   # a case with no recorded run keeps its stored view; drop it there too
         if events or outbox:
             cleared[cid] = {"events": events, "outbox": outbox}
     store.cache_set("linq:last_digest", [])
@@ -741,8 +747,14 @@ def case_explain(case_id: str) -> dict[str, Any]:
         return tenant_waterfall(tenant, toronto_percentiles(cell, scores))
     if get_store().get_case(case_id) is None:
         raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    from . import override
+
     case, a, _hz, _impact, events, rules = _enriched(case_id)
-    return explain_payload(case, a, rules, events)
+    payload = explain_payload(case, a, rules, events)
+    step = override.waterfall_step(get_store(), case_id)   # after reconciles(): the engine's steps still sum
+    if step:
+        payload["steps"].append(step)
+    return payload
 
 
 class WhatIfRequest(BaseModel):
@@ -762,6 +774,51 @@ def case_whatif(case_id: str, req: WhatIfRequest) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"no case {case_id}")
     case, _a, hazard, impact, _events, rules = _enriched(case_id)
     return whatif(case, rules, req.overrides, hazard, impact)
+
+
+class OverrideRequest(BaseModel):
+    points: float                      # signed, in score points; refused past override.MAX_OVERRIDE_POINTS
+    reason: str
+
+
+@app.post("/cases/{case_id}/override")
+def case_override(case_id: str, req: OverrideRequest) -> dict[str, Any]:
+    """The underwriter's bounded nudge of the engine's interval (docs/OVERRIDE.md).
+
+    The what-if slider moves an *input*; this moves the *output*, by at most a few points, with a
+    reason, into the same event ledger every other decision uses. The engine's own interval and
+    decision are untouched: GET /cases/{id} returns both, `score` the engine's and
+    `override.score` the human's.
+    """
+    from . import override
+
+    case_id = case_id.removeprefix("SUB-")
+    store = get_store()
+    if store.get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    try:
+        block = override.apply(store, case_id, req.points, req.reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    publish("override", {"caseId": case_id, "override": block})
+    from .telemetry import log
+    log("case.override", case_id=case_id, points=req.points,
+        decision=block["decision"]["kind"], was=block["engineDecision"]["kind"])
+    return {"caseId": case_id, "override": block}
+
+
+@app.delete("/cases/{case_id}/override")
+def case_override_clear(case_id: str) -> dict[str, Any]:
+    """Undo, for the mis-click during a demo. Idempotent: removed=0 when there was nothing to undo."""
+    from . import override
+
+    case_id = case_id.removeprefix("SUB-")
+    store = get_store()
+    if store.get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    removed = override.clear(store, case_id)
+    publish("override", {"caseId": case_id, "override": None})
+    return {"caseId": case_id, "removed": removed, "override": None}
 
 
 @app.get("/cases/{case_id}/sensitivity")

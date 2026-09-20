@@ -118,6 +118,20 @@ class ScoreP(BaseModel):
     hi: int
 
 
+class OverrideP(_P):
+    """A human's bounded nudge of the engine's interval (docs/OVERRIDE.md). Every number here is a
+    human's or the engine's, never a model's: `points` is what the underwriter dialled, the two
+    intervals are the engine's before and after that adjustment."""
+    kind: Literal["override"] = "override"
+    points: float
+    reason: str
+    by: str = "underwriter"
+    engine_score: ScoreP
+    score: ScoreP
+    decision_before: str
+    decision_after: str
+
+
 class AssessmentP(_P):
     kind: Literal["assessment"] = "assessment"
     score: ScoreP
@@ -231,12 +245,14 @@ class NoteP(_P):
 Payload = Annotated[Union[
     PlanP, QueryP, QueryRetryP, FindingP, EstimateP, GapP, AskP, AnswerP, ConflictP, ResolutionP,
     AssessmentP, DecisionP, ChallengeP, ResponseP, ActionP, ActionResultP, InboundP, GuardrailP,
+    OverrideP,
     RecallP, JudgementP, ToolCallP, RunStatsP, NoteP,
 ], Field(discriminator="kind")]
 
 Kind = Literal["plan", "query", "query_retry", "finding", "estimate", "gap", "ask", "answer", "conflict",
                "resolution", "assessment", "challenge", "response", "decision", "action", "action_result",
-               "inbound", "guardrail", "recall", "judgement", "tool_call", "run_stats", "note"]
+               "inbound", "guardrail", "recall", "judgement", "tool_call", "run_stats", "note",
+               "override"]
 
 
 class DeskEvent(BaseModel):
