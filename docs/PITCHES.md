@@ -21,8 +21,8 @@ Cut from the bottom of the route, in this order, one at a time:
 2. **Expo.** It needs the phone, the tunnel and `EXPO_PUBLIC_API_URL` pointed at it. Most rig for
    the time.
 3. **Gemini.** One card, three minutes.
-4. **ElevenLabs.** Three minutes. It is built now and the audio is on disk, so it is no longer the
-   first thing to cut. It is still thin, because nothing on the page plays it.
+4. **ElevenLabs.** Three minutes. Built, on disk, and now playable: "Read this case" on
+   `/cases/138` reads it in Ben's own cloned voice and the screen rings whatever is being said.
 
 Never cut Federato, Intact, Rox or OpenAI.
 
@@ -607,18 +607,19 @@ and the page stay in step.
 **The number.** Case 138's briefing is five sentences and five marks: two anchored to the score, one
 to the flip point, two to the challenge. The renter briefing for 565 McRoberts Ave is four.
 
-**The limitation I say first.** Nothing on the page plays it. The audio, the timings and the anchors
-are an endpoint today, not a button, so I press play myself and point at the screen. The player is
-the next thing I would build, and it is an afternoon.
+**The limitation I say first.** The voice is a clone of mine, so it is a voice we had rights to and
+one judge in the room can verify by ear. Every briefing is cached to disk: if I ask for a case
+nobody has opened tonight, it takes a few seconds to synthesise, and I would rather say that than
+have it look instant and be fake.
 
 | Time | Say | Screen | Fallback |
 |---|---|---|---|
-| 0:00-0:40 | Press play before speaking. The briefing reads case 138. Then: "That is the case, read aloud, and it is stepping through the page as it goes." | `/cases/138`, audio playing | Cached mp3 from `var/briefings` |
+| 0:00-0:40 | Press **Read this case** before speaking. It reads case 138 in my own cloned voice while the page rings each part as it is mentioned. Then: "That is the case, read aloud, stepping through the page as it goes." | `/cases/138`, audio playing | Cached mp3 from `var/briefings` |
 | 0:40-1:40 | "The endpoint returns the mp3 and a start and end second for every character. We fold that into one mark per sentence and tag each mark with what it is talking about: score, facts, flip, challenge, action. So the sentence about the $50,000 flip point lands while you are looking at the slider." | The marks JSON next to the waterfall | The JSON |
 | 1:40-2:30 | "The script is composed from the case's own computed fields, so the voice cannot say a number the engine did not produce. Change the decision and the audio changes with it." | The script next to the case facts | |
 | 2:30-3:10 | "It works on the consumer side too. The renter quote reads itself: the price, the base, and the line that moves it most, with where that line came from." | The renter briefing | The mp3 |
 | 3:10-4:20 | Condensed product story: the interval, the case against, the broker email. | `/cases/138`, then `/live` | Replay |
-| 4:20-5:00 | "Honest scope: no web player yet, so today this is an endpoint and a cached file, not a button on the page." Closing line. | `/cases/138` | |
+| 4:20-5:00 | "Honest scope: the audio is cached per case, so a case nobody has opened takes a few seconds to synthesise." Then press **Script** and click a sentence to show the highlight moving with the sound off. Closing line. | `/cases/138` | |
 
 **Opening line.** (After the audio.) "That is the case, read aloud, in step with the page."
 
