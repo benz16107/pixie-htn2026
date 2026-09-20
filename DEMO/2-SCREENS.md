@@ -36,6 +36,24 @@ clicking into one and hoping.
 | We wrote N like this | Elastic precedent. The `[elastic]` badge says it came from the index, not memory |
 | Folds at the bottom | Facts, factor bands, agent lanes, site and portfolio. They open full width |
 
+## /guideline — the carrier's appetite, editable
+
+The answer to "can it follow our strategy?" Open it, press a scenario, watch the book re-score in
+about 60 ms, and read the diff: how many cases changed, which declines became open, how much value
+moved into the queue, and which factor moved each one.
+
+| Scenario | What actually happens |
+|---|---|
+| Open Washington | #143 Aperture Cloud goes decline → open, $26.3M into the queue, rank 4 → 2 |
+| Open Texas | **Nothing changes.** 7 cases re-band on state, no decision moves: every Texas case also breaks the loss rule. Press this one for a sceptical judge |
+| Tolerate losses to $1.5M | 20 cases re-band, one decline becomes open ($13.4M) |
+| Premium floor to $75K | The book's only accept becomes a decline: #81, $18.5M, on a $58,800 premium |
+| Soften the hard-fail cap to 50 | 27 declines become open, $1.34B back in the queue |
+
+Press **Reset** (or `POST /demo/reset`) to put the original guideline back. A bad edit is refused
+with the reason: setting decline above accept answers "the decline threshold must sit below the
+accept threshold; otherwise no case can be open."
+
 ## /queue — all 22 submissions
 
 Ranked by score midpoint, open first. Each row says what it is waiting on, how many risks the
