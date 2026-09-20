@@ -180,7 +180,64 @@ and documented as invented.
 
 ---
 
-## 6. The one-paragraph version
+## 6. The backtest, and why "nothing changed" is the honest headline
+
+The backtest asks whether the whole system was any good, by running it against what really
+happened. Four measurements, all written down and committed to git **before** the first run, so the
+metric could not be quietly changed afterwards. The commit hash is printed on the page.
+
+- **B1** — take the 27 bound property policies, group by what the desk would have said. Do the
+  declines have worse loss ratios than the accepts? Declines came out at 1.81.
+- **B2** — 11 policies a human declined for an underwriting reason. Does the desk decline them too,
+  and for the *same* reason?
+- **B3** — score every case with the map data on, then off. Does it change any decisions?
+- **B4** — how many bound policies would the guideline reject? 17 of 27, on premium alone. The
+  humans wrote a lot of business outside their own written guideline.
+
+### B3 confuses people, including us. Three different things can change:
+
+1. the **decision tier** (decline / open / accept)
+2. the **score interval** (the numbers themselves)
+3. the **rank** (position in the queue)
+
+B3 asked only about the first, and the answer was **zero**. No case changed decision because of
+flood, quake, wildfire or wind data.
+
+**Why.** Those cases are declined on state, building age or loss history. Each of those is a hard
+fail: one alone caps the score at 30, below the decline line. Hazard data moves a score by at most
+±15. It is a job applicant with no work visa: improve the interview score all you like, they still
+cannot be hired.
+
+**What did change:** all 38 scored cases had their interval move, median 7.2 points, and 5 of the 6
+open cases changed position in the queue. Nobody's yes/no flipped, but the numbers and the order
+did, and the order is what an underwriter with twenty files and time for five actually acts on.
+
+**Why we left the zero on the page.** When a measurement comes back null the temptation is to
+change what you measure until it looks good. Because B3's definition was committed first, the page
+still leads with "0 tiers changed", explains why, and adds the sub-metrics clearly marked as added
+afterwards with the reason. A judge who has seen a lot of demos notices that.
+
+**The named miss.** Policy PR-2026-1081 was fully in appetite the day it arrived, so the desk would
+have accepted it. It went on to incur $629,200 on $58,800 of premium. It is printed in red under
+the B1 table.
+
+## 7. Two things the underwriter can do to the machine
+
+**Edit the guideline** (`/guideline`). The carrier's appetite is a document on screen. Change a
+threshold or a band, apply, and the whole book re-scores in about 60 ms with a diff: how many cases
+changed, which declines became open, how much value moved into the queue. This is our version of
+what Federato calls Control Tower. Reset puts it back.
+
+**Nudge the score** (on a case). Move the interval by up to ±5 points with a written reason. The
+engine's numbers stay untouched beside it, the adjustment is labelled as the human's, it lands in
+the same audit trail, and it is undoable. Ask for more than 5 and it refuses: *"larger disagreements
+belong in the decision itself, not in the score."*
+
+Both exist because of evidence, not taste. Dietvorst's work is the best-replicated finding in this
+area: experts abandon a model after seeing it err, even when the model beats them by a wide margin,
+and letting them adjust the output by even a small bounded amount brings them back.
+
+## 8. The one-paragraph version
 
 A submission arrives. Code scores it against a written guideline, and because some facts are
 missing, the score is a range rather than a number. Public map data and our own book move that range.

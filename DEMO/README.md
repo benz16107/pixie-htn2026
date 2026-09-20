@@ -12,5 +12,8 @@ Everything for tomorrow is in this folder. Read them in order; they are short.
 4. **[4-PER-TRACK.md](4-PER-TRACK.md)** — one page per sponsor: what to open, the number, the limit
 5. **[5-IF-IT-BREAKS.md](5-IF-IT-BREAKS.md)** — recovery, and the two sentences that save a moment
 
+6. **[6-FEDERATO-BRIEF.md](6-FEDERATO-BRIEF.md)** — who Federato is, what they sell, the jargon,
+   what is genuinely yours versus table stakes, and the lines to say. Read before the Federato slot
+
 The full write-ups live in `../docs/` and are the source of truth. This folder is the short version
 for standing in front of someone.
