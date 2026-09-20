@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ResetDemo } from "./ResetDemo";
+import { IntactPresentation, rememberIntactDemoPage } from "@/app/intact/present/IntactPresentation";
 import { Presentation, rememberDemoPage } from "@/app/present/Presentation";
 
 const FEDERATO_DESTS = [
@@ -26,7 +27,8 @@ export function Chrome() {
   const intact = path.startsWith("/intact");
 
   useEffect(() => {
-    if (path !== "/present") rememberDemoPage();
+    if (path.startsWith("/intact")) rememberIntactDemoPage();
+    else if (path !== "/present") rememberDemoPage();
   }, [path]);
 
   useEffect(() => {
@@ -38,18 +40,18 @@ export function Chrome() {
   useEffect(() => {
     const present = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (path === "/present" || event.defaultPrevented || event.repeat || event.metaKey || event.ctrlKey || event.altKey ||
+      if (path === "/present" || path === "/intact/present" || event.defaultPrevented || event.repeat || event.metaKey || event.ctrlKey || event.altKey ||
           target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox']") ||
           document.querySelector("dialog[open]")) return;
       if (event.key.toLowerCase() === "p") {
         event.preventDefault();
-        rememberDemoPage();
+        if (intact) rememberIntactDemoPage(); else rememberDemoPage();
         setPresenting(true);
       }
     };
     window.addEventListener("keydown", present, true);
     return () => window.removeEventListener("keydown", present, true);
-  }, [path]);
+  }, [path, intact]);
 
   useEffect(() => {
     document.documentElement.dataset.product = intact ? "intact" : "federato";
@@ -61,10 +63,10 @@ export function Chrome() {
   const presentation = presenting && <dialog ref={dialog} aria-label="Pixie presentation"
     className="m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-0"
     onCancel={() => setPresenting(false)}>
-    <Presentation onDismiss={() => setPresenting(false)} />
+    {intact ? <IntactPresentation onDismiss={() => setPresenting(false)} /> : <Presentation onDismiss={() => setPresenting(false)} />}
   </dialog>;
 
-  if (path === "/present") return null;
+  if (path === "/present" || path === "/intact/present") return null;
   if (path.startsWith("/live")) return presentation;
 
   return (<>
@@ -99,7 +101,7 @@ export function Chrome() {
           })}
         </nav>
         <span className="chrome-status ml-auto flex shrink-0 items-center gap-3 pr-3 text-[10px] text-dim">
-          {!intact && <button onClick={() => { rememberDemoPage(); setPresenting(true); }} title="Toggle presentation (P)">Present <kbd>P</kbd></button>}
+          <button onClick={() => { if (intact) rememberIntactDemoPage(); else rememberDemoPage(); setPresenting(true); }} title="Toggle presentation (P)">Present <kbd>P</kbd></button>
           {!intact && <ResetDemo />}
           {process.env.NEXT_PUBLIC_FIXTURES === "1" && <span className="text-ochre">BUNDLED SAMPLES</span>}
         </span>
