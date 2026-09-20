@@ -125,7 +125,7 @@ export type Precedent = {
     tiv: number;
     // A declined submission never became a policy: no premium, no incurred loss, no ratio.
     premium: number | null;
-    status: string;
+    status?: string;
     incurred: number | null;
     lossRatio: number | null;
     outcome: string;

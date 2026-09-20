@@ -85,7 +85,7 @@ export function PrecedentPanel({ p }: { p: Precedent }) {
             <p className="num text-[10.5px] text-dim">
               {money(h.tiv)} TIV ·{" "}
               {typeof h.premium === "number"
-                ? `premium ${money(h.premium)} · incurred ${money(h.incurred ?? 0)} · ${h.status}`
+                ? `premium ${money(h.premium)} · incurred ${money(h.incurred ?? 0)} · ${h.decision}`
                 : h.outcome}
             </p>
           </li>
