@@ -392,13 +392,23 @@ def sensitivity(case: Case, rules: RulesFile, hazard: dict[str, float] | None = 
         kinds = {o["decision"] for o in outcomes}
         flip = None
         numeric = [o for o in outcomes if isinstance(o["value"], (int, float))]
-        for previous, current in zip(numeric, numeric[1:]):
-            if current["decision"] != previous["decision"]:
-                flip = {"at": current["value"], "display": current["display"],
-                        "from": previous["decision"], "to": current["decision"],
-                        "text": f"{rule.fact.replace('_', ' ')} at or above {current['display']} flips "
-                                f"{previous['decision']} to {current['decision']}"}
-                break
+        crossings = [(prev, cur) for prev, cur in zip(numeric, numeric[1:])
+                     if cur["decision"] != prev["decision"]]
+        if crossings:
+            previous, current = crossings[0]
+            flip = {"at": current["value"], "display": current["display"],
+                    "from": previous["decision"], "to": current["decision"],
+                    "text": f"{rule.fact.replace('_', ' ')} at or above {current['display']} flips "
+                            f"{previous['decision']} to {current['decision']}"}
+            # A guideline band has two edges: too cheap declines and so does too dear. Saying only
+            # the lower edge makes the slider look broken when a judge drags it to the far end.
+            if len(crossings) > 1 and crossings[1][1]["decision"] == previous["decision"]:
+                upper = crossings[1][0]
+                flip["until"] = upper["value"]
+                flip["untilDisplay"] = upper["display"]
+                flip["text"] = (f"{rule.fact.replace('_', ' ')} between {current['display']} and "
+                                f"{upper['display']} makes this {current['decision']}; outside that "
+                                f"band the guideline {previous['decision']}s")
         low, high = (outcomes[0], outcomes[-1]) if outcomes else ({}, {})
         rows.append({
             "fact": rule.fact, "label": FACT_LABELS.get(rule.fact, rule.fact),

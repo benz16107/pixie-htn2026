@@ -55,6 +55,6 @@ def test_deterministic_challenge_is_grounded_in_the_sensitivity_output(tmp_path)
     challenge = next(e.payload for e in store.tail("138") if isinstance(e.payload, ChallengeP))
     assert verdict == "request_info" and challenge_id
     assert any("premium" in r.risk.lower() for r in challenge.risks)
-    assert any("flips" in m for m in challenge.change_my_mind)
+    assert any("premium" in m and "$50,000" in m for m in challenge.change_my_mind)
     fold = CaseFile.fold(store.tail("138"))
     assert fold.decision is None                        # a challenge alone is not a decision

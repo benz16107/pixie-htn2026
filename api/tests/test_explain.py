@@ -68,7 +68,9 @@ def test_sensitivity_names_the_flip_point(world):
     out = sensitivity(case, RULES)
     premium = next(r for r in out["facts"] if r["fact"] == "premium")
     assert premium["movesDecision"] and premium["flip"]["at"] == 50_000
-    assert "premium at or above $50,000 flips" in premium["flip"]["text"]
+    # The guideline is a band, so the text names both edges, not just the lower crossing.
+    assert premium["flip"]["until"] == 175_000
+    assert "between $50,000 and $175,000" in premium["flip"]["text"]
     assert out["facts"][0]["spread"] >= out["facts"][-1]["spread"]     # ranked by how much it moves
 
 
