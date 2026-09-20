@@ -16,7 +16,7 @@ export default function ProtectScreen() {
 
   return (
     <Screen topSafe>
-      <ConsumerHeader title="Safety" detail="Take care of what matters." />
+      <ConsumerHeader title="Insights" detail="Take care of what matters." />
       <ProductSwitch product={product} onChange={setProduct} />
       <Title style={st.title}>{product === 'auto' ? 'Your driving insights' : 'Your home checklist'}</Title>
       <Body style={st.lead}>{product === 'auto' ? 'A private view of your driving habits and the roads around you.' : 'A few practical checks for your place.'}</Body>

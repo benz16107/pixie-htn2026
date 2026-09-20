@@ -66,7 +66,7 @@ const st = StyleSheet.create({
   pressed: { opacity: 0.6 },
   section: { fontFamily: F.sansBold, fontWeight: '600', color: C.ink, fontSize: 20, letterSpacing: -0.3, marginTop: 28, marginBottom: 12 },
   panel: { borderRadius: 20, padding: 20, backgroundColor: C.paper, marginBottom: 12, gap: 2 },
-  panelInk: { backgroundColor: '#243650' },
+  panelInk: { backgroundColor: C.deep },
   panelWarm: { backgroundColor: C.paper },
   source: { fontFamily: F.sans, fontSize: 12, color: C.dim },
   iconTile: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.ochreSoft, justifyContent: 'center', alignItems: 'center' },

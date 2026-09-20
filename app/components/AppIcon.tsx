@@ -8,6 +8,7 @@ const icons = {
   car: { symbol: 'car', path: 'm5 7 2-4h10l2 4M3 12l2-5h14l2 5v6H3v-6Zm2 6v3m14-3v3M6 12h2m8 0h2' },
   compare: { symbol: 'slider.horizontal.3', path: 'M3 6h5m4 0h9M3 12h11m4 0h3M3 18h3m4 0h11M8 3v6m6 0v6m-8 0v6' },
   shield: { symbol: 'shield.lefthalf.filled', path: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6' },
+  community: { symbol: 'person.2', path: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm9 14v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
   help: { symbol: 'questionmark.circle', path: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM9 8a3 3 0 0 1 6 0c0 2-3 2-3 4m0 4v.01' },
   info: { symbol: 'info.circle', path: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM12 11v6m0-10v.01' },
   chevron: { symbol: 'chevron.right', path: 'm9 5 7 7-7 7' },

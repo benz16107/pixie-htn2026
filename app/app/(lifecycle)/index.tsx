@@ -1,3 +1,4 @@
+import { WitnessSavingsCard } from '@/components/WitnessSavingsCard';
 import { useInventory } from '@/lib/inventory-store';
 import { inventoryTotal } from '@/lib/inventory';
 import { router } from 'expo-router';
@@ -23,6 +24,7 @@ export default function HomeScreen() {
       {home ? <><Body style={st.description}>{place?.address ?? 'An estimate for your belongings and the place you call home.'}</Body><View style={st.detailRow}><Text style={st.secondary}>{place ? 'Your address is saved' : 'Toronto tenant coverage'}</Text><Text style={st.secondary}>About 2 min</Text></View></> : <><View style={st.priceRow}><Text style={st.price}>${auto.monthly.toFixed(2)}</Text><Text style={st.priceUnit}>/ month</Text></View><Text style={st.secondary}>Illustrative insurance estimate</Text><View style={st.detailRow}><Text style={st.secondary}>Car payment</Text><Text style={st.detailValue}>${autoListing.paymentMonthly} / month</Text></View></>}
       <View style={st.button}><Button label={home ? (place ? 'Continue estimate' : 'Get a tenant estimate') : 'Compare cars'} onPress={() => router.push(home ? '/home-quote' : '/auto-compare')} /></View>
     </Panel>
+    <WitnessSavingsCard />
     <SectionLabel>Explore before you choose</SectionLabel>
     <ActionCard icon="compare" title="What changes my price?" detail="Try coverage choices and see your estimate respond." onPress={() => router.push('/coverage-lab')} />
     <SectionLabel>For you</SectionLabel>

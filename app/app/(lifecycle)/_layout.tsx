@@ -8,7 +8,7 @@ export default function LifecycleLayout() {
   return <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: C.ochre, tabBarInactiveTintColor: C.dim, tabBarStyle: { backgroundColor: C.paper, borderTopColor: C.rule, elevation: 0, height: 60 + inset.bottom, paddingBottom: inset.bottom + 4, paddingTop: 4 }, tabBarLabelStyle: { fontFamily: F.sansMedium, fontWeight: '500', fontSize: 11, lineHeight: 14 }, tabBarItemStyle: { paddingVertical: 0 } }}>
     <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) => <AppIcon name="home" color={color} /> }} />
     <Tabs.Screen name="decide" options={{ title: 'Compare', tabBarIcon: ({ color }) => <AppIcon name="compare" color={color} /> }} />
-    <Tabs.Screen name="protect" options={{ title: 'Safety', tabBarIcon: ({ color }) => <AppIcon name="shield" color={color} /> }} />
-    <Tabs.Screen name="recover" options={{ title: 'Help', tabBarIcon: ({ color }) => <AppIcon name="help" color={color} /> }} />
+    <Tabs.Screen name="protect" options={{ title: 'Insights', tabBarIcon: ({ color }) => <AppIcon name="shield" color={color} /> }} />
+    <Tabs.Screen name="recover" options={{ title: 'Community', tabBarIcon: ({ color }) => <AppIcon name="community" color={color} /> }} />
   </Tabs>;
 }

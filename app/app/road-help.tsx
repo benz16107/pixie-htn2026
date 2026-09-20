@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
@@ -12,10 +12,10 @@ import { Body, Button, Kicker, Screen, Title } from "@/components/ui";
 import {
   roadAPI,
   type EvidenceRole,
-  type RoadDevice,
   type RoadIncident,
 } from "@/lib/evidence";
-import { readDevice, writeDevice } from "@/lib/evidence-device";
+import { useCommunity } from "@/lib/community-store";
+import { WitnessSavingsCard } from "@/components/WitnessSavingsCard";
 import { ReportIncident } from "@/components/evidence/ReportIncident";
 import { UploadEvidence } from "@/components/evidence/UploadEvidence";
 import { EvidenceMedia } from "@/components/evidence/Media";
@@ -29,88 +29,24 @@ export default function RoadHelp() {
     params.role === "bystander" ? "bystander" : "driver",
   );
   const [tab, setTab] = useState<"home" | "reports" | "profile">("home");
-  const [device, setDevice] = useState<RoadDevice | null>(null);
-  const [reports, setReports] = useState<RoadIncident[]>([]);
+  const { device, reports, setReports, loaded, loadError, deviceError, refresh, settings: saveSettings } = useCommunity();
   const [selected, setSelected] = useState<string | null>(
     params.incident ?? null,
   );
   const [mode, setMode] = useState<"browse" | "report" | "upload">("browse");
   const [error, setError] = useState("");
-  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
-  useEffect(() => {
-    let active = true;
-    readDevice()
-      .then(async (value) => {
-        await writeDevice(value);
-        if (active) setDevice(value);
-      })
-      .catch(() => {
-        if (active)
-          setError(
-            "Your local road profile could not be saved. Reopen the app or free device storage before reporting.",
-          );
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      const refresh = () =>
-        roadAPI
-          .list()
-          .then((r) => {
-            if (active) {
-              setReports(r.incidents);
-              setLoaded(true);
-              setLoadError("");
-            }
-          })
-          .catch(() => {
-            if (active) {
-              setLoadError(
-                "Evidence service unavailable. Existing records may be out of date.",
-              );
-              setLoaded(true);
-            }
-          });
-      void refresh();
-      const timer = setInterval(refresh, 8000);
-      return () => {
-        active = false;
-        clearInterval(timer);
-      };
-    }, []),
-  );
-  const refresh = async () => {
-    try {
-      const r = await roadAPI.list();
-      setReports(r.incidents);
-      setLoadError("");
-    } catch {
-      setLoadError("Evidence service unavailable. Try again when connected.");
-    }
-  };
   const update = (value: RoadIncident) => {
     setReports((old) => [value, ...old.filter((x) => x.id !== value.id)]);
     setSelected(value.id);
     setMode("browse");
     setError("");
   };
-  const settings = async (patch: Partial<RoadDevice>) => {
-    if (!device) return;
-    try {
-      const next = { ...device, ...patch };
-      await writeDevice(next);
-      setDevice(next);
-    } catch {
-      setError("The preference could not be saved on this device.");
-    }
+  const settings = async (patch: Parameters<typeof saveSettings>[0]) => {
+    try { await saveSettings(patch); }
+    catch { setError("The preference could not be saved on this device."); }
   };
   async function demo() {
     if (!device) return;
@@ -224,6 +160,7 @@ export default function RoadHelp() {
     );
   const messages = (
     <>
+      {deviceError ? <Text role="alert" style={es.error}>{deviceError}</Text> : null}
       {error ? (
         <Text role="alert" style={es.error}>
           {error}
@@ -244,7 +181,7 @@ export default function RoadHelp() {
       <Screen>
         <Button
           kind="link"
-          label="Back to road help"
+          label="Back to incident exchange"
           onPress={() => {
             setSelected(null);
             setError("");
@@ -309,8 +246,8 @@ export default function RoadHelp() {
                         : "Need another perspective?"}
                     </Text>
                     <Text style={es.note}>
-                      Requests appear in Pixie's in-app feed. Demo credits have
-                      no cash value and never change an insurance price.
+                      Requests appear in Pixie's in-app feed. Accepted contributions earn simulated insurance credit.
+                      There is no cash value or real policy discount.
                     </Text>
                     {incident.requestOpen ? (
                       <Button
@@ -336,7 +273,7 @@ export default function RoadHelp() {
                 ) : (
                   <Text style={es.note}>
                     {incident.requestOpen
-                      ? `$${incident.reward} demo credit per accepted contribution. Your own incident cannot earn a credit.`
+                      ? `$${incident.reward} simulated insurance credit per accepted contribution. Your own incident cannot earn a credit.`
                       : "This request is paused."}
                   </Text>
                 )}
@@ -473,7 +410,7 @@ export default function RoadHelp() {
     );
   return (
     <Screen>
-      <Title>Road help</Title>
+      <Title>Incident exchange</Title>
       <Body style={es.lead}>One incident. Every perspective together.</Body>
       <View
         accessibilityRole="radiogroup"
@@ -524,16 +461,14 @@ export default function RoadHelp() {
         ))}
       </View>
       {messages}
+      {tab === "profile" || (tab === "home" && role === "bystander") ? <WitnessSavingsCard configure /> : null}
       {tab === "profile" ? (
         <>
           <Panel>
-            <Kicker>Contribution balance</Kicker>
-            <Text style={es.balance}>
-              ${credits.reduce((sum, e) => sum + e.credit, 0).toFixed(2)}
-            </Text>
+            <Kicker>Accepted contributions</Kicker>
             <Text style={es.note}>
-              Demo credits only. No cash, policy discount, payment method, or
-              insurer account is connected.
+              Accepted witness contributions fund your savings preview.
+              No payment method or insurer account is connected.
             </Text>
             {credits.map((e) => (
               <View key={e.id} style={es.rule}>
@@ -563,8 +498,8 @@ export default function RoadHelp() {
           />
           <Text style={es.note}>
             This local profile is for demo continuity, not a verified identity.
-            Reporting and contributing do not change your driving score or
-            premium.
+            Your driving score and quoted premium stay unchanged.
+            Accepted witness credit can reduce a simulated next payment.
           </Text>
         </>
       ) : (
@@ -638,7 +573,7 @@ export default function RoadHelp() {
                 </Text>
                 {role === "bystander" && report.requestOpen ? (
                   <Text style={es.note}>
-                    ${report.reward} demo credit per accepted contribution
+                    ${report.reward} simulated insurance credit per accepted contribution
                   </Text>
                 ) : null}
                 <Button

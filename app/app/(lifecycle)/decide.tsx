@@ -1,3 +1,4 @@
+import { WitnessSavingsCard } from '@/components/WitnessSavingsCard';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { ActionCard, ConsumerHeader, MiniStat, Panel, ProductSwitch, SectionLabel } from '@/components/consumer';
@@ -18,6 +19,7 @@ export default function CompareScreen() {
       <Body style={st.note}>See how a change affects the estimate. Nothing is saved until you choose to keep it.</Body>
       <Button label="Explore my price" onPress={() => router.push('/coverage-lab')} />
     </Panel>
+    <WitnessSavingsCard configure />
     <SectionLabel>{home ? 'Start with what you own' : 'Before you buy'}</SectionLabel>
     <ActionCard icon={home ? 'inventory' : 'car'} title={home ? 'Build my contents estimate' : 'Find a car within my budget'} detail={home ? 'Photograph belongings, add replacement values, and use your total.' : 'Compare the car payment and insurance against your monthly budget.'} onPress={() => router.push(home ? '/home-inventory' : '/auto-compare')} />
   </Screen>;

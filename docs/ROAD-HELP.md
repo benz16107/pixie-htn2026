@@ -1,10 +1,10 @@
 # Connected road evidence
 
-Road help brings the driver and bystander workflows into Pixie's Expo app. The Intact insurer workspace reviews those same records. The customer can carry the incident reference and a snapshot of its evidence status into the existing recovery plan.
+Incident exchange brings the driver and bystander workflows into Pixie's Expo app. The Intact insurer workspace reviews those same records. The customer can carry the incident reference and a snapshot of its evidence status into the existing recovery plan.
 
 ## Where to open it
 
-- Phone: Auto → Help → **I was in an incident** or **I witnessed an incident**. Safety also links to witness requests.
+- Phone: Auto → Community → **I was in an incident** or **I witnessed an incident**. Insights also links to witness requests.
 - Mobile browser: `http://macserver:8081/road-help`.
 - Intact insurer preview: `http://macserver:3112/intact/insurer`. This port is separate from the Federato session on 3100.
 - Connected overview: `/intact`, with driver, witness, and insurer nodes under Recover.
@@ -24,11 +24,19 @@ The reporter can delete a demo incident and its files after a second confirmatio
 
 ## Bystander
 
-Switch to Bystander on Road help. Browse open requests or use current location to find requests within five kilometres. This is a foreground lookup, not background tracking. **I wasn't there** hides a request on that device; Profile can restore dismissed requests.
+Switch to Bystander on Incident exchange. Browse open requests or use current location to find requests within five kilometres. This is a foreground lookup, not background tracking. **I wasn't there** hides a request on that device; Profile can restore dismissed requests.
 
 Open a request, choose a photo or video, add a statement, and supply capture time or confirm scene coordinates only if known. Sharing requires explicit consent. The default anonymous option hides the contributor label, but does not redact the file, filename, or metadata.
 
-My reports contains the customer's reports and contributions. Profile shows demo credits from accepted contributions and settings for the in-app request feed. Credits do not pay cash, charge a claim, or alter an insurance estimate. A reporter cannot earn credits by contributing to their own incident. Reversing acceptance reverses the displayed credit; repeated acceptance does not multiply it.
+My reports contains the customer's reports and contributions. Profile shows demo credits from accepted contributions and settings for the in-app request feed. Credits do not pay cash or alter the quoted premium. Home and Compare show a simulated one-time payment reduction. Customers allocate the shared credit to Home, Auto, or split it equally; a credit is never counted twice. A reporter cannot earn credits by contributing to their own incident. Reversing acceptance reverses the displayed credit; repeated acceptance does not multiply it.
+
+## Community savings
+
+The tabs are Home, Compare, Insights, and Community. Community exposes the bystander entry for both Home and Auto customers. Accepted witness contributions, rather than merely submitting a report, earn the amount offered by the request when the file was submitted.
+
+Home shows the earned balance, pending amount, and separate Home and Auto allocations. Compare and Explore your price let the customer move that balance between products. Where an estimate exists, the next-payment preview subtracts the one-time allocation, stops at zero, and shows any unused credit. The underlying premium and driving score stay unchanged. These are prototype credits, not an insurer-approved program.
+
+The allocation persists on this device. Accepted amounts are refreshed from the evidence service every eight seconds while the app is active. If the service is unavailable, savings show as unavailable rather than treating stale records as current.
 
 ## Insurer
 
@@ -53,7 +61,7 @@ Export downloads a ZIP with the original uploaded bytes, `manifest.json`, and an
 
 ## Repeatable example
 
-Use **Try an illustrated example** at the bottom of Road help. It creates one repeatable example for the local role and device, with two clearly labelled scene diagrams. Their hashes are real; the pictures are illustrations, not camera evidence. Capture time and capture location stay unknown. Example attachments never earn credits.
+Use **Try an illustrated example** at the bottom of Incident exchange. It creates one repeatable example for the local role and device, with two clearly labelled scene diagrams. Their hashes are real; the pictures are illustrations, not camera evidence. Capture time and capture location stay unknown. Example attachments never earn credits.
 
 For the full contribution demo, use two devices or two browser profiles: one driver and one witness. Switching roles on the same device does not create an independent person or qualify the reporter for credits on their own case.
 

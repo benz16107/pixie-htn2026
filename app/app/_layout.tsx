@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
+import { CommunityProvider } from '@/lib/community-store';
 import { InventoryProvider } from '@/lib/inventory-store';
 import { QuoteProvider } from '@/lib/store';
 import { C, F } from '@/lib/theme';
@@ -31,6 +32,7 @@ function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <QuoteProvider>
     <InventoryProvider>
+    <CommunityProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -50,13 +52,14 @@ function RootLayout() {
         <Stack.Screen name="coverage-lab" options={{ title: 'Explore your price' }} />
         <Stack.Screen name="home-inventory" options={{ title: 'Room inventory' }} />
         <Stack.Screen name="driving-context" options={{ title: 'Drive score' }} />
-        <Stack.Screen name="road-help" options={{ title: 'Road help' }} />
+        <Stack.Screen name="road-help" options={{ title: 'Incident exchange' }} />
         <Stack.Screen name="recovery-plan" options={{ title: 'Recovery plan' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
         <Stack.Screen name="quote" options={{ title: 'Your quote' }} />
         <Stack.Screen name="about" options={{ title: 'About', headerRight: () => null }} />
       </Stack>
+    </CommunityProvider>
     </InventoryProvider>
     </QuoteProvider>
     </GestureHandlerRootView>

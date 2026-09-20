@@ -12,12 +12,14 @@ export type RoadDevice = {
   anonymous: boolean;
   alerts: boolean;
   dismissed: string[];
+  creditAllocation: "split" | "home" | "auto";
 };
 export const newRoadDevice = (): RoadDevice => ({
   clientId: `device-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   anonymous: true,
   alerts: true,
   dismissed: [],
+  creditAllocation: "split",
 });
 export function parseDevice(raw: string | null): RoadDevice {
   if (!raw) return newRoadDevice();
@@ -30,5 +32,5 @@ export function parseDevice(raw: string | null): RoadDevice {
     typeof value.alerts !== "boolean"
   )
     throw new Error("Your local profile could not be opened.");
-  return value;
+  return { ...value, creditAllocation: ["home", "auto", "split"].includes(value.creditAllocation) ? value.creditAllocation : "split" };
 }

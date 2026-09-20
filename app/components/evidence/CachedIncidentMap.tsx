@@ -1,3 +1,4 @@
+import { C } from '@/lib/theme';
 import { Image, Text, View } from "react-native";
 import { useState } from "react";
 import { roadMapPosition } from "../../../shared/road-map";
@@ -32,7 +33,7 @@ export default function IncidentMap({
           height: 180,
           borderRadius: 12,
           overflow: "hidden",
-          backgroundColor: "#e9eeef",
+          backgroundColor: C.land,
         }}
       >
         {p.available ? (
@@ -60,7 +61,7 @@ export default function IncidentMap({
                 borderRadius: 10,
                 borderWidth: 4,
                 borderColor: "white",
-                backgroundColor: "#0066cc",
+                backgroundColor: C.ochre,
               }}
             />
           </>

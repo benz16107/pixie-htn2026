@@ -1,18 +1,19 @@
 import { Platform } from 'react-native';
 
 export const C = {
-  background: '#F2F2F7',
-  land: '#E9E9EF',
-  paper: '#FFFFFF',
-  ink: '#1C1C1E',
-  dim: '#636366',
-  rule: '#DCDCE1',
-  water: '#C4DEEA',
-  ochre: '#0066CC',
-  ochreSoft: '#EDF4FD',
-  hex: '#367783',
+  background: '#F4F2EC',
+  land: '#E8E5DC',
+  paper: '#FFFEFA',
+  ink: '#242C27',
+  dim: '#63675E',
+  rule: '#DADDD2',
+  water: '#CDDAD4',
+  ochre: '#365C45',
+  ochreSoft: '#E8EEE3',
+  hex: '#597465',
   rust: '#B42318',
-  moss: '#217347',
+  moss: '#365C45',
+  deep: '#283D31',
 };
 
 const system = Platform.select({ ios: 'System', android: 'sans-serif', default: 'system-ui' });

@@ -1,3 +1,4 @@
+import { WitnessSavingsCard } from '@/components/WitnessSavingsCard';
 import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import { Redirect, router } from 'expo-router';
@@ -207,6 +208,7 @@ export default function QuoteScreen() {
         </Text>
       ) : null}
 
+      <WitnessSavingsCard product="home" monthly={approve && !differs ? q.monthly : null} configure />
       <View style={st.coverageCard}>
         <View style={{ flex: 1 }}>
           <Kicker>Your coverage</Kicker>

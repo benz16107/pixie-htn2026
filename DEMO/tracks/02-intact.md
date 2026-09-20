@@ -12,7 +12,7 @@ This submission is judged from the Devpost page. The first image and first 15 se
 
 The web page shows four connected insurance jobs: Quote, Decide, Protect, and Recover. Each job connects directly to its Home proof, Auto proof, deterministic service, and MCP role. Clicking a node opens its evidence.
 
-The phone uses consumer language instead. Its tabs are Home, Compare, Safety, and Help. Home and Auto share the same app but show different tools. This keeps the pitch architecture out of the customer's way.
+The phone uses consumer language instead. Its tabs are Home, Compare, Insights, and Community. Home and Auto share the same app but show different tools. This keeps the pitch architecture out of the customer's way.
 
 | Customer need | Working proof |
 | --- | --- |
@@ -58,7 +58,7 @@ The repository contains `.mcp.json`, so project-aware agents can start the stdio
 | 0:42 to 1:15 | Run the Drive Score sample. | "During an opt-in drive, Pixie measures speed changes and hard braking. It evaluates coarse road context separately, explains both scores, and stores no route." |
 | 1:15 to 1:30 | Show widget and Live Activity proof. | "Expo keeps the active score visible on the Home Screen, Lock Screen, and Dynamic Island in the native development build." |
 | 1:30 to 2:05 | Open the live MCP page and run the tenant request. | "An AI agent can ask for the same estimate through MCP. You can see the tool, every argument, the deterministic answer, and the source behind each line." |
-| 2:05 to 2:27 | Show Help and create a recovery plan. | "After an incident, Pixie starts with safety, organizes the record locally, and lets the customer decide whether to share it." |
+| 2:05 to 2:27 | Show Community and create a recovery plan. | "After an incident, Pixie starts with safety, organizes the record locally, and lets the customer decide whether to share it." |
 | 2:27 to 2:40 | Return to the diagram. | "Models choose and explain. Typed tools calculate. Customers can see what happened and what to do next." |
 
 ## Required disclosure
@@ -79,4 +79,8 @@ Use the [new screenshots](../../docs/assets/intact/discovery/README.md) in the g
 
 ## Connected driver and witness recovery
 
-The mobile app now includes Road help for both drivers and bystanders. The website adds an **Insurer** tab under Intact. Demonstrate a driver report, a witness upload, a reviewer decision, and the status returning to the phone. Follow the [road-help script](../10-ROAD-HELP.md). Expo Image Picker handles photos and clips, Expo Video plays the evidence, and the existing recovery plan carries the incident reference. Credits are demo bookkeeping; file hashes do not establish authenticity or fault.
+The mobile app now includes Incident exchange for both drivers and bystanders. The website adds an **Insurer** tab under Intact. Demonstrate a driver report, a witness upload, a reviewer decision, and the status returning to the phone. Follow the [road-help script](../10-ROAD-HELP.md). Expo Image Picker handles photos and clips, Expo Video plays the evidence, and the existing recovery plan carries the incident reference. Credits are demo bookkeeping; file hashes do not establish authenticity or fault.
+
+## Witness incentive to demonstrate
+
+Open Community on either Home or Auto, then **I witnessed an incident**. Each request states its offered demo credit. A submitted file waits for review before it earns anything. Accept it in the insurer workspace, then show the witness Home screen: the shared credit is split between Home and Auto. In Compare, move all of it to Auto and show the simulated next-payment reduction. The credit is one-time, not a recurring premium discount; no real insurer has approved this program. See [the connected walkthrough](../10-ROAD-HELP.md).

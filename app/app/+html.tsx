@@ -29,4 +29,4 @@ export default function Root({ children }: { children: ReactNode }) {
 }
 
 const responsiveBackground = `
-html, body { background-color: #F2F2F7; -webkit-tap-highlight-color: transparent; }`;
+html, body { background-color: #F4F2EC; -webkit-tap-highlight-color: transparent; }`;

@@ -262,7 +262,7 @@ const st = StyleSheet.create({
   section: { marginTop: 24, marginBottom: 9 },
   surfaceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   widgetPreview: { flex: 1, minWidth: 140, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: C.paper, justifyContent: 'space-between' },
-  lockPreview: { flex: 1, minWidth: 140, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: '#243650' },
+  lockPreview: { flex: 1, minWidth: 140, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: C.deep },
   previewKicker: { color: C.ochre, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 11 },
   previewArea: { marginTop: 11, color: C.ink, fontFamily: F.sansBold, fontWeight: '600', fontSize: 17, lineHeight: 20 },
   previewContext: { marginTop: 5, color: C.dim, fontFamily: F.sans, fontSize: 11, lineHeight: 15 },

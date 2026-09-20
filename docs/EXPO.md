@@ -1,20 +1,20 @@
 # Expo mobile experience
 
-Pixie is a consumer insurance app for Home and Auto. The phone does not expose the presentation framework used on the website. Customers see four everyday destinations: Home, Compare, Safety, and Help. A Home and Auto switch changes the tools and policy context without moving the customer into a second app.
+Pixie is a consumer insurance app for Home and Auto. The phone does not expose the presentation framework used on the website. Customers see four everyday destinations: Home, Compare, Insights, and Community. A Home and Auto switch changes the tools and policy context without moving the customer into a second app.
 
 ## Consumer interface
 
-The September 20 refresh follows Apple's guidance on [typography](https://developer.apple.com/design/human-interface-guidelines/typography) and [tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars). It uses platform system fonts, grouped white cards over a neutral background, one blue action color, labelled tabs, and a Home/Auto segmented control. Large titles identify the current task. Supporting screens keep the standard stack back button.
+The September 20 refresh follows Apple's guidance on [typography](https://developer.apple.com/design/human-interface-guidelines/typography) and [tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars). It uses platform system fonts, grouped ivory cards over a warm neutral background, one forest-green action color, labelled tabs, and a Home/Auto segmented control. Large titles identify the current task. Supporting screens keep the standard stack back button.
 
 Icons use SF Symbols through `expo-symbols` on iOS and vector paths on web and Android. Emoji and character-based navigation icons have been removed. Buttons and product controls have at least 44-point touch targets, text retains native font scaling, and press feedback respects reduced motion.
 
-Current [phone-size screenshots](assets/intact/apple-refresh/README.md) cover Home, Auto, Compare, Safety, Help, and Drive Score. The refresh passed TypeScript, Expo Doctor, web export, tenant-estimate and recovery-plan browser flows, and layout checks at 320, 390, and 430 pixels. Native iPhone visual verification remains pending because the device host was unavailable.
+The latest [phone-size screenshots](assets/intact/community/README.md) show Home, Compare, and Community with the warm palette and witness savings. The [earlier Apple-style pass](assets/intact/apple-refresh/README.md) also covers the driving screens. The refresh passed TypeScript, Expo Doctor, web export, tenant-estimate and recovery-plan browser flows, and layout checks at 320, 390, and 430 pixels. Native iPhone visual verification remains pending because the device host was unavailable.
 
 ## What works
 
 Home includes the complete Toronto tenant estimate. A customer can enter an address or use location, inspect the neighbourhood data used by the model, confirm coverage, receive an itemized estimate, listen to the result, and save or share a PDF. The photo inventory records real belongings, customer-entered replacement values, and room totals. It persists on the device and can fill the contents amount for an estimate. Home pricing currently covers tenant insurance only.
 
-Auto compares three illustrative vehicle listings with the same driver profile. Compare opens a live price explorer for distance, parking, deductible, contents, or liability. Draft changes stay separate until the customer saves them. A monthly car-and-insurance budget slider shows which illustrative vehicles fit. Safety contains prevention tasks and Drive Score. Help creates a private recovery checklist and a local PDF after an incident.
+Auto compares three illustrative vehicle listings with the same driver profile. Compare opens a live price explorer for distance, parking, deductible, contents, or liability. Draft changes stay separate until the customer saves them. A monthly car-and-insurance budget slider shows which illustrative vehicles fit. Insights contains prevention tasks and Drive Score. Community creates a private recovery checklist and a local PDF after an incident.
 
 ## Drive Score
 
@@ -43,7 +43,7 @@ Expo Go cannot load the widget extension, Live Activity, SwiftUI, or Jetpack Com
 
 | Expo service | Product use |
 | --- | --- |
-| Expo Router | Home, Compare, Safety, Help tabs plus focused estimate, inventory, driving, and recovery screens |
+| Expo Router | Home, Compare, Insights, Community tabs plus focused estimate, inventory, driving, and recovery screens |
 | Expo Image Picker | Camera and photo-library input for belongings |
 | Expo File System | Persistent inventory, copied photos, and local road-help preferences |
 | Expo Video | Play submitted incident clips inside the consumer app |
@@ -81,11 +81,11 @@ EAS still needs private Apple Developer authentication and device registration. 
 ## Demo path
 
 1. Open Auto from Home.
-2. Open Safety, then Drive Score.
+2. Open Insights, then Drive Score.
 3. Tap **Preview with a Toronto sample** while stationary, or **Start a live drive** on a moving test device.
 4. Point out current speed, distance, events, separate behavior and road-context scores, and the privacy boundary.
 5. Show the widget and Live Activity previews. Replace those previews with captures from the development build once Apple signing is available.
-6. Open Compare to change one assumption, then Help to build a recovery plan.
+6. Open Compare to change one assumption, then Community to build a recovery plan.
 
 ## Discover and choose coverage
 
@@ -102,4 +102,10 @@ The Home price explorer needs the live estimate service because the cached tenan
 
 ## Connected road help
 
-Auto → Help now includes driver reports and bystander contributions. Safety links to witness requests. Reports, files, review status, and demo credits share one API with the new Intact insurer tab. The recovery plan can import an incident reference and status snapshot. See the [full workflow and limits](ROAD-HELP.md) and [demo script](../DEMO/10-ROAD-HELP.md).
+Auto → Community now includes driver reports and bystander contributions. Insights links to witness requests. Reports, files, review status, and demo credits share one API with the new Intact insurer tab. The recovery plan can import an incident reference and status snapshot. See the [full workflow and limits](ROAD-HELP.md) and [demo script](../DEMO/10-ROAD-HELP.md).
+
+### Community savings
+
+Home and Compare show accepted witness credits, a separate pending balance, and Home/Auto allocations. Compare and Explore your price let the customer choose Home, Auto, or an equal split. The next-payment preview subtracts the allocation once and never falls below zero. The quote itself stays unchanged. All credits are simulations without cash value or insurer approval. Community exposes witness requests for either product.
+
+The shared community provider persists the local identity and allocation, then refreshes evidence while the app is active. Review reversals remove the credit. An unavailable service hides the savings calculation instead of showing a stale balance as current.

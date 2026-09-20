@@ -63,7 +63,7 @@ export default function AutoCompareScreen() {
                 <>
                   <SourceMark live={!!live} />
                   {estimate.decision.kind === 'estimate_ready' ? <>
-                    <View style={st.costTrack} accessibilityLabel={`Car payment ${money(vehicle.paymentMonthly)} and insurance ${money(estimate.monthly)} per month`}><View style={{width:`${vehicle.paymentMonthly / estimate.ownershipMonthly * 100}%`,backgroundColor:C.ochre}} /><View style={{flex:1,backgroundColor:'#ADCFF5'}} /></View>
+                    <View style={st.costTrack} accessibilityLabel={`Car payment ${money(vehicle.paymentMonthly)} and insurance ${money(estimate.monthly)} per month`}><View style={{width:`${vehicle.paymentMonthly / estimate.ownershipMonthly * 100}%`,backgroundColor:C.ochre}} /><View style={{flex:1,backgroundColor:C.land}} /></View>
                     <Text style={[st.budgetNote,{color:estimate.ownershipMonthly <= budget ? C.moss : C.dim}]}>{money(Math.abs(budget-estimate.ownershipMonthly))} {estimate.ownershipMonthly <= budget ? 'under' : 'over'} your monthly budget</Text>
                   </> : <Text style={st.budgetNote}>This setup needs advisor review.</Text>}
                   <View style={st.stats}>

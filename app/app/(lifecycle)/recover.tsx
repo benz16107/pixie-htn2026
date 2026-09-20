@@ -1,3 +1,4 @@
+import { WitnessSavingsCard } from '@/components/WitnessSavingsCard';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '@/components/AppIcon';
@@ -6,12 +7,15 @@ import { Body, Button, Screen } from '@/components/ui';
 import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
 
-export default function HelpScreen() {
+export default function CommunityScreen() {
   const { product, setProduct, driveSummary } = useQuote();
   return <Screen topSafe>
-    <ConsumerHeader title="Help" detail="One clear next step, when you need it." />
+    <ConsumerHeader title="Community" detail="Support each other. Keep the details together." />
     <ProductSwitch product={product} onChange={setProduct} />
-    {product === 'auto' ? <><SectionLabel>Incident evidence</SectionLabel><ActionCard icon="car" title="I was in an incident" detail="Report what happened, attach footage, and ask witnesses for another angle." onPress={() => router.push('/road-help?role=driver')} /><ActionCard icon="document" title="I witnessed an incident" detail="Find a footage request and contribute your perspective." onPress={() => router.push('/road-help?role=bystander')} /></> : null}
+    <SectionLabel>Were you there?</SectionLabel>
+    <ActionCard icon="community" title="I witnessed an incident" detail="Share a photo or clip. Accepted contributions earn simulated credit toward your home or auto insurance." meta="See the offered amount on each witness request." onPress={() => router.push('/road-help?role=bystander')} />
+    {product === 'auto' ? <ActionCard icon="car" title="I was in an incident" detail="Record what happened and ask witnesses for another angle." onPress={() => router.push('/road-help?role=driver')} /> : null}
+    <WitnessSavingsCard />
     <SectionLabel>{product === 'auto' ? 'After a road incident' : 'When something happens at home'}</SectionLabel>
     <Panel>
       <View style={st.heading}><AppIcon name="document" size={25} /><Text style={st.title}>Make a recovery plan</Text></View>

@@ -1,3 +1,4 @@
+import { C } from '@/lib/theme';
 import { Button, Host } from '@expo/ui/swift-ui';
 import { buttonStyle, controlSize, disabled as disabledModifier, tint } from '@expo/ui/swift-ui/modifiers';
 
@@ -7,7 +8,7 @@ export function DrivingNativeAction({ label, onPress, disabled }: { label: strin
       <Button
         label={label}
         onPress={onPress}
-        modifiers={[buttonStyle('borderedProminent'), controlSize('large'), tint('#0066CC'), disabledModifier(!!disabled)]}
+        modifiers={[buttonStyle('borderedProminent'), controlSize('large'), tint(C.ochre), disabledModifier(!!disabled)]}
       />
     </Host>
   );
