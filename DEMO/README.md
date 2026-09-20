@@ -2,6 +2,9 @@
 
 Everything for tomorrow is in this folder. Read them in order; they are short.
 
+0. **[0-HOW-IT-WORKS.md](0-HOW-IT-WORKS.md)** — how the score is actually computed, where the data
+   comes from, what the agents do, and what each sponsor service contributes. Read this first if
+   anyone might ask you *why* a number is what it is
 1. **[1-START-HERE.md](1-START-HERE.md)** — what Pixie is, where it runs, the checklist, the
    five-minute demo with the words to say
 2. **[2-SCREENS.md](2-SCREENS.md)** — every screen and how to drive it, including the keys
