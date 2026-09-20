@@ -71,6 +71,31 @@ Measure it. Same cases, a real underwriter, with and without the desk, timed. If
 same decision in the same time without it, the desk is decoration. We built the instrument; the
 measurement is next.
 
+## The three hardest questions, and the honest answer
+
+These came out of our own research pass. If an industry judge is sharp, these are what they ask.
+
+**"Your guard proves the model repeated your number. It does not prove the number is right."**
+Correct, and that is the limit of it. The check is for consistency between what the code computed
+and what the model said, not for whether the guideline itself is sensible. What makes the number
+defensible is separate: it comes from a rules file you can read, and the waterfall shows every step
+that produced it, so you can disagree with the rule rather than with the machine.
+
+**"Your Challenger is not independent. That is not effective challenge."**
+Also correct. In model-risk terms (SR 11-7), effective challenge means review by someone with
+distinct incentives and authority. Our Challenger is another agent in the same system reading the
+same facts. What it does buy is narrower and real: it is grounded in a deterministic sensitivity
+analysis, so it can only argue from facts the engine computed, and it forces the Lead to answer
+before a decision stands. Call it a structured second opinion, not governance.
+
+**"Where does your 'underwriters disagree' claim come from?"**
+Be careful here. The widely quoted figure is a 55% median difference between underwriters pricing
+the same policy, from the noise audit written up in *Noise*. It is **one unreplicated consultancy
+audit** at an unnamed company with no published protocol, and there is no peer-reviewed measurement
+of commercial property underwriter agreement. Do not present it as settled science. The better move
+is to turn it around: "nobody has measured it at your company. Run this alongside your desk for a
+month and it will tell you your own number." That is a first use case, not a weakness.
+
 ## If you do not know
 
 "I do not know" beats a guess. Follow it with what you do know and where it is written down:
