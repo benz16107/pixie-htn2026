@@ -1,11 +1,8 @@
 # The live guideline
 
-`rules/property_2025.yaml` is the carrier's appetite: the thresholds, the hard-fail cap, the points
-table and the bands every submission is scored against. Until now Pixie read it once at startup and
-never again. Now it is a document you can open, edit and apply, and the whole book re-scores against
-the edit while you watch.
+`rules/property_2025.yaml` implements the supplied commercial property criteria. Federato supplied the bands; Pixie chose the points, thresholds, hard-failure caps and evidence adjustments. The rulebook's expandable scoring equation explains those choices. Applying an edit rescores the supported book, while an unapplied draft leaves the active equation unchanged.
 
-The screen is `/guideline`. The demo is fifteen seconds: click **Open Washington**, the state list
+The screen is `/guideline`. The following is a recorded example; counts and timings depend on the local data and active rules: click **Open Washington**, the state list
 gains WA and the factor is marked pending, press **Apply**, and the panel on the right says
 *1 case changed decision · 1 decline became open · $26.3M moved into the queue · 158 submissions
 re-scored in 36 ms*, with #143 Aperture Cloud Corp named underneath and the factor that moved it.

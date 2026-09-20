@@ -58,7 +58,7 @@ Expo Go cannot load the widget extension, Live Activity, SwiftUI, or Jetpack Com
 
 ## Run it
 
-The Expo CLI is signed in as `benz16107`, and the app is linked to `@benz16107/pixie`. Set `EXPO_PUBLIC_API_URL` to an API URL the phone can reach.
+The app is configured for `@benz16107/pixie`; a fresh clone does not inherit an Expo login. Use an account with access to that project for its development builds. Set `EXPO_PUBLIC_API_URL` to an API URL the phone can reach. Follow [app setup](../app/README.md) for dependencies and environment files.
 
 Use Expo Go for the React Native customer flow:
 

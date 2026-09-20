@@ -6,10 +6,10 @@ Incident exchange brings the driver and bystander workflows into Pixie's Expo ap
 
 - Phone: Auto → Community → **I was in an incident** or **I witnessed an incident**. Insights also links to witness requests.
 - Mobile browser: `http://macserver:8081/road-help`.
-- Intact insurer preview: `http://macserver:3112/intact/insurer`. This port is separate from the Federato session on 3100.
+- Intact insurer workspace: `http://macserver:3100/intact/insurer`, or `http://localhost:3100/intact/insurer` on the server itself.
 - Connected overview: `/intact`, with driver, witness, and insurer nodes under Recover.
 
-The normal web build includes `/intact/insurer` beside Overview and Advisor desk. Port 3112 is the current local preview, not a second backend. Both the phone and website use the API on port 8000.
+The normal web build includes `/intact/insurer` beside Overview and Advisor desk. Both products use the same web server on port 3100 and API on port 8000. Replace `macserver` with your own reachable host when running elsewhere.
 
 ## Driver
 

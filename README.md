@@ -1,66 +1,76 @@
 # Pixie
 
-Pixie is one inspectable risk engine presented as two products.
+Pixie is a Hack the North 2026 project with two products: a Federato underwriting desk and an Intact consumer insurance experience. They share deterministic calculation and evidence infrastructure, with separate rules for each product. The repository keeps the internal package name `atlas`.
 
-The Federato desk scores commercial property submissions as intervals, records the source of every fact, and lets specialist agents investigate the cases that need judgment. The Intact experience follows the consumer through Quote, Decide, Protect, and Recover. Its Expo app contains a working Toronto tenant estimate, deterministic synthetic Auto comparisons, prevention records, driving-context coaching, and a locally exportable recovery plan.
+## Federato underwriting desk
 
-Pixie was built for Hack the North 2026. The repository retains the internal package name `atlas`.
+The desk assesses commercial submissions against the supplied property guideline. It keeps known, estimated and missing facts separate, exposes the score calculation, and lets agents investigate evidence that could change a decision.
 
-## Demo
+- Review the ranked queue, then inspect one case's sources and appetite range.
+- Click terms in the scoring equation to see their points, caps, multipliers and origins.
+- Use a what-if without overwriting the case; inspect the Challenger's objections and a reasoned human adjustment of up to five points.
+- Arrange, hide or focus case panels for review.
+- Explore portfolio exposure and geographic context with source-labelled map layers.
+- Check historical outcomes, including the policy the rulebook would have accepted that incurred $629,200 in losses.
 
-Read [DEMO/README.md](DEMO/README.md) before presenting. It links the five-minute base script and one focused card for each active track.
+The recorded snapshot contains 158 commercial submissions: 38 scored under the property guideline and 120 routed to other lines. Some known hard failures settle the result even when other facts are missing. The range is rule-based appetite uncertainty, not a calibrated loss probability.
 
-The web app has a product switch:
+## Intact consumer experience
 
-- Federato opens the commercial queue, case analysis, guideline editor, portfolio map, Ask, and backtest.
-- Intact opens a Home or Auto lifecycle presentation and sends the presenter to the Expo app for each working customer flow.
+The Expo app has **Home, Compare, Insights and Community** tabs, with a Home/Auto switch.
 
-The Expo app has four persistent stages:
+- Home offers a Toronto tenant estimate and a device-local photo inventory.
+- Compare explores coverage choices, synthetic Auto listings and scenario prices.
+- Insights includes prevention work and a coaching-only Drive Score.
+- Community connects driver reports, witness evidence and a recovery plan.
+- The web insurer workspace reviews the same incident files, metadata and history, and exports an evidence package.
+- Accepted witness contributions earn simulated credits that can be allocated to a one-time Home or Auto payment preview. They do not change the quoted premium.
 
-- Quote collects tenant or Auto inputs and produces a sourced estimate.
-- Decide tests one change without overwriting confirmed facts.
-- Protect records prevention work and can run a coaching-only driving-context demo.
-- Recover guides the customer through safety, incident records, and a recovery plan they can save or share.
+Home pricing is tenant-only. Auto rates and route zones are synthetic demo inputs. Estimates are illustrative Pixie calculations, not Intact prices or offers. Incident hashes identify received bytes; they do not establish authenticity or fault. Native widgets and Live Activities require a development build.
 
-The iOS development build adds a home-screen widget and Live Activity for drive context. Expo Go and the web build show the same foreground flow with a labelled fallback.
+See the [mobile guide](docs/EXPO.md), [incident workflow](docs/ROAD-HELP.md) and [phone screenshots](docs/assets/intact/community/README.md).
+
+## Present it
+
+Use the [Federato five-minute script](DEMO/9-FEDERATO-FIVE-MINUTES.md): Submissions, Rulebook, Case 138, Portfolio, Validation.
+
+Press **P** in the web app to open the slides, then **P** again to return without losing your inputs or panel choices. Arrow keys navigate the single nine-slide deck. `/present` also opens it directly. See [presentation controls](DEMO/10-PRESENTATION.md).
+
+For Intact, use the [track guide](DEMO/tracks/02-intact.md) and [driver/witness/insurer walkthrough](DEMO/10-ROAD-HELP.md). The [judging guide](DEMO/README.md) links the other sponsor demonstrations.
 
 ## Run it
 
-Use [docs/RUNBOOK.md](docs/RUNBOOK.md). The standard stack is:
+Start with the [setup and runbook](docs/RUNBOOK.md). Tested locally with Node.js 22 and Python 3.12, using npm and uv lockfiles.
 
-- FastAPI on port 8000
-- Next.js production server on port 3100
-- Expo on port 8081
+| Service | Default port | Entry points |
+| --- | ---: | --- |
+| FastAPI | 8000 | `/health`, `/docs` |
+| Next.js | 3100 | `/queue`, `/present`, `/intact`, `/intact/insurer` |
+| Expo | 8081 | Phone app or browser preview |
+| Optional MCP | 8010 or stdio | Consumer tools and `/intact/agent` |
 
-The optional MCP server runs over standard input/output by default. See [mcp/README.md](mcp/README.md).
+A fresh clone does **not** contain the Federato snapshot, recorded SQLite events or provider caches. `data/federato` and `docs/federato` are links to a sibling local directory. Read [data and replay setup](docs/DATA.md) before starting the API. A limited web preview can use explicit bundled-sample mode; it is not the recorded full-book demo.
 
-Replay is the default for the commercial live desk. It streams a recorded run without spending tokens or depending on venue Wi-Fi. A deliberate "Run live" action starts the model-backed desk.
+Copy [`.env.example`](.env.example) to a private root `.env` for backend configuration. Manual Next.js and Expo commands use their own environment files or exported variables; the runbook explains both. `start.sh` is a convenience script for the configured macserver, not a fresh-clone installer. It leaves already-running services untouched.
 
-## Core rules
+## Calculation and evidence boundaries
 
-1. Commercial score inputs and quote arithmetic come from code.
-2. A missing field stays unknown and widens the score interval.
-3. Every displayed fact carries its source.
-4. External risk lookups are cached for an offline demo.
-5. Region data lives in `packs/`; the engine contains no city-specific rules.
-6. Secrets remain in gitignored environment files.
+Code computes underwriting scores, prices, totals and adjustments. Models choose investigations and explain tool results. `verify_numbers()` rejects explanation numbers absent from computed facts, but does not prove every interpretation correct. Missing facts never silently pass a rule.
 
-Model outputs are labelled. Agent prose is not presented as a confirmed fact or commercial score. `verify_numbers()` checks numbers in agent explanations against tool outputs and falls back to a deterministic explanation when the check fails.
+Existing hazard and nearby-exposure adjustments affect scoring. Newer heat, population and humidity layers provide investigation context only. Replay reads previously recorded events and makes no model call; it requires those local events to exist.
 
 ## Repository map
 
 | Path | Purpose |
 | --- | --- |
-| `api/` | FastAPI, the risk engine, case model, agent desk, quote API, and persistence |
-| `web/` | Federato and Intact web experiences |
-| `app/` | Expo Home and Auto consumer app |
-| `mcp/` | Privacy-limited consumer-insurance MCP server |
-| `packs/` | US and Toronto risk data |
-| `rules/` | Commercial and renter guidelines |
-| `eval/` | Pre-registered backtest and model checks |
-| `DEMO/` | Current booth script and per-track cards |
-| `docs/` | Architecture, runbook, evidence, and limitations |
+| [api/](api/README.md) | FastAPI, commercial engine, consumer services, agent desk and evidence storage |
+| [web/](web/README.md) | Federato desk, presentation and Intact insurer workspace |
+| [app/](app/README.md) | Expo consumer app |
+| `shared/` | Evidence client contract and cached road-map assets shared by both clients |
+| [mcp/](mcp/README.md) | Consumer-insurance MCP server |
+| `packs/`, `rules/` | Region data and product guidelines |
+| `eval/` | Backtest outputs and evaluation code |
+| [DEMO/](DEMO/README.md) | Scripts, controls and verification records |
+| [docs/](docs/README.md) | Architecture, setup, sources and limitations |
 
-The active sponsor stories are Federato, Intact, Rox, Sentry, Elastic, and Expo. Expo is the mobile implementation of the Intact product rather than a separate product experience.
-
-Home pricing currently means renter or tenant insurance. Pixie does not claim a homeowner tariff. Auto rates, vehicle listings, and route zones are synthetic demo inputs. Every price is an illustrative Pixie estimate, not an Intact price or an offer of insurance.
+The active sponsor stories are Federato, Intact, Rox, Sentry, Elastic and Expo. Their implemented capabilities and limits are listed in the [track matrix](docs/TRACKS.md).

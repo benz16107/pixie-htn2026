@@ -14,7 +14,7 @@ Federato is one of the two main product demos. Stay in the commercial underwrite
 - A case view with known, estimated, and missing facts, each tied to its source field.
 - A score interval that tests every plausible rule band when a field is missing.
 - A what-if control that previews a confirmed answer without changing the filed submission.
-- A 3D portfolio map where tower height is active total insured value in an H3 cell.
+- A portfolio map with active exposure, H3 concentration and geographic context layers. New climate layers support investigation without silently changing scores.
 - An editable guideline with a measured whole-book diff and a reset.
 - A small backtest that keeps sample size and known misses visible.
 
@@ -28,16 +28,18 @@ The risk engine cannot make an honest decision until the source data is hydrated
 
 ## Five-minute flow
 
-| Time | Show and say |
-|---|---|
-| 0:00-0:35 | Open `/queue`. Point to the single unresolved submission and the reason it needs attention. |
-| 0:35-1:35 | Open case 138. Trace the submission, insured, location, building, and policy facts back to the supplied Federato records. |
-| 1:35-2:35 | Read the interval and waterfall. Point out that the unresolved premium crosses the referral line instead of becoming a guessed point score. |
-| 2:35-3:35 | Move the premium what-if. Say that it previews the answer the broker could provide and never overwrites the filed submission. |
-| 3:35-4:35 | Open `/map`. Rotate the 3D exposure view and explain that tower height is active insured value grouped into H3 cells. |
-| 4:35-5:00 | Return to the decision: one missing answer, its source, its effect, and the next action are all visible. State the limitation below. |
+Use the [full spoken script](../9-FEDERATO-FIVE-MINUTES.md) as the timing reference.
 
-Do not open the rulebook, Ask, and validation pages during this five-minute version. They remain available for judge questions. If the judge asks for measured performance, use validation instead of the map for the final minute.
+| Time | Show |
+| --- | --- |
+| 0:00–0:35 | Submissions and the scope of the property guideline |
+| 0:35–1:25 | Rulebook, point mapping and clickable equation |
+| 1:25–3:30 | Case 138: source-labelled premium, what-if, recorded query and calculation |
+| 3:30–4:05 | Portfolio exposure and geographic context |
+| 4:05–4:35 | Validation and the historical miss |
+| 4:35–4:50 | Closing summary, leaving ten seconds free |
+
+Press P for the [short explanatory slides](../10-PRESENTATION.md), then P again to return to the live page. Keep case 126's model-written Challenger available for questions; case 138 currently uses a deterministic sensitivity fallback.
 
 ## Know these details
 
@@ -45,7 +47,7 @@ Do not open the rulebook, Ask, and validation pages during this five-minute vers
 
 ## Say this limitation
 
-"This uses Federato's supplied synthetic snapshot and our transcription of the supplied appetite rule. The backtest measures disagreement on a small sample. It does not prove loss prevention or model winnability."
+"This uses Federato's supplied synthetic snapshot and our transcription of the supplied appetite rule. The backtest shows historical outcomes and a known miss on a small synthetic sample. It does not prove loss prevention or model winnability."
 
 ## If it fails
 

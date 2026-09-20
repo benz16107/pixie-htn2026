@@ -1,6 +1,6 @@
 # Incident exchange: driver, witness, insurer
 
-Open the Expo app on one phone and `http://macserver:3112/intact/insurer` on the computer. For an independent witness contribution, use a second device or a separate browser profile.
+Open the Expo app on one phone and `http://macserver:3100/intact/insurer` on the computer. For an independent witness contribution, use a second device or a separate browser profile.
 
 ## Quick visual demo
 

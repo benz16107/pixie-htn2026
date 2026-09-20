@@ -21,9 +21,9 @@ flowchart LR
 
 engine.assess() evaluates commercial cases and the tenant quote uses the same provenance rules with its own pricing service. Commercial rules live in rules/property_2025.yaml. Tenant pricing and Toronto context live in the Toronto pack. Auto and driving-context demo inputs live in versioned JSON fixtures. Models do not calculate a score or price.
 
-The Federato web product is an underwriter workbench. It shows the queue, score interval, source trail, decision waterfall, sensitivity, precedent, portfolio impact, agent events, guideline changes, and bounded overrides.
+The Federato web product is an underwriter workbench. It shows the queue, score interval, source trail, interactive calculation, sensitivity, precedent, portfolio impact, agent events, guideline changes and bounded overrides. Case panels can be rearranged, hidden or focused. The rulebook and case share the expandable equation interface. The P shortcut opens a modal presentation while leaving the current demo page mounted.
 
-The Intact web product maps Quote, Decide, Protect, and Recover to their services and working proof. The Expo app is the consumer product and uses Home, Compare, Safety, and Help navigation. Home routes to the tenant estimate, inventory, and prevention flows. Auto routes to vehicle comparison, scenario testing, prevention records, Drive Score, and recovery.
+The Intact web product maps Quote, Decide, Protect, and Recover to their services and working proof. The Expo app is the consumer product and uses Home, Compare, Insights, and Community navigation. Home routes to the tenant estimate, inventory, and prevention flows. Auto routes to vehicle comparison, scenario testing, prevention records, Drive Score, and recovery.
 
 ## Consumer service boundary
 
@@ -33,9 +33,15 @@ The Intact web product maps Quote, Decide, Protect, and Recover to their service
 - POST /driving/context accepts coarse route points and aggregate driving events. It returns behavior, route-context, and composite coaching scores with provenance. It stores no coordinates and cannot affect a quote or premium.
 - Application and recovery routes require consent and a demo confirmation. They prepare unsent records.
 
+## Incident evidence and community credits
+
+The Expo app and `/intact/insurer` use `shared/evidence.ts` to call the same `/consumer/incidents` API. It stores uploaded bytes, hashes, declared metadata, review notes and status in `var/evidence.sqlite`, separate from the commercial case store. The web API proxy supports media playback and evidence-package exports.
+
+Accepted witness contributions generate simulated credits. The phone allocates one shared balance between Home and Auto for a one-time payment preview. Neither the original premium nor Drive Score changes. Device-local identity is not verified production authentication; a file hash does not establish authenticity or fault. See [ROAD-HELP.md](ROAD-HELP.md).
+
 ## Native Expo surfaces
 
-- Expo Router owns the Home, Compare, Safety, and Help navigation plus supporting screens.
+- Expo Router owns the Home, Compare, Insights, and Community navigation plus supporting screens.
 - @expo/ui supplies native SwiftUI and Jetpack Compose controls in development builds.
 - expo-widgets supplies the iOS drive-context widget and Live Activity.
 - Expo Go and web use a labelled foreground fallback because native extensions cannot load there.
@@ -57,8 +63,10 @@ The Intact web product maps Quote, Decide, Protect, and Recover to their service
 
 ## Runtime
 
-- FastAPI serves both products on port 8000. SQLite stores cases, events, and cached provider responses.
-- Next.js serves the Federato desk and Intact presentation on port 3100.
+- FastAPI serves both products on port 8000. SQLite stores commercial cases and events; a separate SQLite database stores incidents and uploads. Provider caches live under `cache/`.
+- Next.js serves the Federato desk, integrated slides and Intact insurer workspace on port 3100.
 - Expo serves the consumer app on port 8081.
 - The MCP server uses standard input/output by default and can use Streamable HTTP on port 8010.
 - Elastic has an in-memory fallback with the same response shape. Replay reconstructs an agent run from recorded events and makes no model call.
+
+The full API loads the commercial snapshot at startup. See [DATA.md](DATA.md) for machine-local dependencies and the difference between committed sample files and recorded replay events.

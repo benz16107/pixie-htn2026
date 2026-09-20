@@ -2,23 +2,27 @@
 
 | Screen | Purpose | Best use |
 | --- | --- | --- |
-| /queue | Commercial submissions, uncertainty, issues, and decisions | Start every Federato-side pitch |
-| /cases/138 | Provenance, interval, waterfall, what-if, sensitivity, precedent, memory, and override | Explain the core product |
-| /live | Short replay of specialist investigation and challenge | Sentry trace context or a technical question |
-| /guideline | Written rules, scenarios, validation, and portfolio diff | Federato rule-change story |
-| /map | Flat or 3D geographic exposure and portfolio concentration | Federato or Elastic story |
-| /ask | Natural language to a checked Federato query | Federato or Rox story |
-| /backtest | Pre-registered results and named misses | Credibility and evaluation |
-| /intact | Home or Auto lifecycle presentation across Quote, Decide, Protect, and Recover | Intact or Expo opening |
-| /intact/quotes | Tenant quote receipts and advisor referrals | Human handoff after a tenant quote |
-| Expo Quote | Tenant estimate or synthetic Auto vehicle comparison | Working quote proof |
-| Expo Decide | One-input what-if comparison | Explain customer control |
-| Expo Protect | Room inventory or driving-context coaching | Prevention, Expo UI, widget, and Live Activity |
-| Expo Recover | Safety confirmation, incident record, and local recovery plan | Post-incident story |
-| /privacy, /terms | Product trust pages | Open only if asked |
+| `/queue` | Commercial submissions, appetite and review priority | Start the Federato pitch |
+| `/guideline`, `/method` | Active rules and expandable scoring equation | Explain scoring before the case |
+| `/cases/138` | Sources, calculation, what-if, recorded investigation and adjustable panels | Main commercial example |
+| `/cases/126` | Recorded model-written Challenger | Optional challenge example; case 138 uses a sensitivity fallback |
+| `/map` | Exposure concentration and source-labelled geographic context | Explain existing exposure and hazards |
+| `/backtest` | Historical outcomes and recorded enrichment effects | Show measured changes and the known miss |
+| `/present`, or P in the app | One nine-slide explanatory deck | P switches both ways; arrows move slides |
+| `/live` | Recorded specialist investigation or a deliberate live run | Technical or provider questions |
+| `/ask` | Natural language to a checked Federato query | Federato or Rox query demonstration |
+| `/intact` | Home and Auto workflow overview | Intact opening |
+| `/intact/insurer` | Incident reports, submitted files, reviews and exports | Connected evidence demonstration |
+| `/intact/quotes` | Tenant receipts and advisor referrals | Human handoff |
+| `/intact/agent` | Consumer MCP tools | Sourced agent request |
+| Expo Home | Tenant estimate, inventory, Auto entry and community savings | Customer starting point |
+| Expo Compare | Coverage scenarios, car budget and credit allocation | Customer control |
+| Expo Insights | Prevention and coaching-only Drive Score | Risk awareness |
+| Expo Community | Incident reporting, witnesses and recovery plan | Post-incident workflow |
+| `/privacy`, `/terms` | Product trust pages | Reference when needed |
 
-The case page contains depth for questions. In a five-minute pitch, keep the score breakdown selected and open only one supporting section.
+The Federato sequence is Submissions, Rulebook, Case 138, Portfolio, Validation. Focus one case panel at a time. Equation details belong in the app; the slides contain short summaries.
 
-The product switch changes the whole website between Federato and Intact. Use it once to explain that one engine supports two workflows.
+The product switch moves between Federato and Intact. Home/Auto is a separate consumer context switch. Home pricing is tenant-only. Auto inputs and witness credits are illustrative. Drive Score never changes a price.
 
-Inside Intact, use the Home and Auto route switch separately. Home pricing is tenant-only. Auto uses synthetic listings and rates. The drive-context score is coaching-only and does not change a quote or premium.
+Both web products use port 3100. The Expo app uses port 8081 and calls the shared API on port 8000. Replace `localhost` with a reachable server address on another device.

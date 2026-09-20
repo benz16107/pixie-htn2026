@@ -1,28 +1,18 @@
-# Five-minute rehearsal
+# Start here
 
-## Before the judge arrives
+Use one product's script for each judging session.
 
-1. Run ./start.sh.
-2. Confirm the API health check and open http://macserver:3100/queue.
-3. Open case 138, the 3D portfolio, guideline, backtest, and the Intact lifecycle in separate tabs.
-4. On the phone, leave the lifecycle home screen open. Prepare the tenant receipt and Auto comparison as adjacent screens.
-5. If the Expo native development build is available, start one drive-context Live Activity. Otherwise use the labelled foreground fallback.
-6. Open the relevant provider console for the next track.
-7. Reset stored guideline and override changes from the previous rehearsal.
+- **Federato:** [five-minute script](9-FEDERATO-FIVE-MINUTES.md), in the order Submissions, Rulebook, Case 138, Portfolio, Validation. [P toggles the slides](10-PRESENTATION.md) over the current live page without discarding its inputs.
+- **Intact:** [product and asynchronous judging guide](tracks/02-intact.md). Use the Expo app for the customer flows and `/intact/insurer` for evidence review. The [incident exchange walkthrough](10-ROAD-HELP.md) covers the connected driver/witness/reviewer demonstration.
+- **Other sponsors:** select the relevant [track card](4-PER-TRACK.md) and show its specific evidence.
 
-## Base commercial script
+## Prepare
 
-| Time | Action | What to say |
-| ---: | --- | --- |
-| 0:00 | Open the Federato queue | "A blank should never look safe. Pixie keeps missing facts visible." |
-| 0:30 | Open case 138 | "This submission has evidence, an estimate, and a missing premium. Every value names its source." |
-| 1:20 | Point to the score interval and waterfall | "The same missing field can satisfy several bands, so the honest answer is 30 to 75 rather than one false-precision score." |
-| 2:10 | Move the premium what-if | "This asks what a confirmed value would do. It does not overwrite the case." |
-| 2:50 | Open the 3D portfolio | "Tower height is active insured value, so the underwriter sees where another policy adds concentration." |
-| 3:25 | Run the sponsor-specific beat | Follow the current track card. |
-| 4:35 | Show the limitation | State the exact fallback or unverified boundary from the card. |
-| 4:50 | Close | "Pixie gives the underwriter the decision range, the source trail, and the fact that would settle it." |
+1. Follow [setup and recovery](../docs/RUNBOOK.md). On the configured demo machine, `./start.sh` starts missing services; it does not rebuild a server that is already running.
+2. Check API health, then preload only the pages in the selected script.
+3. For Federato, reset previous rehearsal edits when appropriate. Confirm case 138's baseline before showing a what-if. Keep the recorded query trace ready.
+4. For Intact, open Home, Compare, Insights and Community. Prepare a tenant receipt and Auto example. For witness credits, use a second device or browser profile and the same incident in the insurer workspace.
+5. Use the stationary Drive Score sample when driving is impractical. Native widgets and Live Activities require the development build; label previews as previews.
+6. Use recorded commercial replay for predictable timing. A live model run needs configured access and can incur charges.
 
-For Intact or Expo, start on `/intact` and use its four stages as the pitch. Move to the phone only for the working proof. Quote shows tenant and Auto estimates. Decide changes one input. Protect shows inventory or driving context. Recover walks through Safety, Record, and Plan, then creates a local PDF the customer can save or share. Do not mix the commercial and consumer scripts until the tenant quote reaches its advisor referral.
-
-Use replay for a predictable five-minute demonstration. If you run the live model path, tell the judge before pressing it.
+Avoid switching between the commercial and consumer products mid-script unless the judge asks how they share infrastructure. The [screen map](2-SCREENS.md) and [failure guide](5-IF-IT-BREAKS.md) cover recovery during questions.

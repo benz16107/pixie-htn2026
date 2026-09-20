@@ -1,70 +1,25 @@
-# The bounded underwriter override
+# Bounded underwriter adjustment
 
-## What it does
+An underwriter can move a scored interval by up to five points with a written reason. The engine's result remains visible, and the case labels the adjusted result as human judgement.
 
-`POST /cases/{id}/override {"points": <signed number>, "reason": "<free text>"}` moves the engine's
-score interval by at most five points, recomputes the decision from the moved interval using the
-guideline's own thresholds, and writes the whole thing into the case's DeskEvent ledger under the
-`human` actor, beside every other decision the desk made. `DELETE /cases/{id}/override` undoes it,
-and `POST /demo/reset` clears it along with the other human events.
+## API and record
 
-Nothing the engine computed is overwritten. `GET /cases/{id}` returns the engine's `score` and
-`decision` exactly as before and adds an `override` block carrying `engineScore`, `engineDecision`,
-the adjusted `score` and `decision`, the points, the reason, who moved it and when. The case page
-labels the engine's interval "Engine interval", prints the adjustment as its own line
-("Underwriter adjusted +4, sprinkler certificate confirmed by the broker, at 09:56 p.m."), and the
-waterfall shows it as a final ink-filled bar behind a dashed divider, tagged HUMAN. Every value the
-override produces carries `"provenance": "human"` (AGENTS.md invariant 3): it is a human's number,
-and the UI says so wherever it appears.
+- `POST /cases/{id}/override` accepts `points` and `reason`, records a human `DeskEvent`, and returns the adjusted result.
+- `DELETE /cases/{id}/override` removes the override events and restores the view without the human adjustment.
+- `POST /demo/reset` clears overrides alongside other commercial rehearsal changes.
 
-Refusals, not silent corrections: an adjustment past the bound comes back 400 with the number you
-asked for and the number allowed, and nothing is written. An empty reason is a 400 too. A bound that
-quietly clamps is not a bound the underwriter can see, and a reason nobody typed is not an audit
-trail.
+The case response retains its original `score` and `decision` and adds an `override` block with the original values, adjusted values, reason, actor and timestamp. The waterfall can display the adjustment separately from the engine steps. Numeric provenance is `human`.
 
-## The evidence
+The API rejects an empty reason, zero or non-finite movement, an adjustment beyond ±5, and cases without a scored interval. Adjusted endpoints are rounded and limited to 0–100, then classified using the active guideline thresholds. It does not silently reduce an excessive requested adjustment to the allowed bound.
 
-Dietvorst, Simmons and Massey (2015), *Journal of Experimental Psychology: General* 144(1), 114-126,
-showed that people abandon an algorithm after watching it err, even when it beats them by a wide
-margin: their participants made 15-29% more error than the model in one task and 90-97% more in
-another, and still chose themselves over it.
+## Why allow an adjustment?
 
-Dietvorst, Simmons and Massey (2018), "Overcoming Algorithm Aversion: People Will Use Imperfect
-Algorithms If They Can (Even Slightly) Modify Them," *Management Science* 64(3), 1155-1170, is the
-fix this feature implements. Participants who could modify the model's forecast, in one condition by
-no more than two percentage points, "were more likely to choose to use the model's forecasts than
-those who could not, and as a result, they performed better and earned more money."
+[Dietvorst, Simmons and Massey](https://faculty.wharton.upenn.edu/wp-content/uploads/2016/08/Dietvorst-Simmons-Massey-2018.pdf) found that allowing limited modifications increased participants' willingness to use imperfect algorithmic forecasts. This motivates the control; it does not validate Pixie's five-point limit or establish an adoption effect for this product.
 
-Both papers, with quotes and links, are in `docs/research/underwriting-evidence.md` section 2.
+The what-if control changes a hypothetical input. This adjustment changes the displayed output under the underwriter's name, with the original result beside it. Larger disagreements belong in the review decision and requested evidence.
 
-Pixie already let a human replace the decision outright over iMessage, and change an *input* through
-the what-if slider. Neither is what the 2018 paper tested. This is the missing one: a small, bounded
-nudge of the *output*.
+## Limits
 
-## Why the bound exists
+The bound is a product choice in `api/src/atlas_api/override.py`. We have not measured its effect on loss ratio or decision quality. A later engine run reapplies the recorded point adjustment to the new engine interval; it does not ask the human to confirm the adjustment again.
 
-`MAX_OVERRIDE_POINTS = 5` in `api/src/atlas_api/override.py` is a product decision, not a law of
-nature. Five points is enough to carry a case over a threshold it already sits next to, and too
-small to turn a decline into an accept on its own. Dietvorst 2018 got its adoption effect with two
-points of movement, so the bound can go lower without losing the benefit the evidence predicts.
-
-The bound is there because the other half of the literature is Hoffman, Kahn and Li (2018),
-"Discretion in Hiring," *Quarterly Journal of Economics* 133(2), 765-800: managers who overrode a
-hiring test "end up with worse average hires... because they are biased or mistaken, not only
-because they have superior private information." Give the expert a free knob and they will use it to
-destroy value; give them no knob and they will stop using the system. A bounded, logged, reviewable
-adjustment is the only shape both findings support.
-
-## The honest limitation
-
-A bounded nudge is not effective challenge. SR 11-7 and NYDFS Part 500 §32 mean something specific
-by that phrase: critical analysis by *independent* parties with the standing and the authority to
-make the model owner change the model. An underwriter moving their own case by four points, however
-well logged, is none of those things. It is an adoption mechanism with an audit trail, and it should
-be described that way in front of a model-risk officer.
-
-Two smaller caveats. The five-point bound is unvalidated: we have not measured what it does to loss
-ratio, because we have no outcome data on overridden cases. And an override that is later
-contradicted by the engine (a desk re-run that moves the interval) still applies its points on top
-of the new number; the case file records both, but nothing re-asks the human whether they still
-mean it.
+Undo deletes override events in this demo implementation, so the ledger is not an immutable production audit system. A logged score adjustment is also not independent model validation or proof of regulatory compliance. The current feature does not depend on an SMS or iMessage integration.
