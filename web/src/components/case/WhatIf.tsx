@@ -35,7 +35,9 @@ export function WhatIf({
   const [res, setRes] = useState<WhatIfResult | null>(null);
   const seq = useRef(0);
   const emit = useRef(onState);
-  emit.current = onState;
+  useEffect(() => {
+    emit.current = onState;
+  }, [onState]);
 
   // The API answers in well under a millisecond, so ask on every drag frame and keep the last answer.
   useEffect(() => {

@@ -79,7 +79,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
   }, [cells]);
 
   const layers = useMemo(
-    () => buildLayers({ s, cells, ax, ay, caseT, caseScore, caseTier, slider, slice }),
+    () => buildLayers({ s, cells, ax, ay, caseT, caseScore, caseTier }),
     [s, cells, caseT[0], caseT[1], caseScore.lo, caseScore.hi, caseTier, slider, slice], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -265,8 +265,6 @@ function buildLayers({
   caseT,
   caseScore,
   caseTier,
-  slider,
-  slice,
 }: {
   s: Surface;
   cells: { p: [number, number, number]; h: number; c: [number, number, number, number]; tier: Tier; lo: number; hi: number; i: number; j: number }[];
@@ -275,8 +273,6 @@ function buildLayers({
   caseT: [number, number];
   caseScore: { lo: number; hi: number };
   caseTier: Tier;
-  slider: number;
-  slice: number;
 }): Layer[] {
   const cx = px(caseT[0]);
   const cy = px(caseT[1]);
