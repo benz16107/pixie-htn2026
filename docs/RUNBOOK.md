@@ -27,6 +27,23 @@ every URL.
 awake. If any of those fail at the venue there is no fallback but the backup video, so record one.
 macserver sleeps on battery, so it must stay plugged in.
 
+## 0b. The backup on GitHub
+
+`git@github.com:benz16107/pixie-htn2026` (private). `main` plus every lane branch is pushed. The
+work still happens on macserver; this is a backup and a way to read the code on the laptop.
+
+    git clone https://github.com/benz16107/pixie-htn2026.git
+
+A clone will not run without three things that are deliberately not in git: `.env` (every API key),
+`var/atlas.sqlite` (the recorded desk runs the demo replays) and `data/federato` (a symlink here to
+the pulled Federato snapshot). Copy them from macserver if the laptop ever has to take over:
+
+    scp macserver:~/Code/hackathons/htn-2026/atlas/.env .
+    scp -r macserver:~/Code/hackathons/htn-2026/atlas/var ./var
+    scp -r macserver:~/Code/hackathons/htn-2026/atlas/cache ./cache
+
+Push after any real change so the backup stays current: `git push origin main`.
+
 ## 1. What has to be running
 
 | Piece | Port | Start it | Check |
