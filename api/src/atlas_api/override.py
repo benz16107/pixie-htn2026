@@ -23,7 +23,8 @@ MAX_OVERRIDE_POINTS = 5.0
 
 
 def _rules() -> RulesFile:
-    return RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    from . import guideline
+    return guideline.active()
 
 
 def decide(lo: float, hi: float, rules: RulesFile) -> str:

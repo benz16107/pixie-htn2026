@@ -39,6 +39,7 @@ from pydantic import BaseModel
 from . import layers, memory
 from .case import Case, Estimated, Known, Missing, World
 from .case_store import CaseStore
+from . import guideline
 from .engine import (DEFAULT_RULES_DIR, Assessment, Decided, Open, Routed, RulesFile, assess,
                      estimate_premium, explain, risk_points)
 from .events import (ActionP, Actor, AnswerP, AskP, AssessmentP, CaseFile, ChallengeP, ConflictP, DecisionP,
@@ -433,7 +434,7 @@ class Desk:
         self.store = store
         self.models = models or ModelConfig.from_env()
         self.policy = policy or DeskPolicy()
-        self.rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+        self.rules = guideline.active()   # the live guideline, edits included
         self.portfolio = open_index(world, max_penalty=(self.rules.portfolio_points or {}).get("max_penalty", 10))
         self.precedent = open_precedent_index(world)
         self.sem = asyncio.Semaphore(self.policy.concurrency)

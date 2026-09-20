@@ -22,6 +22,12 @@
 - **[../eval/BACKTEST.md](../eval/BACKTEST.md)** — B1 to B4 defined and committed before the first
   run, so the metrics could not be tuned after seeing them.
 
+## Per feature, if a judge goes deep
+
+[GUIDELINE.md](GUIDELINE.md) — the live guideline: editing the carrier's appetite and watching the
+book re-score (our answer to Federato's Control Tower). [OVERRIDE.md](OVERRIDE.md) — the
+underwriter's bounded nudge of the engine's interval.
+
 ## Per sponsor, if a judge goes deep
 
 [SENTRY.md](SENTRY.md) · [ELASTIC.md](ELASTIC.md) · [COMPOSIO.md](COMPOSIO.md) · [LINQ.md](LINQ.md) ·

@@ -132,6 +132,25 @@ class OverrideP(_P):
     decision_after: str
 
 
+class GuidelineP(_P):
+    """The carrier's appetite changed, and this case moved with it (docs/GUIDELINE.md).
+
+    Every number here is the engine's: the two intervals are its re-scores of this case under the
+    old and the new guideline, and `change` is what the human edited, rendered from the document
+    itself rather than written by anyone."""
+    kind: Literal["guideline"] = "guideline"
+    guideline_id: str
+    hash_before: str
+    hash_after: str
+    change: list[str] = []                     # the edits, in words
+    by: str = "underwriting leader"
+    decision_before: str
+    decision_after: str
+    score_before: ScoreP | None = None
+    score_after: ScoreP | None = None
+    factors: list[dict[str, Any]] = []         # [{fact, from: [bands], to: [bands], value}]
+
+
 class AssessmentP(_P):
     kind: Literal["assessment"] = "assessment"
     score: ScoreP
@@ -245,14 +264,14 @@ class NoteP(_P):
 Payload = Annotated[Union[
     PlanP, QueryP, QueryRetryP, FindingP, EstimateP, GapP, AskP, AnswerP, ConflictP, ResolutionP,
     AssessmentP, DecisionP, ChallengeP, ResponseP, ActionP, ActionResultP, InboundP, GuardrailP,
-    OverrideP,
+    OverrideP, GuidelineP,
     RecallP, JudgementP, ToolCallP, RunStatsP, NoteP,
 ], Field(discriminator="kind")]
 
 Kind = Literal["plan", "query", "query_retry", "finding", "estimate", "gap", "ask", "answer", "conflict",
                "resolution", "assessment", "challenge", "response", "decision", "action", "action_result",
                "inbound", "guardrail", "recall", "judgement", "tool_call", "run_stats", "note",
-               "override"]
+               "override", "guideline"]
 
 
 class DeskEvent(BaseModel):

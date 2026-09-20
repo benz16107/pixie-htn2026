@@ -58,7 +58,13 @@ class RulesFile:
 
     @staticmethod
     def load(path: str | Path) -> "RulesFile":
-        raw = yaml.safe_load(Path(path).read_text())
+        return RulesFile.from_raw(yaml.safe_load(Path(path).read_text()), str(path))
+
+    @staticmethod
+    def from_raw(raw: dict[str, Any], path: str = "<guideline>") -> "RulesFile":
+        """The same parse as load(), from an already-decoded mapping. guideline.py edits the
+        mapping and rebuilds through here, so an edited guideline gets the identical checks a
+        file on disk gets."""
         rules = []
         for r in raw["factors"]:
             fact = r["fact"]

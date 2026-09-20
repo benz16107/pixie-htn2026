@@ -35,6 +35,38 @@ export type Percentile = { backend: "elastic" | "memory"; n: number; tiv: number
 export type Receipt = Omit<QuoteView["receipt"], "base"> & { base: number; annual: number; label: string };
 export type CaseWithReceipt = CaseView & { receipt?: Receipt };
 
+
+// The live guideline (docs/GUIDELINE.md). `pred` is one band's test, e.g. {between: [75000, 100000]}.
+export type Pred = Record<string, unknown>;
+export type GuidelineBand = { band: "target" | "acceptable" | "not_acceptable"; pred: Pred; text: string };
+export type GuidelineFactor = { fact: string; label: string; hardFail: boolean; routes: boolean; source: string; bands: GuidelineBand[] };
+export type GuidelineEdit =
+  | { kind: "threshold"; key: "decline" | "accept"; value: number }
+  | { kind: "cap"; value: number }
+  | { kind: "points"; key: string; value: number }
+  | { kind: "band"; fact: string; band: string; op: string; value: unknown };
+export type Scenario = { id: string; label: string; note: string; effect: string; edits: GuidelineEdit[] };
+export type GuidelineDoc = {
+  id: string; kind: string; hash: string; edited: boolean;
+  thresholds: { decline: number; accept: number };
+  hardFailCap: number | null;
+  points: Record<string, number>;
+  factors: GuidelineFactor[];
+  scenarios: Scenario[];
+};
+export type GuidelineCaseChange = {
+  caseId: string; insured: string; tierBefore: string; tierAfter: string; tierChanged: boolean;
+  scoreBefore: { lo: number; hi: number } | null; scoreAfter: { lo: number; hi: number } | null;
+  valueAtStake: number; factors: { fact: string; from: string[]; to: string[]; value: string }[];
+};
+export type GuidelineDiff = {
+  casesScored: number; changed: number; tierChanges: number; counts: Record<string, number>;
+  valueIntoQueue: number; valueOutOfQueue: number; cases: GuidelineCaseChange[];
+  rankMoves: { caseId: string; insured: string; from: number; to: number; delta: number }[];
+  enteredQueue: string[]; leftQueue: string[]; ms: number; change: string[];
+};
+export type GuidelineResult = { guideline: GuidelineDoc; diff: GuidelineDiff };
+
 // On the server we call the API directly; in the browser we go through the same-origin proxy,
 // so the page works from another machine (the API sends no CORS headers).
 const BASE = typeof window === "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "/api/atlas";
@@ -99,6 +131,18 @@ async function send(path: string, init: RequestInit): Promise<{ ok: boolean; det
   }
 }
 
+/** Like send(), but keeps the response body: the guideline diff IS the answer. */
+async function sendJson<T>(path: string, init: RequestInit): Promise<{ ok: boolean; detail: string; data?: T }> {
+  if (FIXTURES_ONLY) return { ok: true, detail: "dry run (fixtures)" };
+  try {
+    const res = await fetch(BASE + path, { ...init, signal: AbortSignal.timeout(15000) });
+    const body = (await res.json().catch(() => ({}))) as { detail?: string };
+    return res.ok ? { ok: true, detail: "", data: body as T } : { ok: false, detail: body.detail ?? `API returned ${res.status}` };
+  } catch {
+    return { ok: false, detail: "desk API unreachable" };
+  }
+}
+
 export const api = {
   queue: async (view: "open" | "all") =>
     (await get<QueueRow[]>(`/queue?view=${view}`, () => {
@@ -127,4 +171,8 @@ export const api = {
   override: (caseId: string, points: number, reason: string) =>
     send(`/cases/${caseId}/override`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ points, reason }) }),
   clearOverride: (caseId: string) => send(`/cases/${caseId}/override`, { method: "DELETE" }),
+  guideline: () => get<GuidelineDoc>(`/guideline`, () => undefined),
+  putGuideline: (doc: GuidelineDoc) =>
+    sendJson<GuidelineResult>(`/guideline`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(doc) }),
+  resetGuideline: () => sendJson<GuidelineResult>(`/guideline/reset`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
 };
