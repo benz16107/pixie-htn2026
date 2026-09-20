@@ -3,20 +3,29 @@
 Everything Ben needs to bring Pixie up, keep it up, and recover in front of a judge.
 Written 2026-09-19 against what is actually running on this laptop. Ports and URLs verified.
 
-## 0. One command
+## 0. Where it runs, and what to open
 
-    ~/Code/hackathons/htn-2026/atlas/start.sh
+**Everything runs on macserver at home**, not on the laptop. Ben demos from the laptop and the
+phone, both reaching macserver over Tailscale. Nothing needs to move, and nothing needs rewriting
+when the venue's network changes.
 
-Starts whatever is down, leaves what is up alone, rewrites the phone app's API address from the
-Wi-Fi this laptop is on right now (restarting Expo if the address moved), holds the machine awake
-with `caffeinate`, checks the tunnel through Cloudflare's resolver, and prints every URL. Run it
-after any network change and after any reboot.
+| Where | What to open |
+|---|---|
+| Laptop (Tailscale on) | `http://macserver:3100/live`, and the other pages under the same host. If the name does not resolve, `http://100.95.223.110:3100` |
+| Phone (Tailscale on) | Expo Go, `exp://100.95.223.110:8081` |
+| Anything public, no VPN | `https://macserver.tailb51682.ts.net` (the API, through Tailscale Funnel) |
 
-Everything runs on the laptop, not the server: it is the machine that goes to the judges. That
-means two failure modes to stay ahead of. The lid closing ends the demo, so leave `caffeinate`
-running (`start.sh` does it) and keep the machine plugged in. And the venue's Wi-Fi hands out a
-different address than home, which silently breaks the phone app because Expo bakes the API URL
-into the bundle: re-run `start.sh` after joining the venue network, then reopen Expo Go.
+The Funnel address is permanent. It replaced the cloudflared quick tunnel, whose hostname changed
+on every restart and silently broke inbound iMessage. Linq's webhook should point at
+`https://macserver.tailb51682.ts.net/webhooks/linq` and never need touching again.
+
+On macserver itself, `~/Code/hackathons/htn-2026/atlas/start.sh` starts whatever is down, leaves
+what is up alone, holds the machine awake with `caffeinate`, warns if it is on battery, and prints
+every URL.
+
+**What this setup costs.** The demo depends on home power, home internet and macserver staying
+awake. If any of those fail at the venue there is no fallback but the backup video, so record one.
+macserver sleeps on battery, so it must stay plugged in.
 
 ## 1. What has to be running
 

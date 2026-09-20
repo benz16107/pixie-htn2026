@@ -8,24 +8,11 @@ set -a; . ./.env 2>/dev/null; set +a
 
 up() { lsof -ti tcp:"$1" >/dev/null 2>&1; }
 
-# The venue Wi-Fi hands out a different address than home, and the phone app bakes its API URL in
-# at bundle time. Rewrite it from the address this machine holds right now, every start.
-LAN=$(ipconfig getifaddr en0 || ipconfig getifaddr en1)
-if [ -n "${LAN:-}" ]; then
-  PREV=$(grep -m1 '^EXPO_PUBLIC_API_URL=' app/.env 2>/dev/null | cut -d= -f2-)
-  cat > app/.env <<EOF
-# Written by start.sh from this machine's current Wi-Fi address. The phone must be on this network.
-# On cellular, swap in the tunnel URL from .env (PUBLIC_URL).
-EXPO_PUBLIC_API_URL=http://$LAN:8000
-EXPO_PUBLIC_WEB_URL=http://$LAN:3100
-EOF
-  echo "lan   $LAN"
-  # A changed address means the running bundle is stale, so Expo has to be restarted, not reused.
-  if [ "$PREV" != "http://$LAN:8000" ] && up 8081; then
-    echo "      address changed, restarting Expo"
-    lsof -ti tcp:8081 | xargs kill -9 2>/dev/null
-  fi
-fi
+# Everything runs here on macserver; Ben demos from his laptop and phone over Tailscale. The
+# Funnel gives the API one permanent public HTTPS address, so nothing needs rewriting when the
+# venue's network changes. Only check that the pieces are still reachable.
+TS_IP=$(tailscale ip -4 2>/dev/null | head -1)
+[ -n "${TS_IP:-}" ] && echo "tailnet $TS_IP (macserver)"
 
 if up 8000; then
   echo "api   already up"
@@ -76,21 +63,28 @@ else
   echo "tunnel DOWN. iMessage replies will not arrive. Run: python3 scripts/retunnel.py"
 fi
 
-# The lid closing mid-demo ends the demo. Hold the machine awake until this shell is killed.
+# macserver sleeps on battery, which takes the whole demo down. Keep it awake and plugged in.
 if ! pgrep -qf "caffeinate -disu"; then
   nohup caffeinate -disu > /dev/null 2>&1 &
-  echo "awake caffeinate running (kill it with: pkill caffeinate)"
+  echo "awake   caffeinate running (kill it with: pkill caffeinate)"
 fi
+pmset -g batt 2>/dev/null | grep -q "AC Power" || echo "POWER   on battery. Plug macserver in."
 
 cat <<EOF
 
-  Desk        http://localhost:3100/live      <- press "Run the demo"
-  A case      http://localhost:3100/cases/138
-  Queue       http://localhost:3100/queue
-  Backtest    http://localhost:3100/backtest
-  Ask         http://localhost:3100/ask
-  Map         http://localhost:3100/map
-  Phone       Expo Go on this Wi-Fi, port 8081
+  Open these on the laptop, with Tailscale on:
+
+  Desk        http://macserver:3100/live      <- press "Run the demo"
+  A case      http://macserver:3100/cases/138
+  Queue       http://macserver:3100/queue
+  Backtest    http://macserver:3100/backtest
+  Ask         http://macserver:3100/ask
+  Map         http://macserver:3100/map
+
+  If the name does not resolve, use http://${TS_IP:-100.95.223.110}:3100 instead.
+
+  Phone       Tailscale on, then Expo Go: exp://${TS_IP:-100.95.223.110}:8081
+  API, public https://macserver.tailb51682.ts.net  (Linq webhooks, no VPN needed)
 
   Reset the demo:  curl -X POST localhost:8000/demo/reset
   Runbook:         $ROOT/docs/RUNBOOK.md
