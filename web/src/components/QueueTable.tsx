@@ -23,7 +23,7 @@ const COLS: { key?: Key; label: string; w: string; align?: "right" }[] = [
   { label: "line", w: "w-[74px]" },
   { label: "st", w: "w-[30px]" },
   { key: "value", label: "at stake", w: "w-[76px]", align: "right" },
-  { key: "score", label: "score interval", w: "w-[186px]" },
+  { key: "score", label: "score 0–100", w: "w-[186px]" },
   { label: "call", w: "w-[164px]" },
   { label: "flags", w: "w-[102px]" },
   { label: "what it turns on", w: "" },
@@ -171,11 +171,6 @@ export function QueueTable({
               <tr>
                 <td colSpan={COLS.length} className="px-2 pt-2 text-[10px] text-faint">
                   — end of the {view === "open" ? "open" : "full"} book, {sorted.length} rows
-                  {view === "open" && (
-                    <>
-                      {" "}· press <kbd className="key mx-0.5">A</kbd> for every decided and bound submission too
-                    </>
-                  )}
                 </td>
               </tr>
             )}

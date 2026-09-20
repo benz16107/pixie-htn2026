@@ -117,7 +117,7 @@ export const humanVerdict = (e: DeskEvent) =>
 
 /** One plain line for the caption strip: what the desk is doing right now. */
 export function nowLine(e: DeskEvent | undefined, running: boolean): string {
-  if (!e) return running ? "Starting the desk…" : "Press Run the demo, or pick a case from the queue.";
+  if (!e) return running ? "Starting the desk…" : "The desk is idle. This line narrates every step once it runs.";
   const who = e.actor.charAt(0).toUpperCase() + e.actor.slice(1);
   const text = prettyBands(str(e.body.text));
   switch (e.kind) {

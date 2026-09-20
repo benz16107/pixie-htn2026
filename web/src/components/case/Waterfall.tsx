@@ -99,6 +99,7 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
       <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
         <b className="block font-semibold">{s.label}: {pts} points</b>
         {human && <span className="block text-ink">The underwriter&apos;s number, not the engine&apos;s.</span>}
+        {s.kind === "cap" && <span className="block text-ochre">A cap: break this hard rule and the score cannot climb past it.</span>}
         {s.value && <span className="block">{s.value}</span>}
         {s.rule && <span className="mt-1 block text-dim">{s.rule}</span>}
         {s.source && <span className="mt-1 block font-mono text-[10px] text-faint">{s.source}</span>}

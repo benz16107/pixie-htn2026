@@ -164,7 +164,8 @@ function Thresholds({ doc, onEdit }: { doc: GuidelineDoc; onEdit: (e: GuidelineE
           <div key={at} aria-hidden className="absolute inset-y-0 border-l border-ink" style={{ left: `${at}%` }} />
         ))}
         <div aria-hidden className="absolute inset-y-0 border-l border-dashed border-rust" style={{ left: `${cap}%` }}>
-          <span className="num absolute bottom-0 left-1 whitespace-nowrap text-[9px] text-rust">hard-fail cap {cap}</span>
+          {/* right-anchored, so the sentence stays inside the decline zone instead of crossing a divider */}
+          <span className="num absolute bottom-0 right-1 whitespace-nowrap text-[9px] text-rust">break a hard rule and the score stops at {cap} →</span>
         </div>
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -383,21 +384,22 @@ export default function GuidelinePage() {
     );
 
   const tiles = [
-    { label: "in force", value: server.id, note: `content hash ${server.hash}` },
-    { label: "factors", value: String(server.factors.length), note: "each scored against its own bands" },
-    { label: "thresholds", value: `${server.thresholds.decline}/${server.thresholds.accept}`, note: "decline under, accept at or over" },
-    { label: "hard-fail cap", value: String(server.hardFailCap ?? "—"), note: "a broken hard rule cannot score above this" },
-    { label: "pending", value: String(pending.n), note: "edits on screen the desk is not scoring yet" },
+    { label: "in force", value: server.id, sub: `hash ${server.hash}` },
+    { label: "rules", value: String(server.factors.length), sub: "each with its own bands" },
+    { label: "decline / accept", value: `${server.thresholds.decline} / ${server.thresholds.accept}`, sub: "under, and at or over" },
+    { label: "hard-fail cap", value: String(server.hardFailCap ?? "—"), sub: "break a hard rule, score no higher" },
+    { label: "pending", value: String(pending.n), sub: "edits the desk is not scoring yet" },
   ];
 
   return (
-    <main className="grid h-[calc(100vh-30px)] grid-rows-[46px_minmax(0,1fr)_26px] overflow-hidden">
+    <main className="grid h-[calc(100vh-30px)] grid-rows-[52px_minmax(0,1fr)_26px] overflow-hidden">
       <header className="flex items-stretch border-b border-edge bg-land">
         <h1 className="sr-only">2025 commercial property underwriting guideline</h1>
         {tiles.map((t) => (
-          <div key={t.label} className="flex shrink-0 flex-col justify-center border-r border-rule px-3.5" title={t.note}>
+          <div key={t.label} className="flex shrink-0 flex-col justify-center border-r border-rule px-3.5">
             <span className="kicker">{t.label}</span>
             <span className={`num text-[17px] font-medium leading-[19px] ${t.label === "pending" && pending.n ? "text-ochre" : "text-ink"}`}>{t.value}</span>
+            <span className="text-[9px] leading-[12px] text-faint">{t.sub}</span>
           </div>
         ))}
         <p className="cond hidden max-w-[40ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
@@ -412,7 +414,7 @@ export default function GuidelinePage() {
             {server.edited ? "edited" : "as filed"}
           </span>
           <button onClick={reset} disabled={busy} className={BTN}>
-            restore filed <kbd className="key ml-1">r</kbd>
+            restore filed
           </button>
         </div>
       </header>
@@ -463,7 +465,7 @@ export default function GuidelinePage() {
               Try a change <span className="normal-case tracking-normal text-faint">— each effect below is measured against this book, not guessed</span>
             </h2>
             <ul>
-              {doc.scenarios.map((s, i) => (
+              {doc.scenarios.map((s) => (
                 <li key={s.id}>
                   <button
                     onClick={() => {
@@ -471,13 +473,10 @@ export default function GuidelinePage() {
                       setRan(s.id);
                     }}
                     title={s.note}
-                    className={`flex w-full items-baseline gap-2 border-b border-rule py-1 text-left transition-colors duration-150 hover:bg-land ${
+                    className={`flex w-full items-baseline gap-2 border-b border-rule py-1 pl-1.5 text-left transition-colors duration-150 hover:bg-land ${
                       ran === s.id ? "bg-raise" : ""
                     }`}
                   >
-                    <kbd aria-hidden className={`key mt-px shrink-0 ${ran === s.id ? "key-on" : ""}`}>
-                      {i + 1}
-                    </kbd>
                     <span className="min-w-0">
                       <span className={`cond block text-[12px] font-semibold ${ran === s.id ? "text-ochre" : "text-ink"}`}>{s.label}</span>
                       <span className="block text-[10px] leading-snug text-faint">{s.effect}</span>
@@ -505,17 +504,14 @@ export default function GuidelinePage() {
                   <span className="text-faint"> · the desk is still scoring the filed guideline</span>
                 </span>
                 <button onClick={apply} disabled={busy} className={`${BTN} border-ochre text-ochre hover:bg-ochre hover:text-paper`}>
-                  {busy ? "re-scoring…" : "apply"} <kbd className="key ml-1">a</kbd>
+                  {busy ? "re-scoring…" : "apply"}
                 </button>
                 <button onClick={discard} disabled={busy} className={BTN}>
-                  discard <kbd className="key ml-1">d</kbd>
+                  discard
                 </button>
               </>
             ) : (
-              <span className="text-[11px] text-faint">
-                Press <kbd className="key mx-0.5">1</kbd>–<kbd className="key mx-0.5">5</kbd> for a scenario, or edit any number on the left. Nothing
-                is sent until you apply.
-              </span>
+              <span className="text-[11px] text-faint">Every number on the left is editable. Nothing reaches the desk until you apply.</span>
             )}
           </div>
 
@@ -540,13 +536,6 @@ export default function GuidelinePage() {
             <span className={server.edited ? "text-ochre" : "text-dim"}>{server.edited ? "edited in memory, the file on disk is untouched" : "as filed"}</span>
           </>
         }
-        keys={[
-          ["1 – 5", "scenario"],
-          ["a", "apply"],
-          ["d", "discard"],
-          ["r", "restore"],
-          ["?", "keys"],
-        ]}
       />
     </main>
   );

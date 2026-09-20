@@ -123,9 +123,7 @@ export function SweepBoard({ cases, onPick }: { cases: Record<string, CaseState>
   };
   return (
     <div className="flex min-h-0 flex-col px-4 pb-1 pt-1.5">
-      <p className="kicker mb-1">
-        Sweep · {list.length} cases at once · keys 1-6 jump beats, space runs the sweep
-      </p>
+      <p className="kicker mb-1">Sweep · {list.length} cases at once</p>
       <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
         {list.map((c) => {
           const last = c.events.filter((e) => e.kind !== "run_stats").at(-1);
@@ -169,7 +167,7 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
   if (!c)
     return (
       <div className="p-4 text-[12px]">
-        <p className="text-dim">Pick a case from the queue on the left, or a pin on the map. The case and its decision appear here.</p>
+        <p className="text-dim">A case and its decision land here.</p>
         <button onClick={onStart} className="mt-3 rounded-sm border border-ochre bg-ochre px-3 py-1 text-paper transition-colors duration-150 hover:bg-ochre/85">
           Run the demo
         </button>

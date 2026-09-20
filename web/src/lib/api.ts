@@ -67,6 +67,40 @@ export type GuidelineDiff = {
 };
 export type GuidelineResult = { guideline: GuidelineDoc; diff: GuidelineDiff };
 
+// What the desk remembered (GET /cases/{id}/memory). Advisory only: see `boundary`.
+export type MemoryRow = {
+  caseId: string; insured: string; broker: string; state: string;
+  dataIssues: string[]; why: string; from: "desk" | "backboard"; line: string;
+};
+export type MemorySource = {
+  id: string; name: string; store: string; needsNetwork: boolean; note: string;
+  lines: number; live: boolean; queried?: boolean;
+};
+export type MemoryJudgement = {
+  source: string; about: string; text?: string;
+  answers: { question: string; answer: string; probability: number | null; confidence: number | null }[];
+};
+export type DeskMemory = {
+  caseId: string; summary: string; recalled: MemoryRow[]; boundary: string;
+  sources: Record<string, MemorySource>; judgements: MemoryJudgement[]; judgementBoundary: string;
+};
+
+// The broker's reply, folded in (POST /composio/cases/{id}/broker-reply/check).
+// `path` is the API's own word for what ran, and the only thing the badge is allowed to read.
+export type BrokerReply = {
+  status: "applied" | "no_new_facts" | "no_reply" | "not_connected" | "dry" | "failed" | "no_fixture";
+  path?: "replay" | "live" | "dry";
+  messageId?: string;
+  facts?: Record<string, number | string>;
+  before?: { lo: number; hi: number };
+  after?: { lo: number; hi: number };
+  deduped?: boolean;
+  detail?: string;
+  /** The verbatim sentence, when the API returns one. */
+  quote?: string;
+  source?: { fixture?: string; capturedAt?: string; extractedBy?: string; extractedAt?: string };
+};
+
 // On the server we call the API directly; in the browser we go through the same-origin proxy,
 // so the page works from another machine (the API sends no CORS headers).
 const BASE = typeof window === "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "/api/atlas";
@@ -171,6 +205,24 @@ export const api = {
   override: (caseId: string, points: number, reason: string) =>
     send(`/cases/${caseId}/override`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ points, reason }) }),
   clearOverride: (caseId: string) => send(`/cases/${caseId}/override`, { method: "DELETE" }),
+  memory: (id: string) => get<DeskMemory>(`/cases/${id}/memory`, () => undefined),
+  /** A live Gmail search can take a while; a replay answers at once. Errors keep the API's own sentence. */
+  brokerReply: async (caseId: string, replay: boolean): Promise<BrokerReply> => {
+    if (FIXTURES_ONLY) return { status: "dry", path: "dry", detail: "Running on fixtures, so nothing was checked." };
+    try {
+      const res = await fetch(`${BASE}/composio/cases/${caseId}/broker-reply/check?replay=${replay}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+        signal: AbortSignal.timeout(60_000),
+      });
+      const body = (await res.json().catch(() => ({}))) as BrokerReply & { detail?: string };
+      return res.ok ? body : { status: "failed", detail: body.detail ?? `The desk API returned ${res.status}.` };
+    } catch {
+      return { status: "failed", detail: "The desk API is unreachable, so nothing was checked." };
+    }
+  },
+  demoReset: () => post(`/demo/reset`, {}),
   guideline: () => get<GuidelineDoc>(`/guideline`, () => undefined),
   putGuideline: (doc: GuidelineDoc) =>
     sendJson<GuidelineResult>(`/guideline`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(doc) }),

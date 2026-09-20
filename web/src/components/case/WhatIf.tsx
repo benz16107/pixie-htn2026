@@ -73,9 +73,8 @@ export function WhatIf({
     <section data-brief="flip" aria-labelledby="whatif-h" className="mt-2 border-t border-edge pt-2">
       <div className="flex items-end gap-5">
         <div className="w-[176px] shrink-0">
-          <h2 id="whatif-h" className="kicker flex items-center gap-1.5">
+          <h2 id="whatif-h" className="kicker">
             what if the {label.toLowerCase()} were
-            <kbd className="key">f</kbd>
           </h2>
           <p className="num text-[20px] font-medium leading-[24px] text-ochre">{usd(value)}</p>
           <p className="text-[10px] leading-snug text-faint">{flips.length ? flips[0].text : "the desk re-scores the whole case on every step"}</p>

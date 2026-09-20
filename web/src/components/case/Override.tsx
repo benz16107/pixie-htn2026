@@ -81,7 +81,7 @@ export function Override({ caseId, current, bound = 5 }: { caseId: string; curre
       }}
     >
       <span className="kicker shrink-0" id="ov-h">
-        Adjust
+        Underwriter adjusts
       </span>
       <button type="button" className={btn} onClick={() => step(-1)} disabled={points <= -bound} aria-label="one point down">
         −
@@ -96,14 +96,11 @@ export function Override({ caseId, current, bound = 5 }: { caseId: string; curre
         ref={field}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        placeholder={`why, in your words — the engine keeps its own interval either way`}
+        placeholder={`why, in your words — the engine keeps its own score either way`}
         aria-labelledby="ov-h"
         className="min-w-0 flex-1 border border-rule bg-paper px-1.5 leading-[18px] text-ink placeholder:text-faint focus:border-ochre focus:outline-none"
       />
-      <kbd aria-hidden className="key shrink-0">
-        o
-      </kbd>
-      <span className="num shrink-0 text-[10px] text-faint">±{bound} max</span>
+      <span className="num shrink-0 whitespace-nowrap text-[10px] text-faint">{bound} points at most</span>
       <button type="submit" className={`${btn} uppercase tracking-[0.08em]`} disabled={busy || points === 0 || !reason.trim()}>
         apply
       </button>
