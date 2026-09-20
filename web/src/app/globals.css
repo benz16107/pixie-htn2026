@@ -1,38 +1,132 @@
 @import "tailwindcss";
 
-/* Cartographic tokens, from mockups/direction-cartographic.html */
+/*
+ * D1 "BLOTTER" — the trading desk.
+ *
+ * One idea: an underwriting desk is a book you read in one glance, not a page you scroll.
+ * Everything is monospaced and on a 4px grid, hairlines instead of margins, three signal
+ * hues with one job each, and every action has a key.
+ *
+ * The token NAMES are the ones the rest of the app already uses, so every panel inherits
+ * the language. Their VALUES are the night desk.
+ *
+ * TYPE SCALE, nine steps, used everywhere and nowhere else:
+ *   9px   micro    tags and units, always with a title or a neighbouring label
+ *   10px  meta     .kicker, uppercase +0.14em, and source lines
+ *   11px  data     table cells, facts, anything a number sits next to
+ *   12px  body     the default, set on <body>
+ *   13px  prose    .cond, the condensed face, for sentences
+ *   17px  title    a case name in the identity strip
+ *   20px  sub      a panel headline, the what-if figure
+ *   24px  read     the what-if result
+ *   32px  head     the score interval, the one number per screen
+ * The three small steps are close on purpose: case, tracking and colour separate them,
+ * not size. A terminal cannot afford a 1.25x ratio nine times over.
+ */
 @theme {
-  --color-land: #ece6d6;
-  --color-paper: #f3efe4;
-  --color-ink: #2f2a22;
-  --color-dim: #6f6453;
-  --color-rule: #d4cab4;
-  --color-water: #c8d2cb;
-  --color-ochre: #8f6327;
-  --color-ochre-soft: #e4d9bf;
-  --color-rust: #a2492f;
-  --color-moss: #5e6f4a;
-  --font-serif: var(--font-newsreader), Georgia, serif;
-  --font-sans: var(--font-public-sans), system-ui, sans-serif;
-  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
-  --radius-sm: 4px;
+  /* surfaces, coldest to warmest */
+  --color-paper: #0a0d10; /* the page: near-black with a blue-green cast, never #000 */
+  --color-land: #12181d; /* a panel, a hovered row, a raised well */
+  --color-raise: #1a2128; /* the selected row, an active tab */
+  --color-water: #0e1619; /* map water */
+
+  /* ink */
+  --color-ink: #cfd7dd; /* primary text and the one bright hairline */
+  --color-dim: #8a97a3; /* labels, sources, everything read on demand */
+  --color-faint: #5d6a75; /* disabled, placeholder */
+
+  /* structure */
+  --color-rule: #232c34; /* the hairline that does 90% of the dividing */
+  --color-edge: #313d47; /* a real border: panel edges, inputs, chips */
+
+  /* three signals, one job each */
+  --color-ochre: #f0a437; /* AMBER — estimated, refer, caution, the cursor */
+  --color-ochre-soft: #3a2a10; /* amber at 10%, for a filled chip */
+  --color-moss: #35b88a; /* JADE — known, accept, verified, reconciled */
+  --color-rust: #e2594a; /* EMBER — missing, decline, risk, a threshold */
+
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-plex-condensed), "IBM Plex Sans Condensed", system-ui, sans-serif;
+  --font-serif: var(--font-plex-condensed), system-ui, sans-serif; /* the desk has no serif */
+  --radius-sm: 2px;
 }
 
-html { background: var(--color-paper); color: var(--color-ink); }
-body { font: 13px/1.45 var(--font-sans); font-variant-numeric: tabular-nums; }
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  color-scheme: dark;
+}
+/* Mono is the body face here, not an accent: this is a terminal. */
+body {
+  font: 12px/1.45 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* Condensed grotesk carries prose and headings: more words per line at the same size. */
+.cond {
+  font-family: var(--font-sans);
+  letter-spacing: 0.005em;
+}
 .kicker {
-  font: 600 10.5px var(--font-sans);
-  letter-spacing: 0.12em;
+  font: 500 10px/1.2 var(--font-mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-dim);
 }
-:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
-/* the contour texture behind the shell header: a map is the subject here */
-.contours {
-  background-image: url("/contours.svg");
-  background-size: 640px 400px;
+::selection {
+  background: var(--color-ochre);
+  color: var(--color-paper);
 }
+:focus-visible {
+  outline: 2px solid var(--color-ochre);
+  outline-offset: 1px;
+}
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-rule);
+  border: 2px solid var(--color-paper);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-edge);
+}
+
+/* A keycap. Shortcuts are shown everywhere they apply, so nobody has to learn them twice. */
+.key {
+  display: inline-block;
+  min-width: 15px;
+  padding: 0 3px;
+  border: 1px solid var(--color-edge);
+  border-bottom-width: 2px;
+  border-radius: 2px;
+  background: var(--color-land);
+  font: 500 9.5px/14px var(--font-mono);
+  text-align: center;
+  color: var(--color-dim);
+  white-space: nowrap;
+}
+.key-on {
+  border-color: var(--color-ochre);
+  color: var(--color-ochre);
+}
+
+/* The cursor row: an amber gutter, no fill wash, so the numbers stay the brightest thing. */
+.cursor-row {
+  background: var(--color-raise);
+  box-shadow: inset 2px 0 0 var(--color-ochre);
+}
+
 /* motion: the interval narrows as evidence lands; lane cards arrive as events do */
 .iv { transition: transform 500ms cubic-bezier(0.77, 0, 0.175, 1); }
 .lane-card { transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
@@ -48,12 +142,19 @@ body { font: 13px/1.45 var(--font-sans); font-variant-numeric: tabular-nums; }
 
 /* the spoken briefing rings the part of the page it is talking about, and nothing else moves */
 [data-brief] { transition: box-shadow 220ms cubic-bezier(0.23, 1, 0.32, 1); }
-[data-brief].brief-on { box-shadow: inset 0 0 0 2px var(--color-ochre); border-radius: 4px; }
+[data-brief].brief-on { box-shadow: inset 0 0 0 1px var(--color-ochre); }
+
+/* the help sheet slides up from the status bar it belongs to */
+.sheet { transition: opacity 180ms ease-out, transform 180ms cubic-bezier(0.23, 1, 0.32, 1); }
+@starting-style { .sheet { opacity: 0; transform: translateY(8px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-brief] { transition: none; }
+  [data-brief], .sheet, .pin { transition: none; }
   .pulse-ring { animation: none; opacity: 0.5; }
   .iv { transition: none; }
   .lane-card { transition: opacity 200ms ease; }
-  @starting-style { .lane-card { transform: none; } }
+  @starting-style {
+    .lane-card { transform: none; }
+    .sheet { transform: none; }
+  }
 }

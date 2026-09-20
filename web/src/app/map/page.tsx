@@ -20,13 +20,13 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
   const total = hexes.reduce((s, h) => s + h.value, 0);
 
   return (
-    <main className="grid h-[calc(100vh-48px)] grid-cols-[1fr_360px]">
+    <main className="grid h-[calc(100vh-30px)] grid-cols-[1fr_360px]">
       <div className="relative overflow-hidden border-r border-rule">
         <LiveMap hexes={hexes} pins={pins} center={[-99, 37]} zoom={3.5} />
-        <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
-        <div className="absolute left-5 top-4 rounded-sm border border-ink bg-paper/95 px-3.5 py-2.5">
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
+        <div className="absolute left-5 top-4 rounded-sm border border-edge bg-paper/95 px-3.5 py-2.5">
           <p className="kicker">Book of business</p>
-          <p className="mt-0.5 font-serif text-[22px] font-semibold leading-tight">
+          <p className="mt-0.5 font-serif text-[20px] font-semibold leading-tight">
             <span className="num">{money(total)}</span> active TIV in <span className="num">{hexes.length}</span> cells
           </p>
           <nav aria-label="Peril" className="mt-2 flex gap-1">
@@ -35,7 +35,7 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
                 key={p}
                 href={p === "all" ? "/map" : `/map?peril=${p}`}
                 aria-current={p === peril ? "page" : undefined}
-                className={`rounded-sm border px-2 py-px text-[12px] transition-colors duration-150 ${p === peril ? "border-ink bg-ink text-paper" : "border-rule hover:border-ink"}`}
+                className={`rounded-sm border px-2 py-px text-[12px] transition-colors duration-150 ${p === peril ? "border-ochre bg-ochre text-paper" : "border-rule hover:border-edge"}`}
               >
                 {PERIL_LABEL[p]}
               </Link>
@@ -50,7 +50,7 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
           {LEGEND.map((l) => (
             <span key={l.kind} className="flex items-center gap-1.5">
               <span
-                className={`inline-block size-3 rounded-full border-2 ${l.kind === "open" ? "border-ink bg-paper" : l.kind === "decline" ? "border-paper bg-rust" : "border-paper bg-dim/70"}`}
+                className={`inline-block size-3 rounded-full border-2 ${l.kind === "open" ? "border-edge bg-paper" : l.kind === "decline" ? "border-paper bg-rust" : "border-paper bg-dim/70"}`}
               />
               {l.label}
             </span>
@@ -59,13 +59,13 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
       </div>
       <aside className="overflow-y-auto px-6 py-5" aria-labelledby="cases-h">
         <h1 id="cases-h" className="kicker mb-1">Submission sites · {pins.length}</h1>
-        <p className="mb-3 text-[11.5px] text-dim">Every pin, as a list. Open one to see how its score was built.</p>
+        <p className="mb-3 text-[11px] text-dim">Every pin, as a list. Open one to see how its score was built.</p>
         <ul>
           {pins.map((p) => (
             <li key={p.caseId} className="border-t border-rule">
               <Link href={`/cases/${p.caseId}`} className="flex items-baseline gap-2 py-1.5 transition-colors duration-150 hover:bg-land">
                 <span className="num w-9 shrink-0 text-[11px] text-dim">#{p.caseId}</span>
-                <span className="min-w-0 flex-1 truncate text-[12.5px]">{p.insured}</span>
+                <span className="min-w-0 flex-1 truncate text-[12px]">{p.insured}</span>
                 <DecisionChip decision={{ kind: p.decision } as DecisionView} />
               </Link>
             </li>

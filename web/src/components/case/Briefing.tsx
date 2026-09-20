@@ -77,24 +77,24 @@ export function Briefing({ caseId }: { caseId: string }) {
       <button
         onClick={toggle}
         aria-label={playing ? "Pause the briefing" : "Read this case aloud"}
-        className="flex items-center gap-1.5 rounded-sm border border-rule bg-paper px-2 py-1 text-[11.5px] transition-colors duration-150 hover:border-ink active:scale-[0.97]"
+        className="flex items-center gap-1.5 rounded-sm border border-rule bg-paper px-2 py-1 text-[11px] transition-colors duration-150 hover:border-edge active:scale-[0.97]"
       >
         <span aria-hidden className="font-mono text-[10px] leading-none">
           {playing ? "❙❙" : "▶"}
         </span>
         {playing ? "Pause" : "Read this case"}
-        <span className="num text-[10.5px] text-dim">{clock(data.durationSec)}</span>
+        <span className="num text-[10px] text-dim">{clock(data.durationSec)}</span>
       </button>
       <button
         onClick={() => setShowScript((v) => !v)}
         aria-expanded={showScript}
-        className="rounded-sm border border-rule px-1.5 py-1 text-[11.5px] text-dim transition-colors duration-150 hover:border-ink hover:text-ink"
+        className="rounded-sm border border-rule px-1.5 py-1 text-[11px] text-dim transition-colors duration-150 hover:border-edge hover:text-ink"
       >
         Script
       </button>
 
       {showScript && (
-        <ol className="absolute left-0 top-full z-30 mt-1 w-[420px] rounded-sm border border-ink bg-paper p-2 text-[11.5px] leading-snug shadow-[0_6px_20px_rgba(47,42,34,0.14)]">
+        <ol className="absolute left-0 top-full z-30 mt-1 w-[420px] rounded-sm border border-edge bg-paper p-2 text-[11px] leading-snug shadow-[0_6px_20px_rgba(47,42,34,0.14)]">
           {marks.map((m, i) => (
             <li key={m.startSec}>
               <button
@@ -108,7 +108,7 @@ export function Briefing({ caseId }: { caseId: string }) {
               </button>
             </li>
           ))}
-          <li className="px-1.5 pt-1 text-[10.5px] text-dim">
+          <li className="px-1.5 pt-1 text-[10px] text-dim">
             Read by {data.model}. Every number in it was computed before it was spoken.
           </li>
         </ol>

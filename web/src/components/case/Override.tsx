@@ -1,19 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CaseOverride } from "@/contract";
 import { api } from "@/lib/api";
-
-// Fixed width: the explanation beside it is flex-1, so an unbounded block here would squeeze that
-// paragraph down to one word a line. A long reason truncates and keeps its full text in the title.
-const BOX = "w-[392px] shrink-0 border-l border-rule pl-4 text-[11.5px]";
-const BTN = "rounded-sm border border-rule px-1.5 leading-tight transition-colors duration-150 hover:border-ink disabled:text-dim";
+import { useKeys } from "../desk/keys";
 
 /**
  * The underwriter's bounded nudge of the engine's interval (docs/OVERRIDE.md). Dietvorst et al.
  * (2018): people use an imperfect model far more when they can move its output, even by a couple of
- * points. Plus and minus inside the bound, a reason that is required, and an undo. The engine's own
- * interval and decision sit to its left and stay exactly as the engine computed them.
+ * points. Plus and minus inside the bound, a reason that is required, and an undo.
+ *
+ * `ink` is this control's colour, here and on the waterfall's final bar. The engine owns amber,
+ * jade and ember; the human owns plain ink, so on any screen you can tell whose number you are
+ * looking at without reading a word. The engine's own interval never moves and sits beside it.
  */
 export function Override({ caseId, current, bound = 5 }: { caseId: string; current?: CaseOverride; bound?: number }) {
   const router = useRouter();
@@ -21,6 +20,9 @@ export function Override({ caseId, current, bound = 5 }: { caseId: string; curre
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+
+  useKeys((e) => (e.key === "o" && !current ? (e.preventDefault(), field.current?.focus(), true) : false), [current]);
 
   const run = async (fn: () => Promise<{ ok: boolean; detail: string }>) => {
     setBusy(true);
@@ -38,65 +40,78 @@ export function Override({ caseId, current, bound = 5 }: { caseId: string; curre
     const when = new Date(current.at * 1000).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" });
     const moved = current.decision.kind !== current.engineDecision.kind;
     return (
-      <div className={BOX}>
-        <p className="flex items-baseline gap-2">
-          <span className="kicker shrink-0 text-ink">Underwriter adjusted</span>
-          <span className="num shrink-0 font-medium">
-            {current.points > 0 ? "+" : "−"}
-            {Math.abs(current.points)}
-          </span>
-          <span className="num shrink-0 text-dim">
-            {current.engineScore.lo}-{current.engineScore.hi} → {current.score.lo}-{current.score.hi}
-            {moved ? `, ${current.engineDecision.kind} → ${current.decision.kind}` : ""}
-          </span>
-          <button onClick={() => run(() => api.clearOverride(caseId))} disabled={busy} className={`${BTN} ml-auto shrink-0`}>
-            Undo
-          </button>
-        </p>
-        <p className="mt-0.5 truncate text-dim" title={current.reason}>
-          {current.reason}, at {when}
-        </p>
+      <div className="mt-1.5 flex items-baseline gap-3 border-y border-ink/40 bg-ink/[0.06] px-2 py-1 text-[11px]">
+        <span className="kicker shrink-0 text-ink">Underwriter adjusted</span>
+        <span className="num shrink-0 font-medium text-ink">
+          {current.points > 0 ? "+" : "−"}
+          {Math.abs(current.points)}
+        </span>
+        <span className="num shrink-0 text-dim">
+          {current.engineScore.lo}–{current.engineScore.hi} → <span className="text-ink">{current.score.lo}–{current.score.hi}</span>
+          {moved && (
+            <>
+              , {current.engineDecision.kind} → <span className="text-ink">{current.decision.kind}</span>
+            </>
+          )}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-dim" title={current.reason}>
+          &ldquo;{current.reason}&rdquo;, {current.by} at {when}
+        </span>
+        <button
+          onClick={() => run(() => api.clearOverride(caseId))}
+          disabled={busy}
+          className="shrink-0 border border-edge px-2 text-[10px] uppercase leading-[16px] tracking-[0.08em] text-dim transition-colors duration-150 hover:border-ink hover:text-ink disabled:text-faint"
+        >
+          undo
+        </button>
       </div>
     );
   }
 
   const step = (d: number) => setPoints((p) => Math.max(-bound, Math.min(bound, p + d)));
+  const btn =
+    "shrink-0 border border-edge px-1.5 leading-[18px] transition-colors duration-150 hover:border-ink hover:text-ink disabled:border-rule disabled:text-faint";
 
   return (
     <form
-      className={BOX}
+      className="mt-1.5 flex items-center gap-2 border-y border-rule px-2 py-1 text-[11px]"
       onSubmit={(e) => {
         e.preventDefault();
         void run(() => api.override(caseId, points, reason));
       }}
     >
-      <div className="flex items-baseline gap-2">
-        <span className="kicker shrink-0" id="ov-h">
-          Adjust
+      <span className="kicker shrink-0" id="ov-h">
+        Adjust
+      </span>
+      <button type="button" className={btn} onClick={() => step(-1)} disabled={points <= -bound} aria-label="one point down">
+        −
+      </button>
+      <span className="num w-[26px] shrink-0 text-center font-medium text-ink" aria-live="polite" aria-label={`adjustment ${points} points`}>
+        {points > 0 ? `+${points}` : points}
+      </span>
+      <button type="button" className={btn} onClick={() => step(1)} disabled={points >= bound} aria-label="one point up">
+        +
+      </button>
+      <input
+        ref={field}
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder={`why, in your words — the engine keeps its own interval either way`}
+        aria-labelledby="ov-h"
+        className="min-w-0 flex-1 border border-rule bg-paper px-1.5 leading-[18px] text-ink placeholder:text-faint focus:border-ochre focus:outline-none"
+      />
+      <kbd aria-hidden className="key shrink-0">
+        o
+      </kbd>
+      <span className="num shrink-0 text-[10px] text-faint">±{bound} max</span>
+      <button type="submit" className={`${btn} uppercase tracking-[0.08em]`} disabled={busy || points === 0 || !reason.trim()}>
+        apply
+      </button>
+      {note && (
+        <span role="status" className="max-w-[260px] shrink-0 truncate text-[10px] text-rust" title={note}>
+          {note}
         </span>
-        <button type="button" className={BTN} onClick={() => step(-1)} disabled={points <= -bound} aria-label="one point down">
-          −
-        </button>
-        <span className="num w-[26px] shrink-0 text-center font-medium" aria-live="polite" aria-label={`adjustment ${points} points`}>
-          {points > 0 ? `+${points}` : points}
-        </span>
-        <button type="button" className={BTN} onClick={() => step(1)} disabled={points >= bound} aria-label="one point up">
-          +
-        </button>
-        <input
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder={`why, in your words (±${bound} max)`}
-          aria-labelledby="ov-h"
-          className="min-w-0 flex-1 rounded-sm border border-rule bg-paper px-1.5 py-0.5 placeholder:text-dim focus:border-ink focus:outline-none"
-        />
-        <button type="submit" className={`${BTN} shrink-0`} disabled={busy || points === 0 || !reason.trim()}>
-          Apply
-        </button>
-      </div>
-      <p role="status" className="mt-0.5 truncate text-[11px] text-rust" title={note}>
-        {note}
-      </p>
+      )}
     </form>
   );
 }

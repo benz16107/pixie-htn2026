@@ -4,14 +4,20 @@ import { useState } from "react";
 import type { Interval } from "@/contract";
 import type { Sensitivity, Surface } from "@/lib/explain";
 import { usd } from "@/lib/explain";
+import { useKeys } from "../desk/keys";
 import { WhatIf } from "./WhatIf";
 import type { Pin } from "./DecisionSpace";
 
 // WebGL needs a browser, so the 3D view never renders on the server.
 const DecisionSpace = dynamic(() => import("./DecisionSpace"), {
   ssr: false,
-  loading: () => <div className="min-h-0 flex-1 animate-pulse rounded-sm border border-rule bg-land motion-reduce:animate-none" />,
+  loading: () => <div className="min-h-0 flex-1 animate-pulse border border-rule bg-land motion-reduce:animate-none" />,
 });
+
+const TABS = [
+  { id: "2d" as const, label: "waterfall", key: "w" },
+  { id: "3d" as const, label: "decision space", key: "s" },
+];
 
 /**
  * One decision, two ways to read it. The waterfall is how the score was built; the decision space is
@@ -36,17 +42,22 @@ export function Views({
   const [tab, setTab] = useState<"2d" | "3d">("2d");
   const [pin, setPin] = useState<Pin>(null);
 
+  useKeys(
+    (e) => {
+      if (e.key === "w") return setTab("2d"), true;
+      if (e.key === "s" && surface) return setTab("3d"), true;
+      return false;
+    },
+    [surface],
+  );
+
   const flip = sensitivity?.facts.find((f) => f.fact === whatIf?.fact)?.flip ?? null;
-  const tabs = [
-    { id: "2d" as const, label: "Waterfall" },
-    { id: "3d" as const, label: "Decision space" },
-  ];
 
   return (
     <>
-      <div className="mt-1.5 flex items-center gap-4 border-b border-rule">
+      <div className="mt-2 flex items-center gap-3 border-b border-rule">
         <div role="tablist" aria-label="How to read this decision" className="flex">
-          {tabs.map((t) => (
+          {TABS.map((t) => (
             <button
               key={t.id}
               role="tab"
@@ -55,19 +66,22 @@ export function Views({
               aria-controls={`panel-${t.id}`}
               onClick={() => setTab(t.id)}
               disabled={t.id === "3d" && !surface}
-              className={`-mb-px border-b-2 px-3 py-1.5 text-[12.5px] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-rule ${
-                tab === t.id ? "border-ink font-medium text-ink" : "border-transparent text-dim hover:text-ink"
+              className={`-mb-px flex items-center gap-1.5 border-b-2 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-rule ${
+                tab === t.id ? "border-ochre text-ochre" : "border-transparent text-dim hover:text-ink"
               }`}
             >
+              <kbd aria-hidden className={`key ${tab === t.id ? "key-on" : ""}`}>
+                {t.key}
+              </kbd>
               {t.label}
             </button>
           ))}
         </div>
-        <p className="min-w-0 flex-1 truncate text-[11.5px] text-dim">
+        <p className="min-w-0 flex-1 truncate text-[10px] text-faint">
           {tab === "2d"
-            ? "Each bar is one guideline factor, a hazard layer or a cap."
+            ? "Each bar is one guideline factor, a hazard layer or a cap. Hover a bar for its rule and source."
             : surface
-              ? `${surface.axes[0].label} across, ${surface.axes[1].label} into the page, score as height. Drag to orbit.`
+              ? `${surface.axes[0].label} across, ${surface.axes[1].label} into the page, score as height. ${surface.points.toLocaleString()} re-runs in ${surface.ms}ms. Drag to orbit.`
               : "No decision space for this case."}
         </p>
       </div>
@@ -80,9 +94,10 @@ export function Views({
         <>
           <WhatIf caseId={caseId} fact={whatIf.fact} label={whatIf.label} start={whatIf.start} sensitivity={sensitivity} before={before} onState={setPin} />
           {tab === "3d" && flip && (
-            <p className="mt-1 text-[11.5px] text-dim">
-              The boundary on the floor is {flip.display}: below it the case declines, at or above it the desk {flip.to === "accept" ? "can write it" : `moves to ${flip.to}`}.
-              {pin && <span className="ml-1 text-ink">Now at {usd(pin.value)}.</span>}
+            <p className="mt-1 text-[10px] text-dim">
+              The boundary on the floor is {flip.display}: below it the case declines, at or above it the desk{" "}
+              {flip.to === "accept" ? "can write it" : `moves to ${flip.to}`}.
+              {pin && <span className="ml-1 text-ochre">Now at {usd(pin.value)}.</span>}
             </p>
           )}
         </>

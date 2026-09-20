@@ -7,7 +7,7 @@ const v = (x: number | null | undefined, f: (n: number) => string = String) => (
 
 function Block({ id, title, n, children, note }: { id: string; title: string; n: number | null; children: React.ReactNode; note: string }) {
   return (
-    <section aria-labelledby={id} className="border-t border-ink pt-3">
+    <section aria-labelledby={id} className="border-t border-edge pt-3">
       <h2 id={id} className="flex items-baseline justify-between">
         <span className="font-serif text-[20px] font-semibold">{title}</span>
         <N n={n} />
@@ -30,7 +30,7 @@ export default async function BacktestPage() {
       <h1 className="mt-0.5 font-serif text-[32px] font-semibold leading-tight">
         The guideline would decline <span className="num">{over.declines}</span> of <span className="num">{b.b4.n}</span> bound property policies on premium alone
       </h1>
-      <p className="mt-1 text-[12.5px]">
+      <p className="mt-1 text-[12px]">
         Pre-registration:{" "}
         {b.preregistration ? (
           <code className="num">{b.preregistration}</code>
@@ -42,7 +42,7 @@ export default async function BacktestPage() {
 
       <div className="mt-6 grid grid-cols-2 gap-x-12 gap-y-8">
         <Block id="b4" title="B4 · Guideline vs book" n={b.b4.n} note="How many bound property policies the 2025 guideline would decline, by factor. The humans wrote outside the guideline routinely, which caps how often the desk can agree with them.">
-          <table className="w-full border-collapse text-[12.5px]">
+          <table className="w-full border-collapse text-[12px]">
             <thead><tr><th className={th}>Factor</th><th className={th}>Would decline</th><th className={`${th} w-[45%]`}>Share</th></tr></thead>
             <tbody>
               {b.b4.factors.map((f) => (
@@ -65,7 +65,7 @@ export default async function BacktestPage() {
 
         <Block id="b3" title="B3 · Enrichment changed tiers" n={b.b3.n} note="What changes when external layers (FEMA, USGS, Open-Meteo, portfolio) are switched on. No decision tier moved. The intervals and the queue order did.">
           {b.b3.changed == null ? (
-            <p className="rounded-sm border border-dashed border-rule px-3 py-4 text-[12.5px] text-dim">
+            <p className="rounded-sm border border-dashed border-rule px-3 py-4 text-[12px] text-dim">
               Not measured yet. This needs the desk to score each case with layers on and off.
             </p>
           ) : (
@@ -74,28 +74,28 @@ export default async function BacktestPage() {
                   so the honest answer arrives before a judge asks the obvious question. */}
               <div className="flex items-end gap-6">
                 <p>
-                  <span className="num text-[28px]">{b.b3.changed}</span>
-                  <span className="ml-2 text-[12.5px] text-dim">tiers changed</span>
+                  <span className="num text-[32px]">{b.b3.changed}</span>
+                  <span className="ml-2 text-[12px] text-dim">tiers changed</span>
                 </p>
                 <p>
-                  <span className="num text-[28px]">
+                  <span className="num text-[32px]">
                     {b.b3.intervalMoved}/{b.b3.n}
                   </span>
-                  <span className="ml-2 text-[12.5px] text-dim">intervals moved</span>
+                  <span className="ml-2 text-[12px] text-dim">intervals moved</span>
                 </p>
                 <p>
-                  <span className="num text-[28px]">{b.b3.medianAbsMidpointMove}</span>
-                  <span className="ml-2 text-[12.5px] text-dim">points, median move</span>
+                  <span className="num text-[32px]">{b.b3.medianAbsMidpointMove}</span>
+                  <span className="ml-2 text-[12px] text-dim">points, median move</span>
                 </p>
                 <p>
-                  <span className="num text-[28px]">
+                  <span className="num text-[32px]">
                     {b.b3.rankChanged}/{b.b3.rankQueueN}
                   </span>
-                  <span className="ml-2 text-[12.5px] text-dim">open cases reranked</span>
+                  <span className="ml-2 text-[12px] text-dim">open cases reranked</span>
                 </p>
               </div>
-              <p className="mt-2 max-w-[62ch] text-[12.5px]">{b.b3.changedNote}.</p>
-              <table className="mt-3 w-full border-collapse text-[12.5px]">
+              <p className="mt-2 max-w-[62ch] text-[12px]">{b.b3.changedNote}.</p>
+              <table className="mt-3 w-full border-collapse text-[12px]">
                 <thead>
                   <tr>
                     <th className={th}>Open case</th>
@@ -124,15 +124,15 @@ export default async function BacktestPage() {
         </Block>
 
         <Block id="b2" title="B2 · Human declines by reason" n={b.b2.n} note={`The ${b.b2.n} declines with an underwriting reason, each mapped to the desk lane that should raise it. ${b.b2.excluded} broker_withdrew declines are not underwriting decisions and are excluded.`}>
-          <table className="w-full border-collapse text-[12.5px]">
+          <table className="w-full border-collapse text-[12px]">
             <thead><tr><th className={th}>Human reason</th><th className={th}>n</th><th className={th}>Lines</th><th className={th}>Desk lane</th><th className={th}>Desk agrees</th></tr></thead>
             <tbody>
               {b.b2.rows.map((r) => (
                 <tr key={r.reason} className={r.excluded ? "text-dim" : ""}>
-                  <td className={`${td} font-mono text-[11.5px] ${r.excluded ? "line-through" : ""}`}>{r.reason}</td>
+                  <td className={`${td} font-mono text-[11px] ${r.excluded ? "line-through" : ""}`}>{r.reason}</td>
                   <td className={`${td} num`}>{r.n}</td>
-                  <td className={`${td} text-[11.5px]`}>{Object.entries(r.lines).map(([l, n]) => `${l} ${n}`).join(", ")}</td>
-                  <td className={td}>{r.lane ? <>{r.lane} <span className="text-[11px] text-dim">({r.factor})</span></> : <span className="text-[11.5px]">excluded</span>}</td>
+                  <td className={`${td} text-[11px]`}>{Object.entries(r.lines).map(([l, n]) => `${l} ${n}`).join(", ")}</td>
+                  <td className={td}>{r.lane ? <>{r.lane} <span className="text-[11px] text-dim">({r.factor})</span></> : <span className="text-[11px]">excluded</span>}</td>
                   <td className={td}>{r.excluded ? "" : r.deskAgrees == null ? <Pending /> : String(r.deskAgrees)}</td>
                 </tr>
               ))}
@@ -141,7 +141,7 @@ export default async function BacktestPage() {
         </Block>
 
         <Block id="b1" title="B1 · Property outcomes by desk tier" n={b.b1.n} note="Each bound property policy scored as of its received date, with loss history only from earlier claims. Plain rates, no correlation statistics.">
-          <table className="w-full border-collapse text-[12.5px]">
+          <table className="w-full border-collapse text-[12px]">
             <thead><tr><th className={th}>Desk tier</th><th className={th}>n</th><th className={th}>Premium</th><th className={th}>Incurred</th><th className={th}>Loss ratio</th></tr></thead>
             <tbody>
               {b.b1.tiers.map((t) => (
@@ -154,21 +154,21 @@ export default async function BacktestPage() {
                 </tr>
               ))}
               <tr className="font-semibold">
-                <td className={`${td} border-ink`}>All property</td>
-                <td className={`${td} border-ink num`}>{b.b1.all.n}</td>
-                <td className={`${td} border-ink num`}>{money(b.b1.all.premium)}</td>
-                <td className={`${td} border-ink num`}>{money(b.b1.all.incurred)}</td>
-                <td className={`${td} border-ink num`}>{b.b1.all.lossRatio.toFixed(2)}</td>
+                <td className={`${td} border-edge`}>All property</td>
+                <td className={`${td} border-edge num`}>{b.b1.all.n}</td>
+                <td className={`${td} border-edge num`}>{money(b.b1.all.premium)}</td>
+                <td className={`${td} border-edge num`}>{money(b.b1.all.incurred)}</td>
+                <td className={`${td} border-edge num`}>{b.b1.all.lossRatio.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
-          <p className="mt-1.5 text-[11.5px] text-dim">
+          <p className="mt-1.5 text-[11px] text-dim">
             Status mix: {Object.entries(b.b1.statuses).map(([s, n]) => `${s} ${n}`).join(", ")}. Incurred is paid plus reserved, indemnity and expense.
           </p>
           {/* The single accept is the desk's worst call in this book. Name it rather than leaving it
               as an unattributed row: an aggregate hides a miss, a policy number does not. */}
           {b.knownMisses?.map((m) => (
-            <p key={m.policy} className="mt-2 border-t border-rust pt-1.5 text-[12.5px]">
+            <p key={m.policy} className="mt-2 border-l-2 border-rust bg-rust/[0.07] py-1 pl-2.5 text-[12px] leading-snug">
               <b className="font-semibold text-rust">The miss we would have made.</b> Policy{" "}
               <span className="num">{m.policy}</span> was fully in appetite on the day it arrived, so the
               desk would have said <b className="font-semibold">{m.tier}</b>. It went on to incur{" "}

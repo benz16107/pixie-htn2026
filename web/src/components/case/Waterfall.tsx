@@ -12,18 +12,18 @@ export function Waterfall({ x }: { x: Explain }) {
 
   return (
     <figure className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-0 flex-1 border-b border-l border-ink" style={{ marginLeft: 30, marginBottom: 46 }}>
+      <div className="relative min-h-0 flex-1 border-b border-l border-edge" style={{ marginLeft: 26, marginBottom: 52 }}>
         {[0, 25, 50, 75, 100].map((g) => (
           <div key={g} className="absolute inset-x-0 border-t border-dotted border-rule" style={{ bottom: y(g) }}>
             <span className="num absolute -left-7 -top-[7px] text-[10px] text-dim">{g}</span>
           </div>
         ))}
         {[
-          { at: x.thresholds.decline, label: `refer at ${x.thresholds.decline}` },
-          { at: x.thresholds.accept, label: `accept at ${x.thresholds.accept}` },
+          { at: x.thresholds.decline, label: `refer at ${x.thresholds.decline}`, tone: "border-rust text-rust" },
+          { at: x.thresholds.accept, label: `accept at ${x.thresholds.accept}`, tone: "border-moss text-moss" },
         ].map((t) => (
-          <div key={t.at} className="absolute inset-x-0 border-t border-rust" style={{ bottom: y(t.at) }}>
-            <span className="num absolute -top-[14px] right-1 text-[10px] text-rust">{t.label}</span>
+          <div key={t.at} className={`absolute inset-x-0 border-t border-dashed ${t.tone}`} style={{ bottom: y(t.at) }}>
+            <span className={`num absolute -top-[13px] right-1 text-[9px] ${t.tone}`}>{t.label}</span>
           </div>
         ))}
 
@@ -51,10 +51,10 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
     : s.kind === "cap"
       ? "border border-dashed border-ochre bg-[repeating-linear-gradient(45deg,var(--color-ochre-soft)_0_5px,transparent_5px_10px)]"
       : s.pointsHi < 0
-        ? "bg-rust"
+        ? "bg-rust/75"
         : s.kind === "hazard" || s.kind === "portfolio"
-          ? "bg-ochre"
-          : "bg-moss";
+          ? "bg-ochre/75"
+          : "bg-moss/55";
   const pts = Math.abs(s.pointsHi - s.pointsLo) > 0.01 ? `${signed(s.pointsLo)} to ${signed(s.pointsHi)}` : signed(s.pointsHi);
 
   // One bar while the score is a number; two thin bars once an interval is open.
@@ -64,8 +64,8 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
       style={{
         bottom: y(Math.min(a, b)),
         height: `calc(${y(Math.abs(b - a))} + ${thin ? 2 : 0}px)`,
-        left: thin ? "30%" : "22%",
-        width: thin ? "40%" : "56%",
+        left: thin ? "36%" : "31%",
+        width: thin ? "28%" : "38%",
         minHeight: 2,
       }}
     />
@@ -75,7 +75,7 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
     <div className="group absolute inset-y-0" style={{ left: `${left}%`, width: `${width}%` }}>
       {s.kind === "cap" && split ? (
         <span
-          className={`absolute left-[12%] w-[76%] rounded-[2px] ${tone}`}
+          className={`absolute left-[22%] w-[56%] rounded-[2px] ${tone}`}
           style={{ bottom: y(s.runningLo), height: y(s.runningHi - s.runningLo) }}
         />
       ) : wasSplit ? (
@@ -87,22 +87,22 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
         seg(fromHi, s.runningHi, false)
       )}
 
-      <span className="num absolute inset-x-0 text-center text-[10.5px]" style={{ bottom: y(Math.max(s.runningHi, fromHi)), transform: "translateY(-15px)" }}>
+      <span className="num absolute inset-x-0 text-center text-[10px]" style={{ bottom: y(Math.max(s.runningHi, fromHi)), transform: "translateY(-15px)" }}>
         {s.kind === "cap" ? <span className="text-ochre">{pts}</span> : pts}
       </span>
       {human && <span aria-hidden className="absolute inset-y-0 left-0 border-l border-dashed border-ink" />}
-      <span className={`absolute inset-x-[-8px] bottom-[-34px] text-center font-mono text-[9.5px] leading-tight ${human ? "text-ink" : "text-dim"}`}>
-        {human && <span className="block tracking-[0.12em] text-ink">HUMAN</span>}
+      <span className={`absolute inset-x-0 bottom-[-40px] px-[3px] text-center font-mono text-[9px] leading-[11px] ${human ? "text-ink" : "text-dim"}`}>
+        {human && <span className="block tracking-[0.14em] text-ink">HUMAN</span>}
         {s.label}
       </span>
 
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm bg-ink px-2.5 py-2 text-[11px] leading-snug text-paper opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
         <b className="block font-semibold">{s.label}: {pts} points</b>
-        {human && <span className="block text-ochre">The underwriter's number, not the engine's.</span>}
+        {human && <span className="block text-ink">The underwriter&apos;s number, not the engine&apos;s.</span>}
         {s.value && <span className="block">{s.value}</span>}
-        {s.rule && <span className="mt-1 block text-land/80">{s.rule}</span>}
-        {s.source && <span className="mt-1 block font-mono text-[10px] text-land/70">{s.source}</span>}
-        {s.capped && <span className="mt-1 block font-mono text-[10px] text-land">capped by the rules file</span>}
+        {s.rule && <span className="mt-1 block text-dim">{s.rule}</span>}
+        {s.source && <span className="mt-1 block font-mono text-[10px] text-faint">{s.source}</span>}
+        {s.capped && <span className="mt-1 block font-mono text-[10px] text-ochre">capped by the rules file</span>}
       </span>
     </div>
   );
@@ -118,7 +118,7 @@ export function PriceWaterfall({ steps, annual, label }: { steps: PriceStep[]; a
 
   return (
     <figure className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-0 flex-1 border-b border-l border-ink" style={{ marginLeft: 36, marginBottom: 46 }}>
+      <div className="relative min-h-0 flex-1 border-b border-l border-edge" style={{ marginLeft: 34, marginBottom: 52 }}>
         {[0, 0.5, 1].map((f) => (
           <div key={f} className="absolute inset-x-0 border-t border-dotted border-rule" style={{ bottom: `${f * 100}%` }}>
             <span className="num absolute -left-9 -top-[7px] text-[10px] text-dim">${Math.round(top * f)}</span>
@@ -130,29 +130,29 @@ export function PriceWaterfall({ steps, annual, label }: { steps: PriceStep[]; a
           return (
             <div key={s.key} className="group absolute inset-y-0" style={{ left: `${i * W}%`, width: `${W}%` }}>
               <span
-                className={`absolute left-[24%] w-[52%] rounded-[2px] ${s.kind === "base" ? "bg-ink" : up ? "bg-moss" : "bg-rust"}`}
+                className={`absolute left-[24%] w-[52%] rounded-[2px] ${s.kind === "base" ? "bg-dim" : up ? "bg-moss" : "bg-rust"}`}
                 style={{ bottom: y(Math.min(from, s.runningDollars)), height: `calc(${y(Math.abs(s.dollars))} + 2px)`, minHeight: 2 }}
               />
-              <span className="num absolute inset-x-0 text-center text-[10.5px]" style={{ bottom: y(Math.max(from, s.runningDollars)), transform: "translateY(-15px)" }}>
+              <span className="num absolute inset-x-0 text-center text-[10px]" style={{ bottom: y(Math.max(from, s.runningDollars)), transform: "translateY(-15px)" }}>
                 {s.kind === "base" ? `$${s.dollars.toFixed(0)}` : `${s.dollars >= 0 ? "+" : "−"}$${Math.abs(s.dollars).toFixed(2)}`}
               </span>
-              <span className="absolute inset-x-[-8px] bottom-[-34px] text-center font-mono text-[9.5px] leading-tight text-dim">
+              <span className="absolute inset-x-0 bottom-[-40px] px-[3px] text-center font-mono text-[9px] leading-[11px] text-dim">
                 {s.label}
-                {s.capped && <span className="block text-ink">capped</span>}
+                {s.capped && <span className="block text-ochre">capped</span>}
               </span>
-              <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[230px] -translate-x-1/2 translate-y-1 rounded-sm bg-ink px-2.5 py-2 text-[11px] leading-snug text-paper opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+              <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[230px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
                 <b className="block font-semibold">
                   {s.label}
                   {s.multiplier ? ` ×${s.multiplier.toFixed(2)}` : ""}
                 </b>
-                {s.source && <span className="mt-1 block font-mono text-[10px] text-land/80">{s.source}</span>}
-                {s.percentile !== undefined && <span className="mt-1 block text-land/80">percentile {Math.round(s.percentile)} of Toronto cells</span>}
+                {s.source && <span className="mt-1 block font-mono text-[10px] text-dim">{s.source}</span>}
+                {s.percentile !== undefined && <span className="mt-1 block text-dim">percentile {Math.round(s.percentile)} of Toronto cells</span>}
               </span>
             </div>
           );
         })}
       </div>
-      <figcaption className="flex items-baseline gap-3 text-[11.5px] text-dim">
+      <figcaption className="flex items-baseline gap-3 text-[11px] text-dim">
         <span className={exact ? "text-moss" : "text-rust"}>{exact ? "✓ lines sum exactly to the annual price" : "× lines do not sum to the annual price"}</span>
         {label && <span>{label}</span>}
       </figcaption>

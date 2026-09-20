@@ -86,11 +86,11 @@ export function StationLine({
   const geo = !!latest && GEO.has(latest.actor);
 
   return (
-    <section className="relative z-10 shrink-0 border-t border-ink bg-paper px-4 pb-2.5 pt-1.5" aria-label="Where the case is on the desk">
+    <section className="relative z-10 shrink-0 border-t border-edge bg-paper px-4 pb-2.5 pt-1.5" aria-label="Where the case is on the desk">
       {/* the case token, alone on its row, so it can travel without meeting anything */}
       <div className="relative h-[21px]">
         <div
-          className="num absolute top-0 -translate-x-1/2 whitespace-nowrap rounded-sm bg-ink px-2 py-[2px] text-[10px] text-paper transition-[left] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          className="num absolute top-0 -translate-x-1/2 whitespace-nowrap rounded-sm bg-ochre px-2 py-[2px] text-[10px] text-paper transition-[left] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
           style={{ left: `clamp(66px, ${pct}%, calc(100% - 66px))` }}
         >
           {caseTitle} · {loud.length} steps
@@ -111,7 +111,7 @@ export function StationLine({
             <li key={a} className="relative flex flex-col items-center gap-[5px]">
               <span
                 className={`size-[14px] rounded-full border-2 bg-paper ${
-                  live ? "border-rust shadow-[0_0_0_5px_rgba(162,73,47,0.14)]" : mine.length ? "border-ink bg-ink" : "border-rule"
+                  live ? "border-rust shadow-[0_0_0_5px_rgba(226,89,74,0.18)]" : mine.length ? "border-edge bg-ink" : "border-rule"
                 }`}
               />
               <span className={`truncate text-[10px] font-semibold uppercase tracking-[0.09em] ${live ? "text-rust" : mine.length ? "text-ink" : "text-dim"}`}>
@@ -130,7 +130,7 @@ export function StationLine({
             <article
               key={latest.id}
               className={`lane-card flex h-full flex-col overflow-hidden rounded-sm border px-3 py-2 text-[12px] leading-snug ${
-                geo ? "border-ochre bg-ochre-soft/70" : "border-ink bg-land/60"
+                geo ? "border-ochre bg-ochre-soft/70" : "border-edge bg-land/60"
               }`}
             >
               <p className="kicker mb-0.5">{NAME[latest.actor] ?? latest.actor}</p>
@@ -142,7 +142,7 @@ export function StationLine({
                   {h.detail}
                 </span>
               )}
-              <span className="num mt-auto pt-1 text-[9.5px] text-dim">
+              <span className="num mt-auto pt-1 text-[9px] text-dim">
                 t+{(latest.tMs / 1000).toFixed(0)}s{here > 1 ? ` · ${here} steps here` : ""} · earlier steps are in the chatter log
               </span>
             </article>

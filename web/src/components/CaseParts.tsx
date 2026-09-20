@@ -15,7 +15,7 @@ export function portfolioSentence(p: Portfolio) {
 
 export function PortfolioCallout({ p }: { p: Portfolio }) {
   return (
-    <p className="absolute right-5 top-5 w-[270px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12.5px] leading-snug">
+    <p className="absolute right-5 top-5 w-[270px] rounded-sm border border-edge bg-paper/95 px-3 py-2 text-[12px] leading-snug">
       <b className={`float-right ml-2.5 font-mono text-[20px] font-medium leading-none ${p.points < 0 ? "text-rust" : "text-moss"}`}>{signed(p.points)}</b>
       <span className="kicker mb-0.5 block">Portfolio</span>
       {portfolioSentence(p)}
@@ -40,10 +40,10 @@ export function HazardCard({ risk }: { risk: CaseView["risk"] }) {
           const pts = h.points;
           return (
             <li key={f.peril} className="grid grid-cols-[48px_minmax(0,1fr)] items-baseline gap-x-2">
-              <span className={`num text-[14px] font-medium ${f.applied > 1 ? "text-rust" : f.applied < 1 ? "text-moss" : ""}`}>×{f.applied.toFixed(2)}</span>
+              <span className={`num text-[13px] font-medium ${f.applied > 1 ? "text-rust" : f.applied < 1 ? "text-moss" : ""}`}>×{f.applied.toFixed(2)}</span>
               <span className="min-w-0 text-[12px] leading-snug">
                 <b className="font-semibold">{h.peril}.</b> {h.sentence}
-                {f.capped && <span className="ml-1 font-mono text-[10px]">[capped]</span>}
+                {f.capped && <span className="ml-1 font-mono text-[10px] text-ochre">[capped]</span>}
                 <span className="mt-0.5 block text-[11px] text-dim">
                   {pts !== undefined && <span className="num">{signed(pts)} pts · </span>}
                   {f.source.startsWith("http") ? (
@@ -61,7 +61,7 @@ export function HazardCard({ risk }: { risk: CaseView["risk"] }) {
         {risk.skipped.map(([key, why]) => {
           const s = parseSkip(key, why);
           return (
-            <li key={key} className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-2 text-[11.5px] text-dim">
+            <li key={key} className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-2 text-[11px] text-dim">
               <span className="font-mono">skip</span>
               <span className="min-w-0">
                 {s.peril}: {s.reason}
