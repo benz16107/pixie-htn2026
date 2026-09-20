@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Pixie uses your location when you ask to fill an address or run driving context in the foreground.",
-        "CADisableMinimumFrameDurationOnPhone": true
+        "CADisableMinimumFrameDurationOnPhone": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -21,7 +22,11 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -54,10 +59,16 @@
               "name": "DriveContext",
               "displayName": "Pixie drive context",
               "description": "Shows the active synthetic route zone and coaching context.",
-              "supportedFamilies": ["systemSmall", "systemMedium"],
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ],
               "contentMarginsDisabled": false,
               "ios": {
-                "supportedFamilies": ["systemSmall", "systemMedium"],
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ],
                 "contentMarginsDisabled": false
               },
               "android": null
@@ -79,6 +90,30 @@
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.benzhou.pixie.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.benzhou.pixie"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "896de9c9-916b-4ee0-8807-144c2530573f"
+      }
+    },
+    "owner": "benz16107"
   }
 }
