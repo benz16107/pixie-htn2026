@@ -160,7 +160,7 @@ export function Screen({ children, footer, scrollRef }: { children: ReactNode; f
 }
 
 export const s = StyleSheet.create({
-  screenInner: { width: '100%', maxWidth: 660, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20 },
+  screenInner: { width: '100%', maxWidth: 660, minWidth: 0, boxSizing: 'border-box', alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20 },
   title: { fontFamily: F.sansBold, fontSize: 32, lineHeight: 35, color: C.ink, letterSpacing: -0.8 },
   body: { fontFamily: F.sans, fontSize: 16, lineHeight: 23, color: C.ink },
   dim: { color: C.dim },
@@ -185,5 +185,5 @@ export const s = StyleSheet.create({
   progressLabel: { fontFamily: F.sansMedium, fontSize: 11, color: C.dim },
   progressLabelOn: { color: C.ink, fontFamily: F.sansBold },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: C.paper, paddingTop: 12, gap: 6 },
-  footerInner: { width: '100%', maxWidth: 660, alignSelf: 'center', paddingHorizontal: 20, gap: 6 },
+  footerInner: { width: '100%', maxWidth: 660, minWidth: 0, boxSizing: 'border-box', alignSelf: 'center', paddingHorizontal: 20, gap: 6 },
 });

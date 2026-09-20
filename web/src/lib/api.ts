@@ -77,7 +77,7 @@ export type MemorySource = {
 };
 export type DeskMemory = {
   caseId: string; summary: string; recalled: MemoryRow[]; boundary: string;
-  source: MemorySource;
+  source?: MemorySource;
 };
 
 // On the server we call the API directly; in the browser we go through the same-origin proxy,

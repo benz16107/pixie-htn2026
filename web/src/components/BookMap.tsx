@@ -15,6 +15,16 @@ setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 type RGBA = [number, number, number, number];
 const INK: RGBA = [207, 215, 221, 255];
 const PAPER: RGBA = [10, 13, 16, 255];
+const US_OUTLINE: [number, number][] = [
+  [49, -124.7], [46, -124], [42, -124.4], [38.5, -123], [34.5, -120.5], [32.5, -117.1],
+  [31.3, -111], [31.3, -108.2], [31.8, -106.5], [29.5, -103], [26, -97], [25.2, -81],
+  [30.7, -80.1], [35, -75.3], [40.5, -73.7], [44.8, -67], [47.4, -69], [45, -74],
+  [44.8, -82.4], [46, -84.8], [49, -95], [49, -124.7],
+];
+const STATE_LABELS: [string, number, number][] = [
+  ["WA", 47.4, -120.6], ["CA", 37.1, -119.8], ["CO", 39, -105.6], ["TX", 31, -99.2],
+  ["IL", 40, -89.2], ["FL", 27.9, -81.7], ["PA", 41, -77.7], ["NY", 43, -75.2],
+];
 export const PIN_FILL: Record<string, RGBA> = {
   open: PAPER, // hollow, ringed in ink: still undecided
   decline: [226, 89, 74, 255],
@@ -69,6 +79,8 @@ export default function BookMap({
   useEffect(() => {
     if (!box.current) return;
     let map: MapLibre;
+    let styleReady = false;
+    let styleTimer = 0;
     try {
       map = new MapLibre({
         container: box.current,
@@ -82,16 +94,29 @@ export default function BookMap({
         canvasContextAttributes: { preserveDrawingBuffer: true },
       });
     } catch (error) {
-      setTrouble(error instanceof Error ? error.message : "Map rendering is unavailable");
-      return;
+      const message = error instanceof Error ? error.message : "Map rendering is unavailable";
+      const id = window.setTimeout(() => setTrouble(message), 0);
+      return () => window.clearTimeout(id);
     }
     if (!compact) map.addControl(new NavigationControl({ showCompass: false }), "top-right");
-    map.on("style.load", () => earthTone(map));
-    map.on("error", (e) => console.error("maplibre", e.error?.message ?? e));
+    styleTimer = window.setTimeout(() => {
+      if (!styleReady) setTrouble("The external basemap did not load in time");
+    }, 5000);
+    map.on("style.load", () => {
+      styleReady = true;
+      window.clearTimeout(styleTimer);
+      earthTone(map);
+    });
+    map.on("error", (e) => {
+      const message = e.error?.message ?? "The external basemap is unavailable";
+      console.error("maplibre", message);
+      if (!styleReady) setTrouble(message);
+    });
     overlay.current = new MapboxOverlay({ interleaved: false, layers: [] });
     map.addControl(overlay.current);
     mapRef.current = map;
     return () => {
+      window.clearTimeout(styleTimer);
       mapRef.current = null;
       map.remove();
     };
@@ -195,6 +220,11 @@ function MapFallback({ hexes, pins, perspective, reason }: { hexes: Hex[]; pins:
         </defs>
         <rect width="1000" height="600" fill="url(#fallback-land)" />
         <rect width="1000" height="600" fill="url(#fallback-grid)" opacity="0.55" />
+        <polygon points={polygon(US_OUTLINE)} fill="#111b21" stroke="#52626d" strokeWidth="2" />
+        {STATE_LABELS.map(([label, lat, lng]) => {
+          const p = point([lat, lng]);
+          return <text key={label} x={p.x} y={p.y} fill="#74838e" fontSize="12" textAnchor="middle">{label}</text>;
+        })}
         {hexes.map((hex) => {
           const lift = perspective ? 10 + (hex.value / maxValue) * 68 : 0;
           return (
@@ -217,7 +247,7 @@ function MapFallback({ hexes, pins, perspective, reason }: { hexes: Hex[]; pins:
         })}
       </svg>
       <p className="absolute bottom-14 right-5 max-w-[260px] border border-edge bg-paper/95 px-3 py-2 text-[10px] leading-snug text-dim">
-        The basemap needs WebGL. The exposure cells and submission list remain available.
+        Offline portfolio view. The external basemap is unavailable, so Pixie is using its bundled geographic outline with the same exposure cells and submissions.
       </p>
     </div>
   );

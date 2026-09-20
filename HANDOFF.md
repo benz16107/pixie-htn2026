@@ -6,10 +6,18 @@ Updated 2026-09-20 after the product and track cleanup.
 
 Pixie has two intentionally separate front ends over one risk engine:
 
-- Federato is the commercial underwriter desk. Its main path is queue, case 138, 3D portfolio, guideline scenario, and backtest.
+- Federato is the commercial underwriter desk. Its five-minute path is the one unresolved queue row, case 138, then either the portfolio or validation as supporting proof.
 - Intact is the renter operations view. Its main path is Intact overview, the three-stage Expo quote, and an optional referral into the underwriter desk.
 
 The top-left product switch changes the complete web experience. The Expo app uses Intact styling and a three-stage Address, Coverage, Estimate flow. The neighbourhood map is optional.
+
+The Federato interface has a larger reading scale, a one-row default review queue, a consistent case-score baseline, and a bundled geographic fallback when the external basemap fails. The Expo app has no 390 px horizontal overflow, moves focus to an invalid address, and exposes source links as separate screen-reader targets.
+
+## Intact direction under consideration
+
+The exact Intact brief asks for new AI-based ways to get car insurance, tenant insurance, or both. The leading next concept is a life-change insurance assistant: import the current policy once, read a lease or rental listing, compare car listings with one saved profile, and return a combined monthly estimate plus an advisor-ready package.
+
+An Insurance Passport and MCP server can expose privacy-limited estimate and quote-preparation tools to other AI agents. It should not expose a full profile tool or submit an application without explicit consent. CrashClip remains the post-incident evidence service. It should connect after purchase rather than become an underwriting or driving-score input.
 
 ## Start and verify
 

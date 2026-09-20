@@ -15,6 +15,15 @@ export default function AddressScreen() {
   const [error, setError] = useState('');
   const addressRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const addressTop = useRef(0);
+
+  const showAddressError = (message: string) => {
+    setError(message);
+    requestAnimationFrame(() => {
+      addressRef.current?.focus();
+      scrollRef.current?.scrollTo({ y: Math.max(0, addressTop.current - 20), animated: true });
+    });
+  };
 
   const pickExample = (i: number) => {
     const ex = EXAMPLES[i];
@@ -56,15 +65,13 @@ export default function AddressScreen() {
 
   const go = async (withMap: boolean) => {
     if (!text.trim()) {
-      setError('Type an address, use your location, or pick an example.');
-      addressRef.current?.focus();
-      scrollRef.current?.scrollTo({ y: 250, animated: true });
+      showAddressError('Type an address, use your location, or pick an example.');
       return;
     }
     setBusy(true);
     const p = await resolve();
     setBusy(false);
-    if (!p) return setError('We could not find that address in Toronto. Check the spelling or pick an example.');
+    if (!p) return showAddressError('We could not find that address in Toronto. Check the spelling or pick an example.');
     setPlace(p);
     router.push(withMap ? '/map' : '/questions/1');
   };
@@ -102,33 +109,34 @@ export default function AddressScreen() {
         ))}
       </View>
 
-      <Text nativeID="addr-label" style={st.label}>
-        Your address
-      </Text>
-      <TextInput
-        ref={addressRef}
-        value={text}
-        onChangeText={(t) => {
-          setText(t);
-          setError('');
-        }}
-        placeholder="e.g. 180 Queen St W"
-        placeholderTextColor={C.dim}
-        accessibilityLabel="Your address"
-        accessibilityLabelledBy="addr-label"
-        aria-invalid={!!error}
-        aria-describedby={error ? 'addr-error' : undefined}
-        autoComplete="street-address"
-        textContentType="fullStreetAddress"
-        returnKeyType="next"
-        onSubmitEditing={() => go(true)}
-        style={[st.input, error ? { borderColor: C.rust } : null]}
-      />
-      {error ? (
-        <Text nativeID="addr-error" accessibilityLiveRegion="polite" role="alert" style={st.error}>
+      <View onLayout={(event) => { addressTop.current = event.nativeEvent.layout.y; }}>
+        <Text nativeID="addr-label" style={st.label}>
+          Your address
+        </Text>
+        <TextInput
+          ref={addressRef}
+          value={text}
+          onChangeText={(t) => {
+            setText(t);
+            setError('');
+          }}
+          placeholder="e.g. 180 Queen St W"
+          placeholderTextColor={C.dim}
+          accessibilityLabel="Your address"
+          accessibilityLabelledBy="addr-label"
+          accessibilityHint={error || 'Enter a Toronto street address'}
+          aria-invalid={!!error}
+          aria-describedby="addr-error"
+          autoComplete="street-address"
+          textContentType="fullStreetAddress"
+          returnKeyType="next"
+          onSubmitEditing={() => go(true)}
+          style={[st.input, error ? { borderColor: C.rust } : null]}
+        />
+        <Text nativeID="addr-error" accessibilityLiveRegion="assertive" role="alert" style={[st.error, !error && st.errorEmpty]}>
           {error}
         </Text>
-      ) : null}
+      </View>
       <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Button kind="secondary" label="Use my location" onPress={useMyLocation} disabled={busy} hint="Asks once for your location to fill in the address" />
         {busy ? <ActivityIndicator color={C.ink} accessibilityLabel="Working" /> : null}
@@ -159,6 +167,7 @@ const st = StyleSheet.create({
     backgroundColor: C.paper,
   },
   error: { fontFamily: F.sans, fontSize: 14, color: C.rust, marginTop: 6 },
+  errorEmpty: { height: 0, marginTop: 0, overflow: 'hidden' },
   coverage: { marginBottom: 24, borderWidth: 1, borderColor: C.rule, borderRadius: 16, overflow: 'hidden', backgroundColor: C.ink },
   coverageHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#365158' },
   coverageTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.paper },

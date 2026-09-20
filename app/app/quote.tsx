@@ -187,9 +187,9 @@ export default function QuoteScreen() {
     >
       <Progress current={3} total={3} labels={['Address', 'Coverage', 'Estimate']} />
       <Kicker>{q.address}</Kicker>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 }} accessible accessibilityLabel={`${approve ? 'Estimate ready' : 'Referred to an advisor'}. ${money(q.annual)} a year, about ${money(q.monthly)} a month.`}>
-        <Text style={[st.chip, approve ? st.approve : st.refer]}>{approve ? 'ESTIMATE READY' : 'REFERRED'}</Text>
-        <Mono style={{ color: C.dim }}>#{q.caseId}</Mono>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 }}>
+        <Text accessibilityLabel={approve ? 'Estimate ready' : 'Referred to an advisor'} style={[st.chip, approve ? st.approve : st.refer]}>{approve ? 'ESTIMATE READY' : 'REFERRED'}</Text>
+        <Mono accessibilityLabel={`Quote ${q.caseId}`} style={{ color: C.dim }}>#{q.caseId}</Mono>
       </View>
       <Text style={st.price}>
         {money(q.annual)}

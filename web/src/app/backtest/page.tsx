@@ -8,31 +8,32 @@ const v = (x: number | null | undefined, f: (n: number) => string = String) => (
 
 function Block({ id, title, n, children, note }: { id: string; title: string; n: number | null; children: React.ReactNode; note: string }) {
   return (
-    <section aria-labelledby={id} className="min-w-0 border-t border-edge pt-3">
-      <h2 id={id} className="flex items-baseline justify-between">
-        <span className="font-serif text-[20px] font-semibold">{title}</span>
+    <section aria-labelledby={id} className="min-w-0 border-t border-edge pt-4">
+      <p className="kicker mb-1">{id.toUpperCase()}</p>
+      <h2 id={id} className="flex items-baseline justify-between gap-4">
+        <span className="font-serif text-[22px] font-semibold">{title}</span>
         <N n={n} />
       </h2>
-      <p className="mb-3 mt-0.5 max-w-[62ch] text-[12px] text-dim">{note}</p>
+      <p className="mb-4 mt-1 max-w-[64ch] text-[13px] leading-relaxed text-dim">{note}</p>
       {children}
     </section>
   );
 }
 
-const th = "kicker py-1 pr-4 text-left font-normal";
-const td = "py-1.5 pr-4 border-t border-rule";
+const th = "kicker py-1.5 pr-4 text-left font-normal";
+const td = "py-2 pr-4 border-t border-rule";
 
 export default async function BacktestPage() {
   await connection();
   const b = await api.backtest();
   const over = b.b4.factors[0];
   return (
-    <main className="px-4 sm:px-10 pb-12 pt-7">
+    <main className="mx-auto max-w-[1500px] px-4 pb-16 pt-9 sm:px-10">
       <p className="font-mono text-[11px] text-dim">BACKTEST · 2025 PROPERTY GUIDELINE AGAINST THE BOOK</p>
-      <h1 className="mt-0.5 font-serif text-[32px] font-semibold leading-tight">
+      <h1 className="mt-1 max-w-[1200px] font-serif text-[34px] font-semibold leading-[1.12]">
         The guideline would decline <span className="num">{over.declines}</span> of <span className="num">{b.b4.n}</span> bound property policies on premium alone
       </h1>
-      <p className="mt-1 text-[12px]">
+      <p className="mt-3 max-w-[120ch] text-[12px] leading-relaxed">
         Pre-registration:{" "}
         {b.preregistration ? (
           <code className="num">{b.preregistration}</code>
@@ -42,9 +43,9 @@ export default async function BacktestPage() {
         <span className="text-dim">Every figure prints its n. Cells marked awaiting run need the desk backtest (C6).</span>
       </p>
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
-        <Block id="b4" title="B4 · Guideline vs book" n={b.b4.n} note="How many bound property policies the 2025 guideline would decline, by factor. The humans wrote outside the guideline routinely, which caps how often the desk can agree with them.">
-          <div className="max-w-full overflow-x-auto"><table className="w-full border-collapse text-[12px]">
+      <div className="mt-8 grid grid-cols-1 gap-x-14 gap-y-12 xl:grid-cols-2">
+        <Block id="b4" title="Guideline vs book" n={b.b4.n} note="How many bound property policies the 2025 guideline would decline, by factor. The humans wrote outside the guideline routinely, which caps how often the desk can agree with them.">
+          <div className="max-w-full overflow-x-auto"><table className="w-full border-collapse text-[13px]">
             <thead><tr><th className={th}>Factor</th><th className={th}>Would decline</th><th className={`${th} w-[45%]`}>Share</th></tr></thead>
             <tbody>
               {b.b4.factors.map((f) => (
@@ -65,7 +66,7 @@ export default async function BacktestPage() {
           </table></div>
         </Block>
 
-        <Block id="b3" title="B3 · Enrichment changed tiers" n={b.b3.n} note="What changes when external layers (FEMA, USGS, Open-Meteo, portfolio) are switched on. No decision tier moved. The intervals and the queue order did.">
+        <Block id="b3" title="What enrichment changed" n={b.b3.n} note="What changes when external layers (FEMA, USGS, Open-Meteo, portfolio) are switched on. No decision tier moved. The intervals and the queue order did.">
           {b.b3.changed == null ? (
             <p className="rounded-sm border border-dashed border-rule px-3 py-4 text-[12px] text-dim">
               Not measured yet. This needs the desk to score each case with layers on and off.
@@ -97,7 +98,7 @@ export default async function BacktestPage() {
                 </p>
               </div>
               <p className="mt-2 max-w-[62ch] text-[12px]">{b.b3.changedNote}.</p>
-              <div className="max-w-full overflow-x-auto"><table className="mt-3 w-full border-collapse text-[12px]">
+              <div className="max-w-full overflow-x-auto"><table className="mt-4 w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
                     <th className={th}>Open case</th>
@@ -125,8 +126,8 @@ export default async function BacktestPage() {
           )}
         </Block>
 
-        <Block id="b2" title="B2 · Human declines by reason" n={b.b2.n} note={`The ${b.b2.n} declines with an underwriting reason, each mapped to the desk lane that should raise it. ${b.b2.excluded} broker_withdrew declines are not underwriting decisions and are excluded.`}>
-          <div className="max-w-full overflow-x-auto"><table className="w-full border-collapse text-[12px]">
+        <Block id="b2" title="Human declines by reason" n={b.b2.n} note={`The ${b.b2.n} declines with an underwriting reason, each mapped to the desk lane that should raise it. ${b.b2.excluded} broker_withdrew declines are not underwriting decisions and are excluded.`}>
+          <div className="max-w-full overflow-x-auto"><table className="w-full border-collapse text-[13px]">
             <thead><tr><th className={th}>Human reason</th><th className={th}>n</th><th className={th}>Lines</th><th className={th}>Desk lane</th><th className={th}>Desk agrees</th></tr></thead>
             <tbody>
               {b.b2.rows.map((r) => (
@@ -142,8 +143,8 @@ export default async function BacktestPage() {
           </table></div>
         </Block>
 
-        <Block id="b1" title="B1 · Property outcomes by desk tier" n={b.b1.n} note="Each bound property policy scored as of its received date, with loss history only from earlier claims. Plain rates, no correlation statistics.">
-          <div className="max-w-full overflow-x-auto"><table className="w-full border-collapse text-[12px]">
+        <Block id="b1" title="Property outcomes by desk tier" n={b.b1.n} note="Each bound property policy scored as of its received date, with loss history only from earlier claims. Plain rates, no correlation statistics.">
+          <div className="max-w-full overflow-x-auto"><table className="w-full border-collapse text-[13px]">
             <thead><tr><th className={th}>Desk tier</th><th className={th}>n</th><th className={th}>Premium</th><th className={th}>Incurred</th><th className={th}>Loss ratio</th></tr></thead>
             <tbody>
               {b.b1.tiers.map((t) => (

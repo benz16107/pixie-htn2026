@@ -33,7 +33,7 @@ export default async function MapPage({ searchParams }: PageProps<"/map">) {
   };
 
   return (
-    <main className="map-page grid h-[calc(100vh-30px)] grid-cols-[minmax(0,1fr)_390px] bg-paper">
+    <main className="map-page grid h-[calc(100dvh-40px)] grid-cols-[minmax(0,1fr)_410px] bg-paper">
       <div className="relative overflow-hidden border-r border-rule">
         <LiveMap hexes={hexes} pins={pins} center={[-99, 37]} zoom={3.5} perspective={perspective} />
         <div className="absolute left-5 top-5 max-w-[520px] border border-edge bg-paper/95 px-5 py-4 shadow-[0_14px_50px_rgba(0,0,0,0.32)]">

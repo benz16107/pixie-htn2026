@@ -28,7 +28,7 @@ export function Deck({ panels }: { panels: Panel[] }) {
             aria-selected={on === p.id}
             aria-controls={`deckpanel-${p.id}`}
             onClick={() => setOn(p.id)}
-            className={`flex items-center gap-1.5 border-r border-rule px-3.5 text-[10px] uppercase tracking-[0.12em] transition-colors duration-150 ${
+            className={`flex items-center gap-1.5 border-r border-rule px-3.5 text-[11px] uppercase tracking-[0.1em] transition-colors duration-150 ${
               on === p.id ? "bg-raise text-ochre shadow-[inset_0_-2px_0_var(--color-ochre)]" : "text-dim hover:bg-land hover:text-ink"
             }`}
           >

@@ -32,11 +32,11 @@ export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]
   );
 
   return (
-    <main className="queue-page grid h-[calc(100vh-30px)] grid-rows-[96px_minmax(0,1fr)] overflow-hidden">
-      <header className="flex items-center gap-6 border-b border-edge bg-land px-5">
+    <main className="queue-page grid h-[calc(100dvh-40px)] grid-rows-[108px_minmax(0,1fr)] overflow-hidden">
+      <header className="flex items-center gap-6 border-b border-edge bg-land px-6">
         <div className="min-w-[260px] flex-1">
           <p className="kicker text-ochre">Commercial submissions</p>
-          <h1 className="cond mt-1 text-[26px] font-semibold leading-none tracking-[-0.02em] text-ink">Decide what needs attention</h1>
+          <h1 className="cond mt-1 text-[28px] font-semibold leading-none tracking-[-0.02em] text-ink">Decide what needs attention</h1>
           <p className="cond mt-2 text-[13px] leading-snug text-dim">Open cases come first. Select one row to see why it is waiting.</p>
         </div>
         <div className="hidden items-center border-l border-rule lg:flex">
@@ -71,7 +71,7 @@ export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]
         </Link>
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_390px]">
         <div className="min-h-0 border-r border-edge">
           <QueueTable rows={rows} view={view} onCursor={onCursor} filter={filter} setFilter={setFilter} t={t} />
         </div>
@@ -88,7 +88,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return (
     <div className="flex items-baseline gap-2 border-b border-rule py-1">
       <span className="kicker w-[74px] shrink-0">{label}</span>
-      <span className="min-w-0 flex-1 text-[11px]">{children}</span>
+      <span className="min-w-0 flex-1 text-[12px]">{children}</span>
     </div>
   );
 }
@@ -97,22 +97,22 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
   if (!r)
     return (
-      <div className="px-6 py-10 text-center text-[11px] text-faint">The row under the cursor opens out here.</div>
+      <div className="px-6 py-10 text-center text-[12px] text-faint">Select a submission to see its decision, open facts, and data issues.</div>
     );
   const moved = !!r.deskVerdict && r.deskVerdict.replace(/d$/, "") !== r.decision.kind.replace(/d$/, "");
   const straddle = "straddles" in r.decision ? r.decision.straddles : null;
   const why = whyLine(r);
 
   return (
-    <div className="px-5 py-5">
+    <div className="px-6 py-6">
       <p className="flex items-baseline gap-2">
         <span className="num text-[11px] text-dim">#{r.caseId}</span>
         <span className="ml-auto">
           <DecisionChip decision={r.decision} large />
         </span>
       </p>
-      <h2 className="cond mt-1 text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">{r.insured}</h2>
-      <p className="mt-1 text-[12px] text-dim">
+      <h2 className="cond mt-1 text-[26px] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">{r.insured}</h2>
+      <p className="mt-1.5 text-[13px] text-dim">
         {r.line} · {r.state} · {r.status}
         {r.label ? ` · ${r.label.toLowerCase()}` : ""}
       </p>
@@ -121,7 +121,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
         <div className="mt-3">
           <p className="flex items-baseline justify-between">
             <span className="kicker">{r.override ? "Engine score" : "Score range"}</span>
-            <span className="num text-[20px] font-medium leading-none text-ink">
+            <span className="num text-[22px] font-medium leading-none text-ink">
               {r.score.lo}–{r.score.hi}
             </span>
           </p>
@@ -129,7 +129,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
             <IntervalBar score={r.score} t={t} />
           </div>
           <BandScale t={t} className="mt-1" />
-          {straddle !== null && <p className="mt-1 text-[11px] text-ochre">The range crosses the line at {straddle}, so unresolved facts can change the decision.</p>}
+          {straddle !== null && <p className="mt-2 text-[12px] leading-snug text-ochre">The range crosses the line at {straddle}, so unresolved facts can change the decision.</p>}
         </div>
       ) : (
         <p className="mt-3 border border-dashed border-edge px-2 py-3 text-center text-[11px] text-faint">
@@ -188,7 +188,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
       {why && (
         <div className="mt-3">
           <p className="kicker">What it turns on</p>
-          <p className="cond mt-1 text-[15px] leading-snug">{why}</p>
+          <p className="cond mt-1 text-[16px] leading-snug">{why}</p>
         </div>
       )}
 

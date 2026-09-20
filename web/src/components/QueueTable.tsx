@@ -16,12 +16,12 @@ const mid = (r: Row) => (scored(r) ? (r.score!.lo + r.score!.hi) / 2 : -1);
 type Extras = { deskVerdict?: string; challengeRisks?: number };
 export type Ranked = Row & Extras & { rank: number };
 
-const COLS: { key?: Key; label: string; w: string; align?: "right" }[] = [
-  { key: "insured", label: "submission", w: "w-[31%]" },
-  { key: "value", label: "exposure", w: "w-[14%]", align: "right" },
-  { key: "score", label: "risk range", w: "w-[23%]" },
-  { label: "decision", w: "w-[14%]" },
-  { label: "needs attention", w: "w-[18%]" },
+const COLS: { key?: Key; label: string; w: string; align?: "right"; small?: "hide" }[] = [
+  { key: "insured", label: "submission", w: "w-[44%] sm:w-[31%]" },
+  { key: "value", label: "exposure", w: "w-[14%]", align: "right", small: "hide" },
+  { key: "score", label: "risk range", w: "w-[32%] sm:w-[23%]" },
+  { label: "decision", w: "w-[24%] sm:w-[14%]" },
+  { label: "needs attention", w: "w-[18%]", small: "hide" },
 ];
 
 /**
@@ -94,7 +94,7 @@ export function QueueTable({
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-      <div className="flex h-[42px] shrink-0 items-center gap-2 border-b border-rule px-4 text-[12px]">
+      <div className="flex h-[46px] shrink-0 items-center gap-2 border-b border-rule px-4 text-[13px]">
         <input
           ref={search}
           value={filter}
@@ -107,7 +107,7 @@ export function QueueTable({
           }}
           placeholder="Search insured, case, location, or decision"
           aria-label="Filter submissions"
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink placeholder:text-faint focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint focus:outline-none"
         />
         <span className="num shrink-0 text-faint">
           {sorted.length}/{ranked.length} rows
@@ -115,7 +115,7 @@ export function QueueTable({
       </div>
 
       <div ref={box} className="relative min-h-0 flex-1 overflow-auto">
-        <table className="w-full table-fixed border-collapse text-[12px]">
+        <table className="w-full table-fixed border-collapse text-[13px]">
           <caption className="sr-only">
             Submission blotter, ranked by score interval. Column headers sort. Press j and k to move the cursor, Enter to open a case.
           </caption>
@@ -126,7 +126,7 @@ export function QueueTable({
                   key={c.label}
                   scope="col"
                   aria-sort={c.key && sort.key === c.key ? (sort.dir === 1 ? "ascending" : "descending") : undefined}
-                  className={`h-[36px] whitespace-nowrap px-4 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.w}`}
+                  className={`h-[36px] whitespace-nowrap px-3 font-normal sm:px-4 ${c.align === "right" ? "text-right" : "text-left"} ${c.small === "hide" ? "hidden sm:table-cell" : ""} ${c.w}`}
                 >
                   {c.key ? (
                     <button onClick={() => toggle(c.key!)} className="kicker rounded-sm hover:text-ochre">
@@ -198,18 +198,18 @@ function BlotterRow({ r, on, t, onPick, onOpen }: { r: Ranked; on: boolean; t: T
       onFocus={onPick}
       onClick={onPick}
       onDoubleClick={onOpen}
-      className={`h-[62px] cursor-default border-b border-rule/70 ${on ? "cursor-row" : "hover:bg-land"}`}
+      className={`h-[68px] cursor-default border-b border-rule/70 ${on ? "cursor-row" : "hover:bg-land"}`}
     >
       <td className="truncate px-4">
-        <Link href={`/cases/${r.caseId}`} className="cond block truncate text-[15px] font-semibold text-ink underline-offset-2 hover:text-ochre hover:underline">
+        <Link href={`/cases/${r.caseId}`} className="cond block truncate text-[16px] font-semibold text-ink underline-offset-2 hover:text-ochre hover:underline">
           {r.insured}
         </Link>
         <span className="mt-1 block truncate text-[10px] uppercase tracking-[0.08em] text-dim">
           #{r.caseId} · {r.line} · {r.state}{r.deepDived ? " · deep review" : ""}
         </span>
       </td>
-      <td className="num px-4 text-right text-[13px]">{money(r.valueAtStake)}</td>
-      <td className="px-4">
+      <td className="num hidden px-4 text-right text-[13px] sm:table-cell">{money(r.valueAtStake)}</td>
+      <td className="px-3 sm:px-4">
         {has ? (
           <span className="flex items-center gap-2">
             <span className="flex-1">
@@ -227,12 +227,12 @@ function BlotterRow({ r, on, t, onPick, onOpen }: { r: Ranked; on: boolean; t: T
           </span>
         )}
       </td>
-      <td className="truncate px-4">
+      <td className="truncate px-3 sm:px-4">
         <DecisionChip decision={r.decision} />
-        {moved && <span className="ml-1.5 text-[9px] uppercase tracking-[0.06em] text-ochre">desk changed</span>}
+        {moved && <span className="ml-1.5 hidden text-[9px] uppercase tracking-[0.06em] text-ochre sm:inline">desk changed</span>}
       </td>
-      <td className="px-4" title={whyTitle}>
-        <span className={`line-clamp-2 text-[12px] leading-snug ${r.decision.kind === "routed" ? "text-faint" : "text-dim"}`}>{why || "No follow-up required"}</span>
+      <td className="hidden px-4 sm:table-cell" title={whyTitle}>
+        <span className={`line-clamp-2 text-[13px] leading-snug ${r.decision.kind === "routed" ? "text-faint" : "text-dim"}`}>{why || "No follow-up required"}</span>
         {(issues.length > 0 || r.override || r.challengeRisks) && (
           <span className="mt-1 block text-[9px] uppercase tracking-[0.07em] text-faint">
             {issues.length ? `${issues.reduce((sum, issue) => sum + issue.n, 0)} data flag${issues.length === 1 ? "" : "s"}` : ""}

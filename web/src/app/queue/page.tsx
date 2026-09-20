@@ -11,7 +11,10 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
   // The guideline is editable at /guideline, so the band ruler on every row has to read the one in
   // force rather than the two numbers that happened to be filed on disk.
   const [rowsRaw, guideline] = await Promise.all([api.queue(view), api.guideline()]);
-  const rows = (rowsRaw as unknown as (Row & { deskVerdict?: string; challengeRisks?: number })[])
+  const commercial = (rowsRaw as unknown as (Row & { deskVerdict?: string; challengeRisks?: number })[])
     .filter((row) => row.region !== "toronto" && !row.caseId.startsWith("TQ-"));
+  // The API's "open" view means active submissions, which also includes already routed and
+  // declined rows. On this screen "needs review" means an unresolved underwriting decision.
+  const rows = view === "open" ? commercial.filter((row) => row.decision.kind === "open") : commercial;
   return <Blotter rows={rows} view={view} t={guideline?.thresholds ?? THRESHOLDS} />;
 }

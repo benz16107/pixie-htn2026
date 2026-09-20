@@ -44,17 +44,18 @@ export default function About() {
 
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Sources</Kicker>
       {SOURCES.map((s) => (
-        <Pressable
-          key={s.name}
-          onPress={() => WebBrowser.openBrowserAsync(s.url)}
-          accessibilityRole="link"
-          accessibilityLabel={`${s.name}. ${s.use}`}
-          accessibilityHint="Opens the dataset page"
-          style={({ pressed }) => ({ paddingVertical: 10, minHeight: 44, borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: pressed ? C.land : 'transparent' })}
-        >
-          <Text style={{ fontFamily: F.sansMedium, fontSize: 16, color: C.ink, textDecorationLine: 'underline' }}>{s.name}</Text>
+        <View key={s.name} style={{ paddingBottom: 10, borderTopWidth: 1, borderTopColor: C.rule }}>
+          <Pressable
+            onPress={() => WebBrowser.openBrowserAsync(s.url)}
+            accessibilityRole="link"
+            accessibilityLabel={s.name}
+            accessibilityHint="Opens the dataset page"
+            style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', backgroundColor: pressed ? C.land : 'transparent' })}
+          >
+            <Text style={{ fontFamily: F.sansMedium, fontSize: 16, color: C.ink, textDecorationLine: 'underline' }}>{s.name}</Text>
+          </Pressable>
           <Dim style={{ fontSize: 14 }}>{s.use}</Dim>
-        </Pressable>
+        </View>
       ))}
 
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Limits</Kicker>

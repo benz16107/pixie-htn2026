@@ -21,7 +21,7 @@ const BAND_TONE: Record<string, string> = {
   not_acceptable: "border-rust/60 bg-rust/10 text-rust",
 };
 const BTN =
-  "shrink-0 border border-edge px-2 text-[10px] uppercase leading-[19px] tracking-[0.08em] text-dim transition-colors duration-150 hover:border-ochre hover:text-ochre disabled:border-rule disabled:text-faint disabled:hover:border-rule";
+  "shrink-0 border border-edge px-2.5 text-[11px] uppercase leading-[23px] tracking-[0.08em] text-dim transition-colors duration-150 hover:border-ochre hover:text-ochre disabled:border-rule disabled:text-faint disabled:hover:border-rule";
 
 // ---------- editing the document: one path for hand edits and for scenario buttons --------------
 
@@ -125,10 +125,10 @@ function Band({ fact, band, pred, onPred }: { fact: string; band: string; pred: 
   }
   return (
     <>
-      <span className={`w-[104px] shrink-0 whitespace-nowrap border px-1 text-center text-[9px] uppercase leading-[15px] tracking-[0.05em] ${BAND_TONE[band]}`}>
+      <span className={`w-[112px] shrink-0 whitespace-nowrap border px-1 text-center text-[10px] uppercase leading-[17px] tracking-[0.05em] ${BAND_TONE[band]}`}>
         {band.replace("_", " ")}
       </span>
-      <span className="min-w-0 text-[11px]">{body}</span>
+      <span className="min-w-0 text-[12px]">{body}</span>
     </>
   );
 }
@@ -300,7 +300,6 @@ export default function GuidelinePage() {
 
   useEffect(() => {
     live.current = true;
-    setLoading(true); setError("");
     api.guideline().then((g) => {
       if (g && live.current) {
         setServer(g);
@@ -382,35 +381,36 @@ export default function GuidelinePage() {
 
   if (!doc || !server)
     return (
-      <main className="guideline-page grid h-[calc(100vh-30px)] place-items-center text-[11px] text-dim">
+      <main className="guideline-page grid h-[calc(100dvh-40px)] place-items-center text-[12px] text-dim">
         <section className="max-w-lg px-6" aria-live="polite">
-          {loading ? <><p>Loading the guideline…</p><div className="mt-4 h-40 animate-pulse bg-land motion-reduce:animate-none" /></> : <><p role="alert">{error}</p><button className="mt-4 border border-ochre px-4 py-2 text-ochre" onClick={() => setAttempt((n) => n + 1)}>Try again</button></>}
+          {loading ? <><p>Loading the guideline…</p><div className="mt-4 h-40 animate-pulse bg-land motion-reduce:animate-none" /></> : <><p role="alert">{error}</p><button className="mt-4 border border-ochre px-4 py-2 text-ochre" onClick={() => { setLoading(true); setError(""); setAttempt((n) => n + 1); }}>Try again</button></>}
         </section>
       </main>
     );
 
   const tiles = [
-    { label: "in force", value: server.id, sub: `hash ${server.hash}` },
-    { label: "rules", value: String(server.factors.length), sub: "each with its own bands" },
+    { label: "rules", value: String(server.factors.length), sub: "factors in force" },
     { label: "decline / accept", value: `${server.thresholds.decline} / ${server.thresholds.accept}`, sub: "under, and at or over" },
     { label: "hard-fail cap", value: String(server.hardFailCap ?? "—"), sub: "break a hard rule, score no higher" },
     { label: "pending", value: String(pending.n), sub: "edits the desk is not scoring yet" },
   ];
 
   return (
-    <main className="guideline-page grid h-[calc(100vh-30px)] grid-rows-[52px_minmax(0,1fr)_26px] overflow-hidden">
+    <main className="guideline-page grid h-[calc(100dvh-40px)] grid-rows-[68px_minmax(0,1fr)_26px] overflow-hidden">
       <header className="flex items-stretch border-b border-edge bg-land">
-        <h1 className="sr-only">2025 commercial property underwriting guideline</h1>
+        <div className="flex min-w-[230px] flex-col justify-center border-r border-edge px-4">
+          <p className="kicker text-ochre">Active guideline</p>
+          <h1 className="cond mt-1 text-[20px] font-semibold leading-none text-ink">2025 commercial property</h1>
+          <p className="mt-1 text-[9px] text-faint">{server.id} · {server.hash}</p>
+        </div>
         {tiles.map((t) => (
-          <div key={t.label} className="flex shrink-0 flex-col justify-center border-r border-rule px-3.5">
+          <div key={t.label} className="flex min-w-[112px] shrink-0 flex-col justify-center border-r border-rule px-3.5">
             <span className="kicker">{t.label}</span>
-            <span className={`num text-[17px] font-medium leading-[19px] ${t.label === "pending" && pending.n ? "text-ochre" : "text-ink"}`}>{t.value}</span>
-            <span className="text-[9px] leading-[12px] text-faint">{t.sub}</span>
+            <span className={`num text-[18px] font-medium leading-[21px] ${t.label === "pending" && pending.n ? "text-ochre" : "text-ink"}`}>{t.value}</span>
+            <span className="text-[10px] leading-[12px] text-faint">{t.sub}</span>
           </div>
         ))}
-        <p className="cond hidden max-w-[40ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          Apply an edit to re-score the book. The diff shows which decisions changed.
-        </p>
+        <span className="flex-1" />
         <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-rule px-3">
           <span
             className={`border px-1.5 text-[9px] uppercase leading-[15px] tracking-[0.1em] ${
@@ -425,12 +425,12 @@ export default function GuidelinePage() {
         </div>
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_430px]">
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_460px]">
         {/* ------------------------------ the document ------------------------------ */}
         <div className="min-h-0 overflow-y-auto border-r border-edge">
           <section aria-labelledby="th-h" className="border-b border-rule px-4 py-2.5">
             <h2 id="th-h" className="kicker mb-1.5 flex items-baseline gap-2">
-              <span>1 · Decision thresholds</span>
+              <span>Decision thresholds</span>
               {pending.thresholds && <Pendant />}
               <span className="ml-auto normal-case tracking-normal text-faint">the cap must sit below the accept line</span>
             </h2>
@@ -439,7 +439,7 @@ export default function GuidelinePage() {
 
           <section aria-labelledby="fa-h" className="px-4 py-2.5">
             <h2 id="fa-h" className="kicker mb-1 flex items-baseline gap-2">
-              <span>2 · Factors</span>
+              <span>Factors</span>
               <span className="ml-auto normal-case tracking-normal text-faint">
                 first band that matches wins · a missing value keeps every band possible
               </span>
@@ -484,8 +484,8 @@ export default function GuidelinePage() {
                     }`}
                   >
                     <span className="min-w-0">
-                      <span className={`cond block text-[12px] font-semibold ${ran === s.id ? "text-ochre" : "text-ink"}`}>{s.label}</span>
-                      <span className="block text-[10px] leading-snug text-faint">{s.effect}</span>
+                      <span className={`cond block text-[13px] font-semibold ${ran === s.id ? "text-ochre" : "text-ink"}`}>{s.label}</span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-faint">{s.effect}</span>
                     </span>
                   </button>
                 </li>
@@ -562,7 +562,7 @@ function FactorRows({
       <tr className="border-t border-edge">
         <th scope="rowgroup" colSpan={2} className="pb-0.5 pt-2 text-left">
           <span className="flex items-baseline gap-2">
-            <span className="cond text-[13px] font-semibold text-ink">{f.label}</span>
+            <span className="cond text-[14px] font-semibold text-ink">{f.label}</span>
             {f.hardFail && (
               <span title="a not-acceptable value here caps the whole score" className="border border-rust/60 px-1 text-[9px] uppercase leading-[13px] tracking-[0.06em] text-rust">
                 hard fail
@@ -574,14 +574,14 @@ function FactorRows({
               </span>
             )}
             {f.bands.some((b) => pending.has(`${f.fact}.${b.band}`)) && <Pendant />}
-            <span className="num ml-auto text-[10px] font-normal text-faint">{f.source}</span>
+            <span className="num ml-auto text-[11px] font-normal text-faint">{f.source}</span>
           </span>
         </th>
       </tr>
       {f.bands.map((b) => (
         <tr key={b.band} className="border-t border-rule">
           <td colSpan={2} className={pending.has(`${f.fact}.${b.band}`) ? "border-l-2 border-ochre pl-1.5" : "pl-[8px]"}>
-            <span className="flex items-baseline gap-2 py-[3px]">
+            <span className="flex items-baseline gap-2 py-1">
               <Band fact={f.fact} band={b.band} pred={b.pred} onPred={(p) => onEdit(b.band, p)} />
             </span>
           </td>

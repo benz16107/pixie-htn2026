@@ -6,7 +6,7 @@
 
 "A missing field should widen the decision, not quietly pass. Pixie shows the range, the source of every value, and the one fact that would settle the case."
 
-Federato is one of the two main product demos. Stay in the commercial underwriter experience. The story is incomplete submissions, portfolio context, and a rule change an underwriter can inspect.
+Federato is one of the two main product demos. Stay in the commercial underwriter experience. The story is one incomplete submission, how Pixie reads Federato's linked records, and the portfolio exposure around the decision.
 
 ## What we built for this track
 
@@ -31,11 +31,13 @@ The risk engine cannot make an honest decision until the source data is hydrated
 | Time | Show and say |
 |---|---|
 | 0:00-0:35 | Open `/queue`. Point to the single unresolved submission and the reason it needs attention. |
-| 0:35-1:45 | Open case 138. Trace one fact to its Federato source, then show the 30-75 interval crossing the referral line. |
-| 1:45-2:25 | Move the premium what-if. Say that it previews a confirmed answer and never overwrites the case. |
-| 2:25-3:20 | Open `/map`. Rotate the 3D exposure view, filter one peril, and explain that tower height is active insured value. |
-| 3:20-4:25 | Open `/guideline`, apply one rehearsed scenario, and read the measured case and queue changes. Reset it. |
-| 4:25-5:00 | Show the backtest sample size and one known miss. Close on the source, rule, and result being inspectable together. |
+| 0:35-1:35 | Open case 138. Trace the submission, insured, location, building, and policy facts back to the supplied Federato records. |
+| 1:35-2:35 | Read the interval and waterfall. Point out that the unresolved premium crosses the referral line instead of becoming a guessed point score. |
+| 2:35-3:35 | Move the premium what-if. Say that it previews the answer the broker could provide and never overwrites the filed submission. |
+| 3:35-4:35 | Open `/map`. Rotate the 3D exposure view and explain that tower height is active insured value grouped into H3 cells. |
+| 4:35-5:00 | Return to the decision: one missing answer, its source, its effect, and the next action are all visible. State the limitation below. |
+
+Do not open the rulebook, Ask, and validation pages during this five-minute version. They remain available for judge questions. If the judge asks for measured performance, use validation instead of the map for the final minute.
 
 ## Know these details
 

@@ -46,7 +46,7 @@ export function Chrome() {
   if (path.startsWith("/live")) return null; // the live desk owns its whole screen
 
   return (
-      <header className={`desk-chrome product-chrome flex h-[30px] items-stretch border-b border-edge bg-land text-[11px] ${intact ? "intact-chrome" : ""}`}>
+      <header className={`desk-chrome product-chrome flex h-[40px] items-stretch border-b border-edge bg-land text-[11px] ${intact ? "intact-chrome" : ""}`}>
         <span className="flex items-center border-r border-edge px-3 font-semibold tracking-[0.18em] text-ink">PIXIE</span>
         <div className="product-switch flex items-center gap-0.5 border-r border-edge px-1" role="group" aria-label="Product mode">
           <Link href="/queue" aria-current={!intact ? "page" : undefined} className={!intact ? "product-switch-on" : ""}>
@@ -86,10 +86,10 @@ export function Chrome() {
             />
             API {api}
           </span>
-          <Link href="/privacy" className="hover:text-ink">
+          <Link href="/privacy" className="chrome-legal hover:text-ink">
             privacy
           </Link>
-          <Link href="/terms" className="hover:text-ink">
+          <Link href="/terms" className="chrome-legal hover:text-ink">
             terms
           </Link>
         </span>

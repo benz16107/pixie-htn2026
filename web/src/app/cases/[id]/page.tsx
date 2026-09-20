@@ -65,6 +65,9 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const startAt = dollars.length ? Math.round(dollars.reduce((a, b) => a + b, 0) / dollars.length) : Math.round(((premium?.low.value ?? 0) + (premium?.high.value ?? 0)) / 2);
   const verdict = view.deskVerdict?.replaceAll("_", " ");
   const tenant = isTenantExplain(explain);
+  // The explanation drives the waterfall and what-if control. Use its current-rule score for the
+  // headline too, so a case saved under an older guideline cannot show two baselines on one screen.
+  const displayScore = tenant ? view.score : explain?.score ?? view.score;
   // /guideline can move these two numbers, so the ruler reads the guideline this case was scored by.
   const bands = explain?.thresholds ?? THRESHOLDS;
   // Memory only has something to say on a case the desk has worked more than once.
@@ -76,13 +79,13 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   };
 
   return (
-    <main className="case-page grid h-[calc(100vh-30px)] grid-rows-[36px_minmax(0,1fr)_206px_26px] overflow-hidden">
+    <main className="case-page grid h-[calc(100dvh-40px)] grid-rows-[44px_minmax(0,1fr)_206px_26px] overflow-hidden">
       {/* ------------------------------- identity ------------------------------- */}
       <header className="flex items-center gap-3 overflow-hidden border-b border-edge bg-land px-3">
         <span className="shrink-0">
           <CaseNav caseId={view.caseId} kind={view.kind} place={place} />
         </span>
-        <h1 className="cond min-w-0 truncate text-[17px] font-semibold leading-tight">{view.title}</h1>
+        <h1 className="cond min-w-0 truncate text-[19px] font-semibold leading-tight">{view.title}</h1>
         <span className="shrink-0">
           <DecisionChip decision={view.decision} large />
         </span>
@@ -95,13 +98,13 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       </header>
 
       {/* ------------------- score, the book, the case against ------------------ */}
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_312px_324px]">
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_324px_336px]">
         <section className="flex min-h-0 flex-col border-r border-edge px-4 pb-3 pt-2.5" aria-label="How the score was built">
-          <div className="flex items-start gap-5">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:gap-5">
             <div className="shrink-0">
               <p className="kicker">{tenant ? "Annual price" : view.override ? "Engine score (0–100)" : "Score range (0–100)"}</p>
-              <p className={`num text-[32px] font-medium leading-[36px] ${bandTone(view.score, bands)}`}>
-                {tenant ? `$${explain.annual.toFixed(2)}` : view.score ? `${view.score.lo}–${view.score.hi}` : "—"}
+              <p className={`num text-[34px] font-medium leading-[38px] ${bandTone(displayScore, bands)}`}>
+                {tenant ? `$${explain.annual.toFixed(2)}` : displayScore ? `${displayScore.lo}–${displayScore.hi}` : "—"}
               </p>
             </div>
             {view.override && (
@@ -113,8 +116,8 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               </div>
             )}
             {!tenant && (
-              <div className="min-w-0 flex-1 pt-1">
-                <IntervalBar score={view.score} t={bands} />
+              <div className="w-full min-w-0 flex-1 pt-1">
+                <IntervalBar score={displayScore} t={bands} />
                 <BandScale t={bands} className="mt-1" />
               </div>
             )}
@@ -173,17 +176,17 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
                   const factor = view.factors.find((x) => x.fact === f.id);
                   return (
                     <tr key={f.id} className="border-t border-rule align-top first:border-t-0">
-                      <th scope="row" className="w-[86px] py-1 pr-2 text-left text-[10px] font-normal leading-snug text-dim">
+                      <th scope="row" className="w-[92px] py-1.5 pr-2 text-left text-[11px] font-normal leading-snug text-dim">
                         {f.label}
                       </th>
                       <td className="py-1">
                         <span className="flex items-baseline gap-1.5">
-                          <span className={`num min-w-0 flex-1 text-[11px] leading-snug ${f.provenance === "missing" ? "text-rust" : "text-ink"}`}>
+                          <span className={`num min-w-0 flex-1 text-[12px] leading-snug ${f.provenance === "missing" ? "text-rust" : "text-ink"}`}>
                             {f.display}
                           </span>
                           <ProvenanceBadge p={f.provenance} short />
                         </span>
-                        <span className="mt-px block text-[9px] leading-[12px] text-faint">
+                        <span className="mt-0.5 block text-[10px] leading-[13px] text-faint">
                           {f.resolver ? `${f.resolver} resolves · ` : ""}
                           {f.source}
                           {reads(f.display, factor && factorValue(f.id, factor.valueText))}
@@ -216,7 +219,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             <span>The call</span>
             {view.explanationVerified && <span className="normal-case tracking-normal text-moss">✓ every number checked against the facts</span>}
           </h2>
-          <p className="cond mt-1 max-w-[72ch] text-[13px] leading-[1.5]" style={{ textWrap: "pretty" }}>
+          <p className="cond mt-1 max-w-[72ch] text-[14px] leading-[1.5]" style={{ textWrap: "pretty" }}>
             {view.explanation}
           </p>
           {view.contradictions[0] && (

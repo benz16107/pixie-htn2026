@@ -11,7 +11,7 @@ export function Waterfall({ x }: { x: Explain }) {
   const W = 100 / Math.max(steps.length, 1);
 
   return (
-    <figure className="flex min-h-0 flex-1 flex-col">
+    <figure className="score-waterfall flex min-h-0 flex-1 flex-col">
       <div className="relative min-h-0 flex-1 border-b border-l border-edge" style={{ marginLeft: 26, marginBottom: 52 }}>
         {[0, 25, 50, 75, 100].map((g) => (
           <div key={g} className="absolute inset-x-0 border-t border-dotted border-rule" style={{ bottom: y(g) }}>

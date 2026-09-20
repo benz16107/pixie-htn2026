@@ -35,10 +35,14 @@ export function Memory({ m }: { m: DeskMemory }) {
       </div>
 
       <div className="min-w-0">
-        <p className="text-[10px] leading-snug text-faint" title={m.source.store}>
-          <b className="font-medium text-dim">{m.source.name}</b>: {m.source.lines} line{m.source.lines === 1 ? "" : "s"}, stored locally and available without a network.
+        <p className="text-[10px] leading-snug text-faint" title={m.source?.store}>
+          {m.source ? (
+            <><b className="font-medium text-dim">{m.source.name}</b>: {m.source.lines} line{m.source.lines === 1 ? "" : "s"}, stored locally and available without a network.</>
+          ) : (
+            <>Pixie recall from earlier desk cases.</>
+          )}
         </p>
-        <p className="border-t border-rule pt-1 text-[10px] leading-snug text-faint">{m.boundary}</p>
+        {m.boundary && <p className="border-t border-rule pt-1 text-[10px] leading-snug text-faint">{m.boundary}</p>}
       </div>
     </section>
   );

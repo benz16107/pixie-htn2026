@@ -20,7 +20,11 @@ Intact is the second main product demo. Use the phone for the customer story and
 
 ## What comes from the Intact challenge
 
-The product is designed around faster access to renter insurance and a safe handoff when automation should stop. Pixie does not use an Intact customer API or an Intact tariff. The displayed price is a labelled prototype estimate.
+The track is called **"The Quoting Interface of the Future."** Its eligibility line asks for "modern and new ways to get car and tenant insurance via AI." Judges want a working quote flow where the user supplies relevant information and receives a recommendation, estimate, or next step. They also score user experience and accessibility.
+
+The brief says tenant insurance, not general homeowner insurance. Keep the judged property story about renters. Owner-occupied home insurance is a future extension.
+
+Pixie is designed around faster access to renter insurance and a safe handoff when automation should stop. It does not use an Intact customer API or an Intact tariff. The displayed price is a labelled prototype estimate.
 
 ## Why it fits Pixie
 
