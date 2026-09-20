@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
+import { InventoryProvider } from '@/lib/inventory-store';
 import { QuoteProvider } from '@/lib/store';
 import { C, F } from '@/lib/theme';
 
@@ -29,6 +30,7 @@ function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <QuoteProvider>
+    <InventoryProvider>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -45,6 +47,7 @@ function RootLayout() {
         <Stack.Screen name="(lifecycle)" options={{ title: 'Pixie', headerShown: false }} />
         <Stack.Screen name="home-quote" options={{ title: 'Tenant quote' }} />
         <Stack.Screen name="auto-compare" options={{ title: 'Compare vehicles' }} />
+        <Stack.Screen name="coverage-lab" options={{ title: 'Explore your price' }} />
         <Stack.Screen name="home-inventory" options={{ title: 'Room inventory' }} />
         <Stack.Screen name="driving-context" options={{ title: 'Drive score' }} />
         <Stack.Screen name="recovery-plan" options={{ title: 'Recovery plan' }} />
@@ -53,6 +56,7 @@ function RootLayout() {
         <Stack.Screen name="quote" options={{ title: 'Your quote' }} />
         <Stack.Screen name="about" options={{ title: 'About', headerRight: () => null }} />
       </Stack>
+    </InventoryProvider>
     </QuoteProvider>
     </GestureHandlerRootView>
   );

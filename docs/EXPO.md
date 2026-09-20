@@ -12,9 +12,9 @@ Current [phone-size screenshots](assets/intact/apple-refresh/README.md) cover Ho
 
 ## What works
 
-Home includes the complete Toronto tenant estimate. A customer can enter an address or use location, inspect the neighbourhood data used by the model, confirm coverage, receive an itemized estimate, listen to the result, and save or share a PDF. The Safety tab includes a reviewed room inventory. Home pricing currently covers tenant insurance only.
+Home includes the complete Toronto tenant estimate. A customer can enter an address or use location, inspect the neighbourhood data used by the model, confirm coverage, receive an itemized estimate, listen to the result, and save or share a PDF. The photo inventory records real belongings, customer-entered replacement values, and room totals. It persists on the device and can fill the contents amount for an estimate. Home pricing currently covers tenant insurance only.
 
-Auto compares three illustrative vehicle listings with the same driver profile. Compare changes annual distance, parking, deductible, or claims without overwriting the saved profile. Safety contains prevention tasks and Drive Score. Help creates a private recovery checklist and a local PDF after an incident.
+Auto compares three illustrative vehicle listings with the same driver profile. Compare opens a live price explorer for distance, parking, deductible, contents, or liability. Draft changes stay separate until the customer saves them. A monthly car-and-insurance budget slider shows which illustrative vehicles fit. Safety contains prevention tasks and Drive Score. Help creates a private recovery checklist and a local PDF after an incident.
 
 ## Drive Score
 
@@ -44,6 +44,8 @@ Expo Go cannot load the widget extension, Live Activity, SwiftUI, or Jetpack Com
 | Expo service | Product use |
 | --- | --- |
 | Expo Router | Home, Compare, Safety, Help tabs plus focused estimate, inventory, driving, and recovery screens |
+| Expo Image Picker | Camera and photo-library input for belongings |
+| Expo File System | Persistent inventory and copied photos in native app storage |
 | Expo Location | Address lookup and foreground Drive Score samples |
 | Expo UI | Native SwiftUI and Jetpack Compose drive actions |
 | `expo-widgets` | iOS Home Screen widget and Live Activity |
@@ -83,3 +85,16 @@ EAS still needs private Apple Developer authentication and device registration. 
 4. Point out current speed, distance, events, separate behavior and road-context scores, and the privacy boundary.
 5. Show the widget and Live Activity previews. Replace those previews with captures from the development build once Apple signing is available.
 6. Open Compare to change one assumption, then Help to build a recovery plan.
+
+## Discover and choose coverage
+
+The [discovery screenshots](assets/intact/discovery/README.md) show the added customer flows.
+
+1. From Home, open **Your belongings**. Choose a photo or take one on a phone, name the item, select its room, and enter its replacement value. Save it. Reloading preserves the record. Use **Try a furnished-room example** for labelled sample belongings if you need a faster walkthrough.
+2. Tap **Use $10,000 in my estimate**, or the amount shown for your inventory. The app rounds up to a $5,000 coverage step with a $10,000 minimum. Totals above $100,000 require an advisor; the app does not cap them silently. Choose a Toronto address and review coverage. The recorded contents amount survives address selection.
+3. Open **Explore price changes first**, or use Compare → **Explore my price**. Change the deductible and watch the monthly difference in the fixed footer. The repair-bill example explains the amount up to the deductible and the remaining bill. Save choices to carry them back to the coverage form.
+4. Switch to Auto, open **Compare cars**, and move the monthly budget. Each listing shows the car payment, insurance, total, and amount under or over the budget. The plus and minus controls also support precise changes.
+
+Photos have no automatic object recognition. Customers identify and value each item. Native photos are copied into the app's documents directory; the browser preview stores small image data in local storage. This is device-local storage, not cloud backup or an encrypted insurance vault. Deleting app data removes the inventory. Only the chosen contents amount enters the estimate, not item photos.
+
+The Home price explorer needs the live estimate service because the cached tenant examples do not price changed answers. It blocks saving a stale price when offline. Auto can calculate using its labelled bundled illustration. Neither flow binds coverage or submits an application. A signed native build must be rebuilt to include the new photo permission text and native modules.

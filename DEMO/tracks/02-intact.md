@@ -16,8 +16,8 @@ The phone uses consumer language instead. Its tabs are Home, Compare, Safety, an
 
 | Customer need | Working proof |
 | --- | --- |
-| Get covered | Toronto tenant estimate and three-car Auto comparison |
-| Understand the choice | Itemized receipt and one-change-at-a-time comparisons |
+| Get covered | Photo inventory fills tenant contents coverage; a budget slider compares three cars with insurance |
+| Understand the choice | Live coverage explorer, deductible repair-bill example, and itemized receipt |
 | Reduce risk | Room inventory, prevention tasks, and foreground Drive Score |
 | Get help | Safety-first incident record and local recovery-plan PDF |
 | Ask through an agent | Live MCP tenant estimate, car comparison, and drive explanation |
@@ -66,3 +66,13 @@ The repository contains `.mcp.json`, so project-aware agents can start the stdio
 "Pixie currently prices tenant insurance, not homeowner insurance. Vehicle listings, Auto prices, and route contexts are illustrative. Drive Score is coaching only and cannot change a premium. Native widgets and Live Activities require an iOS development build. Pixie does not submit an insurance application or claim."
 
 If the API is unavailable, use the labelled illustrative estimates. If Apple signing is unavailable, show the foreground Drive Score and the in-app native-surface previews. If geocoding fails, use one of the provided Toronto addresses.
+
+## Stronger discovery sequence
+
+Record this as a close-up phone segment for Devpost. It works without explaining the architecture first.
+
+1. Home → **Your belongings**. Add a real item and replacement value, or tap **Try a furnished-room example**. Show room totals. Say: "Start with what you own instead of guessing a coverage amount. I supply the value; Pixie totals it and uses it in the estimate."
+2. Use the total in an estimate, select a Toronto example, and open **Explore price changes first**. Change the deductible. Show the updated monthly price in the footer and the repair-bill example below. Say: "I can compare the price with what I might pay toward a covered loss before keeping a change."
+3. Switch to Auto → **Compare cars**. Change the monthly budget. Say: "A car's payment is only part of the monthly cost. Pixie adds illustrative insurance and shows which cars fit my budget."
+
+Use the [new screenshots](../../docs/assets/intact/discovery/README.md) in the gallery. The inventory uses camera or library input, local persistence, and customer-entered values. Do not describe it as AI recognition or an appraisal. Vehicle listings remain examples, not a live AutoTrader feed. Keep the API running for the Home price explorer. Cached tenant prices cannot price arbitrary new choices.

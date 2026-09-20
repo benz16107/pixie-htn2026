@@ -57,6 +57,9 @@ export default function About() {
         </View>
       ))}
 
+      <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Your belongings</Kicker>
+      <Body style={{ fontSize: 15 }}>Item photos and replacement values stay in this app's local storage. They are not uploaded for recognition or sent with a quote. Only the contents amount you choose enters the estimate. You can edit or delete individual items. Removing app data removes the inventory; it is not a cloud backup.</Body>
+
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Limits</Kicker>
       {LIMITS.map((l) => (
         <Body key={l} style={{ fontSize: 15, marginBottom: 8 }}>

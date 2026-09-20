@@ -35,6 +35,7 @@ function Options<T extends string | number>({
           <Pressable
             key={String(item.value)}
             accessibilityRole="radio"
+            aria-checked={selected}
             accessibilityState={{ checked: selected }}
             accessibilityLabel={`${item.label}${item.note ? `. ${item.note}` : ''}`}
             onPress={() => choose(() => onChange(item.value))}
@@ -123,7 +124,7 @@ export default function CoverageScreen() {
   if (!place) return <Redirect href="/" />;
 
   return (
-    <Screen footer={<Button label="Price this coverage" hint="Creates your estimate and an itemised receipt" onPress={() => router.push('/quote')} />}>
+    <Screen footer={<><Button label="Price this coverage" hint="Creates your estimate and an itemised receipt" onPress={() => router.push('/quote')} /><Button kind="link" label="Explore price changes first" onPress={() => router.push('/coverage-lab')} /></>}>
       <Stack.Screen options={{ title: 'Your coverage' }} />
       <Progress current={2} total={3} labels={['Address', 'Coverage', 'Estimate']} />
       <Kicker>{place.address}</Kicker>

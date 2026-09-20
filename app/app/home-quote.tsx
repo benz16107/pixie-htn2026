@@ -8,9 +8,9 @@ import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
 
 export default function HomeQuoteScreen() {
-  const { setPlace, setAnswers } = useQuote();
-  const [text, setText] = useState('');
-  const [picked, setPicked] = useState<Place | null>(null);
+  const { place, setPlace, setAnswers } = useQuote();
+  const [text, setText] = useState(place?.address ?? '');
+  const [picked, setPicked] = useState<Place | null>(place);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const addressRef = useRef<TextInput>(null);
@@ -29,7 +29,7 @@ export default function HomeQuoteScreen() {
     const ex = EXAMPLES[i];
     setPicked(ex);
     setText(ex.address);
-    setAnswers(ex.answers);
+    setAnswers({ unitLevel: ex.answers.unitLevel });
     setError('');
   };
 

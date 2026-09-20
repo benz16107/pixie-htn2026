@@ -86,7 +86,15 @@
         }
       ],
       "expo-sharing",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a photo to keep with your belongings inventory.",
+          "cameraPermission": "Photograph an item for your private belongings inventory.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

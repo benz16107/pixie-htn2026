@@ -1,3 +1,5 @@
+import { useInventory } from '@/lib/inventory-store';
+import { inventoryTotal } from '@/lib/inventory';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '@/components/AppIcon';
@@ -9,6 +11,7 @@ import { C, F } from '@/lib/theme';
 
 export default function HomeScreen() {
   const { product, setProduct, autoListing, autoProfile, place, driveSummary } = useQuote();
+  const { items } = useInventory();
   const home = product === 'home';
   const auto = bundledAutoEstimate(autoListing, autoProfile);
   return <Screen topSafe>
@@ -20,8 +23,10 @@ export default function HomeScreen() {
       {home ? <><Body style={st.description}>{place?.address ?? 'An estimate for your belongings and the place you call home.'}</Body><View style={st.detailRow}><Text style={st.secondary}>{place ? 'Your address is saved' : 'Toronto tenant coverage'}</Text><Text style={st.secondary}>About 2 min</Text></View></> : <><View style={st.priceRow}><Text style={st.price}>${auto.monthly.toFixed(2)}</Text><Text style={st.priceUnit}>/ month</Text></View><Text style={st.secondary}>Illustrative insurance estimate</Text><View style={st.detailRow}><Text style={st.secondary}>Car payment</Text><Text style={st.detailValue}>${autoListing.paymentMonthly} / month</Text></View></>}
       <View style={st.button}><Button label={home ? (place ? 'Continue estimate' : 'Get a tenant estimate') : 'Compare cars'} onPress={() => router.push(home ? '/home-quote' : '/auto-compare')} /></View>
     </Panel>
+    <SectionLabel>Explore before you choose</SectionLabel>
+    <ActionCard icon="compare" title="What changes my price?" detail="Try coverage choices and see your estimate respond." onPress={() => router.push('/coverage-lab')} />
     <SectionLabel>For you</SectionLabel>
-    {home ? <ActionCard icon="inventory" title="Your belongings" detail="Keep a room-by-room inventory." onPress={() => router.push('/home-inventory')} /> : <ActionCard icon="drive" title="Your drive score" detail={driveSummary ? `${driveSummary.score} on your latest drive. Review your insights.` : 'Understand your driving and the roads around you.'} onPress={() => router.push('/driving-context')} />}
+    {home ? <ActionCard icon="inventory" title="Your belongings" detail={items.length ? `${items.length} items, $${inventoryTotal(items).toLocaleString()} recorded. Add or review belongings.` : "Photograph your belongings and build your contents estimate."} onPress={() => router.push('/home-inventory')} /> : <ActionCard icon="drive" title="Your drive score" detail={driveSummary ? `${driveSummary.score} on your latest drive. Review your insights.` : 'Understand your driving and the roads around you.'} onPress={() => router.push('/driving-context')} />}
     <ActionCard icon="shield" title={home ? 'A safer home' : 'Ready for the road'} detail={home ? 'A few small checks for peace of mind.' : 'Keep your car and records prepared.'} onPress={() => router.push('/protect')} />
     <Text style={st.disclosure}>{home ? 'Tenant estimates for Toronto. ' : 'Example vehicles and prices. '}Illustrative estimates, not an insurance offer.</Text>
   </Screen>;

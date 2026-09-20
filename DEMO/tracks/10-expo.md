@@ -13,6 +13,8 @@ Keep the phone on screen for most of the submission. The web diagram provides te
 | Expo capability | Working proof | Why it belongs in the product |
 | --- | --- | --- |
 | Expo Router | Home, Compare, Safety, Help tabs and focused task screens | Customers can reach the next insurance task without learning the internal lifecycle model |
+| Expo Image Picker | Photograph or choose a belonging photo | Turns home intake into a concrete item-by-item task |
+| Expo File System | Save the inventory and copied photos in native app storage | Records survive reopening the app without uploading personal photos |
 | Expo Location | Address lookup and foreground Drive Score | One permission supports faster intake and live driving measurements |
 | Expo UI | Native SwiftUI or Jetpack Compose drive action | The most important live action uses the platform control system |
 | `expo-widgets` | iOS widget and Live Activity | Score, speed, and road context remain visible outside the app |
@@ -47,3 +49,13 @@ Keep the phone on screen for most of the submission. The web diagram provides te
 "The widget, Live Activity, SwiftUI, and Jetpack Compose components require native development builds and do not run in Expo Go. Vehicle listings and Auto estimates are illustrative. Drive Score is coaching only, stores no route, and cannot change a quote or premium. Home pricing currently supports tenant insurance."
 
 If Apple signing is unavailable, show the on-screen widget and Live Activity previews and describe them as previews. Do not claim that Expo Go ran a native extension.
+
+## Discovery demo additions
+
+Show **Home → Your belongings** to capture an item and replacement value. Save, reopen, and show the same record. On web, use the photo-library picker; on a phone, **Take photo** requests camera permission only when tapped. The app never asks for microphone access for this flow.
+
+Use the inventory total in a tenant estimate, then open **Compare → Explore my price**. Move the contents slider or choose a deductible. The estimate and monthly difference stay visible in the footer. A separate repair-bill example explains the deductible without promising a claim payment.
+
+For Auto, **Compare cars** now includes a monthly budget slider, precise plus/minus controls, and a payment-versus-insurance bar for each vehicle. The listings and prices remain illustrative.
+
+Web checks verify photo persistence, editing, deletion, price updates, and budgeting. The iOS JavaScript bundle exports successfully. A physical iPhone camera and native file-storage walkthrough still need verification in the rebuilt development app. Do not present browser screenshots as native camera proof.
