@@ -60,11 +60,13 @@ cat <<EOF
   Backtest    http://macserver:3100/backtest
   Ask         http://macserver:3100/ask
   Map         http://macserver:3100/map
+  Intact      http://macserver:3100/intact     <- four-stage pitch
 
   If the name does not resolve, use http://${TS_IP:-100.95.223.110}:3100 instead.
 
   Phone       Tailscale on, then Expo Go: exp://${TS_IP:-100.95.223.110}:8081
   API         http://macserver:8000
+  MCP         cd $ROOT/mcp && uv run pixie-mcp
 
   Reset the demo:  curl -X POST localhost:8000/demo/reset
   Runbook:         $ROOT/docs/RUNBOOK.md

@@ -1,8 +1,8 @@
 # Pixie
 
-Pixie is one risk engine presented as two products.
+Pixie is one inspectable risk engine presented as two products.
 
-The Federato desk scores commercial property submissions as intervals, records the source of every fact, and lets specialist agents investigate the cases that need judgment. The Intact renter experience uses the same engine with Toronto data and a separate rules file to produce an itemized quote in an Expo app. A renter case that should not be auto-priced can move into the underwriter desk without changing its original receipt.
+The Federato desk scores commercial property submissions as intervals, records the source of every fact, and lets specialist agents investigate the cases that need judgment. The Intact experience follows the consumer through Quote, Decide, Protect, and Recover. Its Expo app contains a working Toronto tenant estimate, deterministic synthetic Auto comparisons, prevention records, driving-context coaching, and a recovery handoff.
 
 Pixie was built for Hack the North 2026. The repository retains the internal package name `atlas`.
 
@@ -13,9 +13,16 @@ Read [DEMO/README.md](DEMO/README.md) before presenting. It links the five-minut
 The web app has a product switch:
 
 - Federato opens the commercial queue, case analysis, guideline editor, portfolio map, Ask, and backtest.
-- Intact opens the renter operations view and sends the presenter to the Expo app for the quote flow.
+- Intact opens a Home or Auto lifecycle presentation and sends the presenter to the Expo app for each working customer flow.
 
-The Expo flow is Address, Coverage, and Estimate. The customer can skip the optional map, review five prefilled choices on one screen, inspect the itemized receipt, save a PDF, share it, or open the advisor handoff.
+The Expo app has four persistent stages:
+
+- Quote collects tenant or Auto inputs and produces a sourced estimate.
+- Decide tests one change without overwriting confirmed facts.
+- Protect records prevention work and can run a coaching-only driving-context demo.
+- Recover prepares a reviewed evidence bundle and opens Pixie Recover, powered by CrashClip.
+
+The iOS development build adds a home-screen widget and Live Activity for drive context. Expo Go and the web build show the same foreground flow with a labelled fallback.
 
 ## Run it
 
@@ -24,6 +31,8 @@ Use [docs/RUNBOOK.md](docs/RUNBOOK.md). The standard stack is:
 - FastAPI on port 8000
 - Next.js production server on port 3100
 - Expo on port 8081
+
+The optional MCP server runs over standard input/output by default. See [mcp/README.md](mcp/README.md).
 
 Replay is the default for the commercial live desk. It streams a recorded run without spending tokens or depending on venue Wi-Fi. A deliberate "Run live" action starts the model-backed desk.
 
@@ -44,7 +53,8 @@ Model outputs are labelled. Agent prose is not presented as a confirmed fact or 
 | --- | --- |
 | `api/` | FastAPI, the risk engine, case model, agent desk, quote API, and persistence |
 | `web/` | Federato and Intact web experiences |
-| `app/` | Expo renter quote app |
+| `app/` | Expo Home and Auto consumer app |
+| `mcp/` | Privacy-limited consumer-insurance MCP server |
 | `packs/` | US and Toronto risk data |
 | `rules/` | Commercial and renter guidelines |
 | `eval/` | Pre-registered backtest and model checks |
@@ -52,3 +62,5 @@ Model outputs are labelled. Agent prose is not presented as a confirmed fact or 
 | `docs/` | Architecture, runbook, evidence, and limitations |
 
 The active sponsor stories are Federato, Intact, Rox, Sentry, Elastic, and Expo. Expo is the mobile implementation of the Intact product rather than a separate product experience.
+
+Home pricing currently means renter or tenant insurance. Pixie does not claim a homeowner tariff. Auto rates, vehicle listings, and route zones are synthetic demo inputs. Every price is an illustrative Pixie estimate, not an Intact price or an offer of insurance.

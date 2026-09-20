@@ -4,7 +4,9 @@
 | --- | --- | --- |
 | Live agent run is slow | Stop and select replay | "I am switching to the recorded run so we can inspect the same event contract." |
 | Elastic is unavailable | Continue with the [memory] result | "The local implementation answered this request; this screen is not a live Elastic result." |
-| Phone cannot reach the API | Check EXPO_PUBLIC_API_URL, then use the saved receipt if time is short | "The phone lost the server connection, so I am showing the saved result." |
+| Phone cannot reach the API | Check EXPO_PUBLIC_API_URL, then use the labelled bundled Auto or driving result | "The phone lost the shared service, so this screen is using the matching bundled demo model." |
+| Widget or Live Activity is unavailable | Use the foreground drive-context screen | "This is Expo Go or web. The native extension requires the development build." |
+| CrashClip is unavailable | Use the embedded insurer screenshot | "This is a capture of the separate CrashClip prototype, not a live request." |
 | Sentry console is unavailable | Show the traced fields in code and the API response | "The instrumentation is in the build; the provider console is unavailable." |
 | Guideline state is unexpected | Use the reset control and return to case 138 | "I am restoring the prepared rule set." |
 | Web page looks stale | Rebuild and restart the production server | "The server was serving an older production bundle." |

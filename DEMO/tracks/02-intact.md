@@ -4,51 +4,71 @@
 
 ## The pitch
 
-"A renter confirms five prefilled choices on one screen, sees exactly why the price changed, and reaches an advisor with the same receipt when the case needs judgment."
+"Most quote apps stop when the customer buys. Pixie stays useful through Quote, Decide, Protect, and Recover, with the same facts and source trail at every step."
 
-Intact is the second main product demo. Use the phone for the customer story and the Intact web mode for the operations handoff.
+Use the Intact web page as the presentation and the Expo app as the working customer product. Pick one route for the main story. Auto has the stronger visual sequence. Tenant has the stronger end-to-end pricing and advisor handoff.
 
 ## What we built for this track
 
-- A three-stage renter journey: Address, Coverage, Estimate.
-- A fast path that skips the optional map and opens one prefilled coverage review.
-- Editable unit level, contents, deductible, liability, and five-year claims history.
-- Visible price effects beside each choice before the customer requests an estimate.
-- An itemized receipt whose lines expand to show their source and multiplier.
-- A PDF/share action for ready estimates and an exact advisor-case handoff for referrals.
-- An Intact operations view with the original applicant answers and receipt preserved.
+- A four-stage Home and Auto consumer experience in Expo Router.
+- A working Toronto tenant estimate with an address, optional map, five coverage choices, an itemized receipt, PDF sharing, and advisor referral.
+- A working synthetic Auto comparison across a Corolla, CX-5, and IONIQ 5. The same profile stays fixed so the vehicle effect remains visible.
+- Decide screens that change one input without overwriting the confirmed baseline.
+- A reviewed room-inventory flow for tenant protection.
+- A driving-context flow that combines driving events with coarse synthetic route zones. It reports separate behavior, route, and composite coaching scores with provenance.
+- Native SwiftUI and Jetpack Compose actions through Expo UI.
+- An iOS widget and Live Activity through expo-widgets. Expo Go uses a labelled foreground fallback.
+- A recovery checklist and Pixie Recover handoff powered by the separate CrashClip prototype.
+- Privacy-limited MCP tools for AI agents to estimate, compare, prepare a draft, read a limited policy summary, assess drive context, and prepare recovery.
 
 ## What comes from the Intact challenge
 
-The track is called **"The Quoting Interface of the Future."** Its eligibility line asks for "modern and new ways to get car and tenant insurance via AI." Judges want a working quote flow where the user supplies relevant information and receives a recommendation, estimate, or next step. They also score user experience and accessibility.
+The track is called "The Quoting Interface of the Future." Its eligibility line asks for modern ways to get car insurance, tenant insurance, or both through AI. Judges want a working prototype where the user supplies relevant information and receives a recommendation, estimate, or next step. They also score user experience, accessibility, and documentation.
 
-The brief says tenant insurance, not general homeowner insurance. Keep the judged property story about renters. Owner-occupied home insurance is a future extension.
+The brief says tenant insurance rather than general homeowner insurance. Pixie calls the route Home because the relationship continues into inventory, prevention, and recovery. The working property price remains tenant-only.
 
-Pixie is designed around faster access to renter insurance and a safe handoff when automation should stop. It does not use an Intact customer API or an Intact tariff. The displayed price is a labelled prototype estimate.
+## Why this approach
 
-## Why it fits Pixie
+A chatbot that repeats a quote form stops at the quote. Pixie uses the quote as the start of a continuous customer relationship:
 
-The commercial desk already keeps facts, sources, and rules separate. The renter app reuses that trusted core with its own Toronto data and renter rules. The interface, questions, and price model remain separate from Federato.
+1. Quote gathers only the facts required for the selected product.
+2. Decide lets the customer test a car, deductible, or coverage choice before committing.
+3. Protect records useful prevention work and gives context during a drive.
+4. Recover carries policy facts and reviewed evidence into the next step.
 
-## Five-minute flow
+The quote and coaching formulas remain deterministic. AI agents can call the MCP tools, but they cannot invent a price, fetch a full profile, or submit an application.
+
+## Five-minute Auto flow
 
 | Time | Show and say |
-|---|---|
-| 0:00-0:30 | Start on `/intact`. Explain that this is a separate renter operations product over the same rule and provenance engine. |
-| 0:30-1:20 | On the phone, select 180 Queen St W and choose **Review my coverage**. Point out that the neighbourhood map is optional. |
-| 1:20-2:15 | Review the five prefilled choices on one screen. Change contents or deductible and read the price effect beside it. |
-| 2:15-3:10 | Price the coverage. Expand one receipt line, show its source, then use **Save and share my receipt**. |
-| 3:10-4:10 | Start the prepared basement example. Show the referral reason and open the exact advisor handoff. |
-| 4:10-5:00 | Open the same case in `/intact/quotes`. Show that the address, answers, price receipt, and referral reason survived the handoff. |
+| --- | --- |
+| 0:00-0:35 | Start on `/intact` with Auto selected. "The quote is one stage in a longer insurance relationship." Point to Quote, Decide, Protect, and Recover. |
+| 0:35-1:35 | Open Expo Quote and compare the three vehicles. "I keep the driver scenario fixed, so the customer sees the insurance effect before buying the car." |
+| 1:35-2:20 | Open Decide and change annual distance, parking, or deductible. "This is a what-if. It never overwrites the confirmed profile." |
+| 2:20-3:35 | Open Protect and start drive context. Show behavior, route context, the composite, and each source. If using the native build, show the widget and Live Activity. |
+| 3:35-4:30 | Open Recover. Build the evidence checklist, then open Pixie Recover. "CrashClip preserves independent footage and packages it for review. It does not decide fault." |
+| 4:30-5:00 | Describe the MCP boundary. "An agent can compare cars or prepare an advisor draft. It cannot read a full profile or submit to an insurer." State the limitations below. |
+
+## Five-minute tenant alternative
+
+Use the same four-stage rail. In Quote, select a Toronto address and request the tenant estimate. In Decide, change contents coverage. In Protect, run the room-inventory review. In Recover, prepare the home evidence handoff. Finish in `/intact/quotes` with the preserved receipt and referral reason.
 
 ## Know these details
 
-`tenant.py` computes the price in cents and applies the referral rules. Two or more claims in five years, or the prepared basement flood-study case, goes to an advisor. The Toronto pack supplies the location data. The API stores the quote once so the Expo app and web desk read the same case.
+- `tenant.py` computes tenant prices in integer cents and applies referral rules.
+- `consumer.py` computes Auto estimates and comparisons from the bundled synthetic table.
+- `driving.py` keeps behavior and route context separate, then publishes a documented coaching composite.
+- The driving endpoint accepts coordinates rounded to three decimal places, returns no coordinates, and stores nothing.
+- The MCP server imports these same functions rather than duplicating the calculations.
+- CrashClip is a separate deployed prototype. This repository contains screenshots and a launcher, not its source.
 
-## Say this limitation
+## Say these limitations
 
-"The rates are prototype rates. This is not an Intact price or offer, and we have not completed actuarial validation, fairness assessment, or policy issuance."
+"Home pricing currently supports tenant insurance only. Auto prices, listings, and route zones are synthetic demonstration inputs. The driving score is coaching-only and does not change a premium. The widget and Live Activity require an iOS development build. CrashClip is a separate prototype. None of these prices are an Intact quote or offer."
 
 ## If it fails
 
-Use one of the three bundled addresses and state that it is a saved sample. Open the matching `/intact/cases/TQ-...` page. Do not claim the sample just created a new server case.
+- If the phone loses the API, use the bundled Auto and driving fallbacks. Say that the screen labels the source.
+- If the native extension is unavailable, show the foreground drive screen and the widget code. Do not claim that Expo Go is running the Live Activity.
+- If CrashClip is unavailable, use the embedded insurer screenshot and explain the capture, corroboration, and handoff.
+- If tenant geocoding fails, use one of the bundled Toronto addresses.

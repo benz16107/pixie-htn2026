@@ -1,0 +1,63 @@
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Panel, SourceMark } from '@/components/consumer';
+import { Body, Button, Kicker, Screen, Title } from '@/components/ui';
+import { useQuote } from '@/lib/store';
+import { C, F } from '@/lib/theme';
+
+const ITEMS = [
+  { name: 'Sofa', value: 1400 },
+  { name: 'Television', value: 900 },
+  { name: 'Laptop', value: 1800 },
+  { name: 'Dining set', value: 750 },
+];
+
+export default function HomeInventoryScreen() {
+  const { answers } = useQuote();
+  const [scanned, setScanned] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const total = ITEMS.reduce((sum, item) => sum + item.value, 0);
+  return (
+    <Screen>
+      <Kicker>Home & tenant · room inventory</Kicker>
+      <Title style={st.title}>Know what you would need to replace.</Title>
+      <Body style={st.lead}>Run the bundled living-room scan, review every item, then save the total to your protection record.</Body>
+      {!scanned ? (
+        <Panel tone="ink">
+          <Text style={st.room}>LIVING ROOM</Text>
+          <Text style={st.scanTitle}>4 common items are ready for this demo.</Text>
+          <Body style={st.inverse}>No camera permission is needed. This flow shows the review step a real room scan should have.</Body>
+          <View style={{ marginTop: 18 }}><Button label="Run demo room scan" onPress={() => setScanned(true)} /></View>
+        </Panel>
+      ) : (
+        <Panel>
+          <SourceMark live={false} />
+          <Kicker style={{ marginTop: 14 }}>Review detected items</Kicker>
+          {ITEMS.map((item) => (
+            <View key={item.name} style={st.row}><Text style={st.item}>{item.name}</Text><Text style={st.value}>${item.value.toLocaleString('en-CA')}</Text></View>
+          ))}
+          <View style={st.totalRow}><Text style={st.totalLabel}>Room total</Text><Text style={st.total}>${total.toLocaleString('en-CA')}</Text></View>
+          <Button label="Save reviewed inventory" onPress={() => setSaved(true)} />
+          {saved ? <Text accessibilityLiveRegion="polite" style={st.saved}>Saved to your protection record.</Text> : null}
+        </Panel>
+      )}
+      <Body style={st.context}>Your tenant quote currently uses ${answers.contentsValue.toLocaleString('en-CA')} of contents coverage. This one-room demo records ${total.toLocaleString('en-CA')}; it does not change that coverage amount.</Body>
+    </Screen>
+  );
+}
+
+const st = StyleSheet.create({
+  title: { marginTop: 8 },
+  lead: { marginTop: 10, marginBottom: 20, color: C.dim },
+  room: { fontFamily: F.monoMedium, fontSize: 10, letterSpacing: 1, color: '#AFC1C4' },
+  scanTitle: { marginTop: 12, fontFamily: F.sansBold, fontSize: 23, lineHeight: 28, color: C.paper },
+  inverse: { marginTop: 8, color: '#D8E2E3', fontSize: 14 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.rule },
+  item: { flex: 1, fontFamily: F.sansMedium, fontSize: 15, color: C.ink },
+  value: { fontFamily: F.mono, fontSize: 14, color: C.ink },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginVertical: 18 },
+  totalLabel: { fontFamily: F.sansBold, fontSize: 16, color: C.ink },
+  total: { fontFamily: F.monoMedium, fontSize: 25, color: C.ink },
+  saved: { marginTop: 12, fontFamily: F.sansMedium, color: C.moss },
+  context: { marginTop: 16, marginBottom: 24, fontSize: 13, lineHeight: 19, color: C.dim },
+});

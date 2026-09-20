@@ -98,6 +98,7 @@ html:has(.intact-page) {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+.intact-lifecycle-page { padding: clamp(18px, 3vw, 42px) clamp(18px, 4vw, 64px) 28px; }
 .intact-page h1,
 .intact-page h2,
 .intact-page p { margin: 0; }
@@ -272,6 +273,7 @@ html:has(.intact-page) {
   .intact-chrome .chrome-status > :not(a) { display: none; }
   .intact-chrome .chrome-legal { display: flex; align-items: center; }
   .intact-page { padding: 28px 16px 48px; }
+  .intact-lifecycle-page { padding-top: 18px; padding-bottom: 24px; }
   .intact-intro { gap: 20px; margin-bottom: 28px; }
   .intact-intro h1 { font-size: 39px; }
   .intact-board-main, .intact-handoff { padding: 20px; }

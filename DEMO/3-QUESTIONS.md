@@ -2,7 +2,7 @@
 
 ## "Is the AI setting the insurance price?"
 
-"No. Python computes the commercial score, the renter receipt, the thresholds, and the portfolio totals. Agents choose investigations and write from tool results. The final explanation passes a numerical-claim check."
+"No. Python computes commercial scores, tenant and Auto estimates, driving-context coaching, thresholds, and portfolio totals. Agents call typed tools and explain the returned result."
 
 ## "Why an interval?"
 
@@ -10,7 +10,15 @@
 
 ## "Is this a real carrier rate?"
 
-"No. The renter price is illustrative and labelled on the receipt. The product claim is the source-labelled workflow and referral handoff."
+"No. Tenant and Auto prices are illustrative and labelled on the receipt. Home pricing is tenant-only. The product claim is the source-labelled workflow, comparison, and handoff."
+
+## "Does driving context change the premium?"
+
+"No. It is a coaching result with separate behavior and synthetic route-context scores. The API stores no coordinates, returns none, and cannot write into a quote."
+
+## "What can the MCP agent see?"
+
+"It can call narrow estimate, comparison, draft, policy-summary, driving-context, and recovery tools. There is no full-profile tool, and draft actions remain unsent until a licensed workflow takes over."
 
 ## "What is live?"
 
@@ -22,13 +30,15 @@
 
 ## "What would make this production-ready?"
 
-"A carrier-approved guideline, a larger prospective evaluation with working underwriters, fairness analysis for the renter factors, identity and access controls, and provider deployment work."
+"Carrier-approved tariffs and guidelines, a larger prospective evaluation, fairness and privacy reviews, identity and access controls, native distribution, and provider deployment work."
 
 ## Wording to avoid
 
 | Avoid | Say instead |
 | --- | --- |
 | "The AI decides the risk" | "The engine computes the decision interval; agents investigate and explain." |
-| "This is an Intact price" | "This is an illustrative renter quote under our documented rules." |
+| "This is an Intact price" | "This is an illustrative Pixie estimate under documented demo rules." |
+| "The app prices homeowner insurance" | "Home currently prices tenant insurance and adds protection tools." |
+| "Your route improves your premium" | "Route context provides coaching and cannot affect this quote or premium." |
 | "Everything is live" | Name the live, replay, cache, or fallback path visible on screen. |
 | "The backtest proves accuracy" | "The small pre-registered backtest exposes both matches and misses." |

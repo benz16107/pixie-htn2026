@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pixie renter quote operations",
-  description: "Transparent Toronto renter quotes and the advisor referrals they create.",
+  title: "Pixie for Intact · Quote to recovery",
+  description: "A connected tenant and Auto insurance journey through quote, decision, prevention, and recovery.",
 };
 
 export default function IntactLayout({ children }: LayoutProps<"/intact">) {

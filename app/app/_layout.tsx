@@ -61,8 +61,8 @@ function RootLayout() {
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.ochre }} />
-              <Text style={{ fontFamily: F.sansBold, fontSize: 15, color: C.ink, letterSpacing: 1.1 }}>PIXIE</Text>
-              <Text style={{ fontFamily: F.sansMedium, fontSize: 11, color: C.dim }}>RENTERS</Text>
+              <Text style={{ fontFamily: F.sansBold, fontSize: 15, color: C.ink, letterSpacing: 1.1 }}>INTACT</Text>
+              <Text style={{ fontFamily: F.sansMedium, fontSize: 11, color: C.dim }}>PIXIE DEMO</Text>
             </View>
           ),
           headerRight: () => (
@@ -74,7 +74,12 @@ function RootLayout() {
           ),
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Pixie renters' }} />
+        <Stack.Screen name="(lifecycle)" options={{ title: 'Pixie Insurance', headerBackVisible: false }} />
+        <Stack.Screen name="home-quote" options={{ title: 'Tenant quote' }} />
+        <Stack.Screen name="auto-compare" options={{ title: 'Compare vehicles' }} />
+        <Stack.Screen name="home-inventory" options={{ title: 'Room inventory' }} />
+        <Stack.Screen name="driving-context" options={{ title: 'Drive context' }} />
+        <Stack.Screen name="recovery-handoff" options={{ title: 'Recovery' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
         <Stack.Screen name="quote" options={{ title: 'Your quote' }} />

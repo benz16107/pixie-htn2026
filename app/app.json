@@ -8,9 +8,10 @@
     "scheme": "pixie",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.benzhou.pixie",
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Pixie uses your location once to fill in your address for a tenant quote.",
+        "NSLocationWhenInUseUsageDescription": "Pixie uses your location when you ask to fill an address or run driving context in the foreground.",
         "CADisableMinimumFrameDurationOnPhone": true
       }
     },
@@ -40,7 +41,28 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Pixie uses your location once to fill in your address for a tenant quote."
+          "locationWhenInUsePermission": "Pixie uses your location when you ask to fill an address or run driving context in the foreground. The driving sample is rounded and not retained."
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.benzhou.pixie.widgets",
+          "groupIdentifier": "group.com.benzhou.pixie",
+          "widgets": [
+            {
+              "name": "DriveContext",
+              "displayName": "Pixie drive context",
+              "description": "Shows the active synthetic route zone and coaching context.",
+              "supportedFamilies": ["systemSmall", "systemMedium"],
+              "contentMarginsDisabled": false,
+              "ios": {
+                "supportedFamilies": ["systemSmall", "systemMedium"],
+                "contentMarginsDisabled": false
+              },
+              "android": null
+            }
+          ]
         }
       ],
       [

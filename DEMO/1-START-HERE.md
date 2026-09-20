@@ -4,10 +4,11 @@
 
 1. Run ./start.sh.
 2. Confirm the API health check and open http://macserver:3100/queue.
-3. Open case 138, the 3D portfolio, guideline, backtest, and Intact in separate tabs.
-4. Complete one renter quote on the phone and leave the receipt visible.
-5. Open the relevant provider console for the next track.
-6. Reset stored guideline and override changes from the previous rehearsal.
+3. Open case 138, the 3D portfolio, guideline, backtest, and the Intact lifecycle in separate tabs.
+4. On the phone, leave the lifecycle home screen open. Prepare the tenant receipt and Auto comparison as adjacent screens.
+5. If the Expo native development build is available, start one drive-context Live Activity. Otherwise use the labelled foreground fallback.
+6. Open the relevant provider console for the next track.
+7. Reset stored guideline and override changes from the previous rehearsal.
 
 ## Base commercial script
 
@@ -22,6 +23,6 @@
 | 4:35 | Show the limitation | State the exact fallback or unverified boundary from the card. |
 | 4:50 | Close | "Pixie gives the underwriter the decision range, the source trail, and the fact that would settle it." |
 
-For Intact or Expo, start on `/intact`, move to the phone, review the five prefilled coverage choices, and finish with the referral handoff. Do not mix the commercial and renter scripts until the handoff.
+For Intact or Expo, start on `/intact` and use its four stages as the pitch. Move to the phone only for the working proof. Quote shows tenant and Auto estimates. Decide changes one input. Protect shows inventory or driving context. Recover prepares evidence and opens Pixie Recover for Auto. Do not mix the commercial and consumer scripts until an advisor handoff.
 
 Use replay for a predictable five-minute demonstration. If you run the live model path, tell the judge before pressing it.

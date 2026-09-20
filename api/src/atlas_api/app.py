@@ -25,6 +25,19 @@ from pydantic import BaseModel, Field
 from . import guideline
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
+from .consumer import (
+    TENANT_SCOPE,
+    compare_vehicles,
+    consumer_capabilities,
+    estimate_auto_quote,
+    get_policy_summary,
+    get_recovery_status,
+    prepare_application,
+    request_recovery_handoff,
+    run_quote_scenario,
+    vehicle_listings,
+)
+from .driving import assess_drive_context
 from . import insights_routes
 from . import memory_routes
 from .engine import (
@@ -546,6 +559,62 @@ class TenantQuoteRequest(BaseModel):
     answers: TenantAnswersRequest
 
 
+class HomeQuoteRequest(TenantQuoteRequest):
+    home_product: Literal["tenant"] = Field(default="tenant", alias="homeProduct")
+
+
+class AutoQuoteRequest(BaseModel):
+    vehicle_id: str = Field(alias="vehicleId")
+    annual_km_band: Literal["under_10000", "10000_20000", "over_20000"] = Field(
+        default="10000_20000", alias="annualKmBand"
+    )
+    parking: Literal["garage", "driveway", "street"] = "driveway"
+    deductible: Literal[500, 1000, 2000] = 1000
+    claims_5yr: int = Field(default=0, alias="claims5yr", ge=0)
+
+
+class VehicleComparisonRequest(BaseModel):
+    vehicle_ids: list[str] | None = Field(default=None, alias="vehicleIds", max_length=6)
+    annual_km_band: Literal["under_10000", "10000_20000", "over_20000"] = Field(
+        default="10000_20000", alias="annualKmBand"
+    )
+    parking: Literal["garage", "driveway", "street"] = "driveway"
+    deductible: Literal[500, 1000, 2000] = 1000
+    claims_5yr: int = Field(default=0, alias="claims5yr", ge=0)
+
+
+class QuoteScenarioRequest(BaseModel):
+    tenant: TenantQuoteRequest | None = None
+    auto: AutoQuoteRequest | None = None
+
+
+class ApplicationDraftRequest(BaseModel):
+    quote_ids: list[str] = Field(alias="quoteIds", min_length=1, max_length=4)
+    contact_preference: Literal["email_on_file", "phone_on_file", "in_app"] = Field(alias="contactPreference")
+    consent_to_prepare: bool = Field(alias="consentToPrepare")
+    confirm_demo_only: bool = Field(alias="confirmDemoOnly")
+
+
+class RecoveryHandoffRequest(BaseModel):
+    policy_id: str = Field(alias="policyId")
+    incident_type: Literal["collision", "water", "theft", "other"] = Field(alias="incidentType")
+    contact_preference: Literal["email_on_file", "phone_on_file", "in_app"] = Field(alias="contactPreference")
+    consent_to_contact: bool = Field(alias="consentToContact")
+    confirm_demo_only: bool = Field(alias="confirmDemoOnly")
+
+
+class CoarseRoutePointRequest(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+
+
+class DrivingContextRequest(BaseModel):
+    points: list[CoarseRoutePointRequest] = Field(min_length=2, max_length=50)
+    distance_km: float = Field(alias="distanceKm", ge=0.5, le=500)
+    speeding_events: int = Field(default=0, alias="speedingEvents", ge=0)
+    hard_brake_events: int = Field(default=0, alias="hardBrakeEvents", ge=0)
+
+
 @lru_cache(maxsize=1)
 def _tenant_pack() -> TorontoPack:
     return TorontoPack()
@@ -566,6 +635,147 @@ def tenant_quote(req: TenantQuoteRequest) -> dict[str, Any]:
                 sewer_backup=a.sewer_backup, bundle_auto=a.bundle_auto,
             ),
             store=get_store(), pack=_tenant_pack(),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/consumer/capabilities")
+def consumer_products() -> dict[str, Any]:
+    return consumer_capabilities()
+
+
+@app.get("/consumer/vehicles")
+def consumer_vehicles() -> list[dict[str, Any]]:
+    return vehicle_listings()
+
+
+@app.post("/consumer/vehicles/compare")
+def consumer_vehicle_comparison(req: VehicleComparisonRequest) -> dict[str, Any]:
+    try:
+        return compare_vehicles(
+            vehicle_ids=req.vehicle_ids,
+            annual_km_band=req.annual_km_band,
+            parking=req.parking,
+            deductible=req.deductible,
+            claims_5yr=req.claims_5yr,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/quote/home")
+def home_quote(req: HomeQuoteRequest) -> dict[str, Any]:
+    """Customer-facing Home entry point. It currently supports tenant insurance only."""
+    quote = tenant_quote(req)
+    return {
+        **quote,
+        "productCategory": "home",
+        "supportedProduct": "tenant",
+        "scopeNote": TENANT_SCOPE,
+        "demoOnly": True,
+    }
+
+
+@app.post("/quote/auto")
+def auto_quote(req: AutoQuoteRequest) -> dict[str, Any]:
+    try:
+        return estimate_auto_quote(
+            vehicle_id=req.vehicle_id,
+            annual_km_band=req.annual_km_band,
+            parking=req.parking,
+            deductible=req.deductible,
+            claims_5yr=req.claims_5yr,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/quote/scenario")
+def quote_scenario(req: QuoteScenarioRequest) -> dict[str, Any]:
+    tenant = None
+    if req.tenant is not None:
+        tenant = {
+            "address": req.tenant.address,
+            "lat": req.tenant.lat,
+            "lng": req.tenant.lng,
+            "contents_value": req.tenant.answers.contents_value,
+            "unit_level": req.tenant.answers.unit_level,
+            "claims_5yr": req.tenant.answers.claims_5yr
+            if req.tenant.answers.claims_5yr is not None
+            else req.tenant.answers.claims_3yr,
+            "deductible": req.tenant.answers.deductible,
+            "liability": req.tenant.answers.liability,
+            "sewer_backup": req.tenant.answers.sewer_backup,
+            "bundle_auto": req.tenant.answers.bundle_auto,
+        }
+    auto = None
+    if req.auto is not None:
+        auto = {
+            "vehicle_id": req.auto.vehicle_id,
+            "annual_km_band": req.auto.annual_km_band,
+            "parking": req.auto.parking,
+            "deductible": req.auto.deductible,
+            "claims_5yr": req.auto.claims_5yr,
+        }
+    try:
+        return run_quote_scenario(tenant=tenant, auto=auto)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/policies/{policy_id}/summary")
+def policy_summary(policy_id: str) -> dict[str, Any]:
+    try:
+        return get_policy_summary(policy_id)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@app.post("/applications/prepare")
+def application_draft(req: ApplicationDraftRequest) -> dict[str, Any]:
+    try:
+        return prepare_application(
+            quote_ids=req.quote_ids,
+            contact_preference=req.contact_preference,
+            consent_to_prepare=req.consent_to_prepare,
+            confirm_demo_only=req.confirm_demo_only,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/recovery/handoffs")
+def recovery_handoff(req: RecoveryHandoffRequest) -> dict[str, Any]:
+    try:
+        return request_recovery_handoff(
+            policy_id=req.policy_id,
+            incident_type=req.incident_type,
+            contact_preference=req.contact_preference,
+            consent_to_contact=req.consent_to_contact,
+            confirm_demo_only=req.confirm_demo_only,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.get("/recovery/handoffs/{recovery_id}")
+def recovery_handoff_status(recovery_id: str) -> dict[str, Any]:
+    try:
+        return get_recovery_status(recovery_id)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@app.post("/driving/context")
+def driving_context(req: DrivingContextRequest) -> dict[str, Any]:
+    """Compute coaching context without persisting or returning route coordinates."""
+    try:
+        return assess_drive_context(
+            points=[(point.lat, point.lng) for point in req.points],
+            distance_km=req.distance_km,
+            speeding_events=req.speeding_events,
+            hard_brake_events=req.hard_brake_events,
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

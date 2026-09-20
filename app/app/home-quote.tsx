@@ -7,7 +7,7 @@ import { EXAMPLES, type Place } from '@/lib/api';
 import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
 
-export default function AddressScreen() {
+export default function HomeQuoteScreen() {
   const { setPlace, setAnswers } = useQuote();
   const [text, setText] = useState('');
   const [picked, setPicked] = useState<Place | null>(null);

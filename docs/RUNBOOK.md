@@ -15,29 +15,33 @@ Expected services:
 | API | 8000 | `curl -fsS http://localhost:8000/health` |
 | Web production build | 3100 | `curl -fsS http://localhost:3100/queue` |
 | Expo | 8081 | Open the printed Expo Go URL |
+| MCP, optional | stdio or 8010 | `cd mcp && uv run pixie-mcp --help` |
 
 Serve the production Next.js build during judging. A development server can introduce cross-origin asset failures when the laptop opens the server-hosted app.
 
 ## Before judging
 
-1. Open `/queue`, `/cases/138`, `/guideline`, `/backtest`, and `/intact`.
+1. Open `/queue`, `/cases/138`, `/map`, `/guideline`, `/backtest`, and `/intact`.
 2. Confirm the product switch moves between the Federato and Intact experiences.
-3. On the phone, finish one prepared renter quote and leave the receipt open.
-4. Keep replay selected on the live desk unless the judge explicitly wants a live model run.
-5. Open the relevant provider console before a Sentry or Elastic pitch.
+3. On the phone, open the four lifecycle tabs. Prepare the Auto comparison, drive context, and one tenant receipt.
+4. If using a native iOS development build, start the drive-context Live Activity and confirm the widget snapshot. Expo Go cannot run these native extensions.
+5. Keep replay selected on the live desk unless the judge explicitly wants a live model run.
+6. Open the relevant provider console before a Sentry or Elastic pitch.
 
 ## Verify
 
 ```bash
 cd api && SENTRY_DSN_API= uv run pytest -q
+cd mcp && uv run pytest -q
 cd web && npm run build
 cd app && npx tsc --noEmit
+cd app && npx expo config --type public
 ```
 
-A physical phone cannot reach `localhost` on the server. Set `EXPO_PUBLIC_API_URL` to the server's reachable HTTP or HTTPS address before starting Expo.
+A physical phone cannot reach `localhost` on the server. Set `EXPO_PUBLIC_API_URL` to the server's reachable HTTP or HTTPS address before starting Expo. The native widget and Live Activity require a development build. Expo Go and web use the labelled fallback.
 
 ## Recovery
 
-If the commercial model run is slow, stop it and use replay. If Elastic is unavailable, point out the `[memory]` backend label and explain that the same query contract has a local implementation. If the phone loses the API, use the Intact overview to explain the handoff, then show the saved receipt screenshot. If a guideline rehearsal changed the queue, use the reset control before the next judge.
+If the commercial model run is slow, stop it and use replay. If Elastic is unavailable, point out the `[memory]` backend label and explain that the same query contract has a local implementation. If the phone loses the API, use the bundled Auto and drive-context fallbacks and point to their source labels. If CrashClip is unavailable, use the embedded insurer screenshot. If a guideline rehearsal changed the queue, use the reset control before the next judge.
 
 Do not claim a live provider call when the screen shows replay, cache, fixture, or memory.

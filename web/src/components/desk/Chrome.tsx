@@ -13,7 +13,7 @@ const FEDERATO_DESTS = [
 
 const INTACT_DESTS = [
   { href: "/intact", label: "overview", title: "Renter quote volume and advisor handoff" },
-  { href: "/intact/quotes", label: "renter quotes", title: "Ready estimates and quotes that need advisor review" },
+  { href: "/intact/quotes", label: "advisor desk", title: "Ready estimates and quotes that need advisor review" },
 ];
 
 /** The desk frame and the product switch shared by both product modes. */
