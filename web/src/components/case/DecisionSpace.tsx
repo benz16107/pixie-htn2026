@@ -155,7 +155,8 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
 
   return (
     <figure className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-sm border border-rule bg-paper">
+      {/* A terrain squashed to 200px reads as a smear. Below that the pane scrolls instead. */}
+      <div className="relative min-h-[300px] flex-1 overflow-hidden rounded-sm border border-rule bg-paper">
         <canvas
           ref={canvas}
           tabIndex={0}
