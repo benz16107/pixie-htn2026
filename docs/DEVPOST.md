@@ -12,7 +12,7 @@ Before submission:
 
 ## Project overview
 
-Pixie is one inspectable risk engine presented as two products: a commercial underwriting desk and a consumer insurance app. Across both products, AI chooses what to investigate and writes sourced explanations. Typed tools and deterministic code calculate scores, prices, and portfolio totals. A model never invents a number that appears as a result.
+Pixie is one inspectable risk engine presented as two products: a commercial underwriting desk and a consumer insurance app. Across both products, AI chooses what to investigate and writes sourced explanations. Typed tools and deterministic code calculate scores, prices, and portfolio totals. Pixie blocks model prose when it contains a number absent from the computed facts.
 
 The commercial desk helps an underwriter move from a queue of incomplete submissions to a reviewable decision. The consumer app helps a customer compare choices, reduce risk, and prepare for recovery. Both products keep confirmed facts, estimates, and missing information separate. Every displayed value names its source.
 
@@ -41,7 +41,7 @@ Each sponsor section below describes Pixie within that track's scope. This keeps
 
 For Federato, Pixie is an AI-assisted commercial underwriting desk. It reads Federato's supplied submission data and discovered schema, evaluates each supported submission against a carrier's appetite guideline, requests more evidence when the record is incomplete, and ranks the queue for review. The interface shows the facts, sources, calculation, agent activity, portfolio context, and recommended next action in one case workspace.
 
-This directly answers the official [Federato challenge](https://hackthenorth2026.devpost.com/): build an AI agent that ingests insurance submissions, enriches them with real-world risk data, and produces explainable, actionable insights relative to a carrier's appetite guidelines.
+The official [Federato challenge](https://hackthenorth2026.devpost.com/) asks teams to build an AI agent that ingests insurance submissions, enriches them with real-world risk data, and produces explainable, actionable insights relative to a carrier's appetite guidelines. Pixie implements that full workflow.
 
 ### Why we built it
 
@@ -58,7 +58,7 @@ Pixie preserves that uncertainty. It computes the best and worst appetite score 
 | Apply appetite guidelines | Pixie translates the supplied commercial property criteria into an explicit rulebook. Code calculates the score, hard-failure caps, decision thresholds, and uncertainty range. | Photos 02, 03, and 04 |
 | Rank submissions | Pixie assesses all 158 supplied commercial submissions. It scores the 38 property submissions covered by the supplied guideline and routes the other business lines without pretending that the property rules apply to them. | Photo 01 |
 | Explain every decision | Every factor shows its value, provenance, rule band, points, and effect on the result. Agent prose can use only numbers that already appear in computed tool output. | Photos 03 and 04 |
-| Enrich with external risk data | Pixie adds FEMA hazard context, NASA POWER climate observations, and the carrier's existing nearby exposure. Each layer shows its source, unit, date range, and coverage gaps. | Photo 06 |
+| Enrich with external risk data | Scoring enrichment reads cached FEMA flood, USGS earthquake, USFS wildfire, Open-Meteo, and Nominatim records. The portfolio tool adds the carrier's existing nearby exposure. Newer NASA POWER and county map layers provide cited investigation context but do not change the score. | Photo 06 |
 | Make the result actionable | The desk identifies the fact to request, provides a non-destructive what-if control, records a recommended next action, and allows a small reasoned human adjustment while keeping the original engine result visible. | Photos 03 and 04 |
 | Handle edge cases | A missing value widens the rule-based score range. Checked queries expose API errors. Cached enrichment and recorded agent replay keep the demo inspectable when the venue network is unavailable. | Photos 03, 05, and 07 |
 
@@ -66,17 +66,19 @@ Pixie preserves that uncertainty. It computes the best and worst appetite score 
 
 Federato provided the insurance-shaped data and the language needed to interpret it. We used its schema-discovery response to learn the available resources, fields, types, and references. Our adapter uses that schema to validate queries and hydrate a case from linked records. It keeps source paths such as `Submission`, `Insured.hq`, `Location`, and `Building` attached to the resulting facts.
 
+The property bands come from Federato's supplied 2025 commercial property criteria. Pixie's point mapping, thresholds, hard-failure caps, and evidence adjustments are implementation choices. The method page exposes that distinction.
+
 The demo uses a local snapshot pulled from Federato's supplied synthetic API. This makes the live presentation repeatable and lets the app run without venue Wi-Fi. Pixie does not claim to connect to a Federato production account. A fresh clone needs valid challenge credentials and a locally pulled snapshot before it can refresh that data.
 
 ### How the underwriting agent works
 
-1. The Intake agent inspects the discovered schema and the submitted record. It can issue a schema-aware Federato query when a linked fact needs verification.
+1. The Intake agent inspects the discovered schema and the submitted record. It can issue a schema-aware Federato query when a linked fact needs verification and revise a rejected query. High-value open cases receive a deeper review under a fixed policy.
 2. The risk engine applies the carrier guideline to confirmed, estimated, and missing values. It computes a score range instead of asking a language model for a number.
 3. Hazard and Portfolio agents inspect external context and the carrier's existing concentration around the site.
 4. The Appetite agent explains the deterministic result. A Challenger can question the draft recommendation using the case evidence and computed sensitivity results.
 5. The Lead agent produces the review recommendation. The underwriter keeps authority and can inspect, adjust, or reject the recommendation.
 
-The six-agent workflow records which tool each agent called, what the tool returned, and how agents resolved disagreements. A number-verification guardrail rejects model prose that contains a number absent from the computed facts.
+The six-agent workflow records every agent turn, tool call, tool result, and disagreement. A number-verification guardrail rejects model prose that contains a number absent from the computed facts.
 
 ### One case from input to action
 
@@ -88,7 +90,7 @@ That unresolved premium leaves the case with an appetite range of 30 to 75. The 
 
 The geographic workspace separates three kinds of evidence. H3 cells show the carrier's active insured-value concentration. FEMA county and flood layers provide hazard context. NASA POWER records provide historical climate observations for plotted sites. Pixie displays each source and unit and marks locations that lack a county match.
 
-Some existing hazard and nearby-exposure factors affect the computed score. Newer climate views support investigation only. They do not silently change the appetite result. The validation page measures what the connected enrichment changed: five of the six open submissions changed rank in the recorded comparison, while no case changed decision tier. See Photos 06 and 07.
+Some existing hazard and nearby-exposure factors affect the computed score. Newer climate views support investigation only. They do not silently change the appetite result. In the recorded comparison, enrichment moved all 38 property score intervals and changed the rank of five of the six open submissions. No case changed decision tier because hard appetite failures still controlled those decisions. See Photos 06 and 07.
 
 ### Technical implementation
 
