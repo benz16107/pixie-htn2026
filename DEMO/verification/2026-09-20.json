@@ -1,7 +1,7 @@
 {
   "date": "2026-09-20",
   "api_tests": {
-    "passed": 180,
+    "passed": 189,
     "command": "SENTRY_DSN_API= ATLAS_ACTIONS=dry uv run --project api pytest api/tests -q"
   },
   "production_build": "passed",
@@ -32,7 +32,7 @@
       "pass": true
     },
     {
-      "name": "consumer filter shows a persisted quote",
+      "name": "legacy consumer queue redirects to the separate Intact quote list",
       "pass": true
     },
     {
@@ -57,9 +57,38 @@
     "Decision-space WebGL view mount and return passed",
     "Human override apply and undo passed",
     "API-down queue retry without fixture substitution passed",
-    "Labelled bundled replay with live disabled passed"
+    "Labelled bundled replay with live disabled passed",
+    "Federato-to-Intact product switch changed route and theme without console errors",
+    "Intact overview, renter queue and referred-case handoff passed at desktop and 390px",
+    "Expo web completed address, map, three questions and a ready estimate without console errors",
+    "Expo web kept document width at 390px through the completed quote",
+    "Expo Router web export passed"
   ],
   "screen_checks": [
+    {
+      "mode": "desktop",
+      "path": "/intact",
+      "status": 200,
+      "errors": [],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    {
+      "mode": "desktop",
+      "path": "/intact/quotes",
+      "status": 200,
+      "errors": [],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
+    {
+      "mode": "desktop",
+      "path": "/intact/cases/TQ-79375e16",
+      "status": 200,
+      "errors": [],
+      "scrollWidth": 1440,
+      "width": 1440
+    },
     {
       "mode": "desktop",
       "path": "/queue",
@@ -147,6 +176,14 @@
       "errors": [],
       "scrollWidth": 1280,
       "width": 1280
+    },
+    {
+      "mode": "mobile",
+      "path": "/intact",
+      "status": 200,
+      "errors": [],
+      "scrollWidth": 390,
+      "width": 390
     },
     {
       "mode": "mobile",

@@ -24,30 +24,30 @@ function quoteSpeechText(q: QuoteView): string {
     .sort((a, b) => Math.abs(b.dollars) - Math.abs(a.dollars))
     .slice(0, 2);
   const factors = top.map((l) => `${l.label}, ${l.dollars > 0 ? 'adding' : 'saving'} ${money(Math.abs(l.dollars))}`).join('. ');
-  const verdict = q.decision.kind === 'approve' ? 'Your quote is approved' : 'Your quote needs an advisor to review it';
+  const verdict = q.decision.kind === 'approve' ? 'Your estimate is ready' : 'Your quote needs an advisor to review it';
   return `${verdict}, at ${money(q.annual)} a year, about ${money(q.monthly)} a month. ${factors ? `The biggest factors: ${factors}.` : ''} ${q.label}`;
 }
 
 function receiptHtml(q: QuoteView): string {
   const row = (label: string, dollars: number, source: string, capped = false) => `
     <tr>
-      <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:14px;">${label}${capped ? ' <b>(capped)</b>' : ''}<div style="font-size:11px;color:#6F6453;">${source}</div></td>
+      <td style="padding:6px 0;font-family:-apple-system,sans-serif;font-size:14px;">${label}${capped ? ' <b>(capped)</b>' : ''}<div style="font-size:11px;color:#586E73;">${source}</div></td>
       <td style="padding:6px 0;text-align:right;font-family:Menlo,monospace;font-size:14px;white-space:nowrap;">${dollars >= 0 ? '+' : '−'}$${Math.abs(dollars).toFixed(2)}</td>
     </tr>`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
-    body{font-family:-apple-system,sans-serif;color:#2F2A22;padding:24px;}
-    table{width:100%;border-collapse:collapse;} tr{border-top:1px solid #D4CAB4;}
+    body{font-family:-apple-system,sans-serif;color:#17343A;padding:24px;}
+    table{width:100%;border-collapse:collapse;} tr{border-top:1px solid #C1D0D2;}
     h1{font-size:22px;margin:0 0 4px;} h2{font-size:32px;margin:4px 0 12px;}
   </style></head><body>
-    <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#6F6453;">${q.address}</div>
-    <h1>${q.decision.kind === 'approve' ? 'Approved' : 'Referred to an advisor'} · #${q.caseId}</h1>
-    <h2>${money(q.annual)} <span style="font-size:16px;color:#6F6453;">a year, about ${money(q.monthly)} a month</span></h2>
+    <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#586E73;">${q.address}</div>
+    <h1>${q.decision.kind === 'approve' ? 'Estimate ready' : 'Referred to an advisor'} · #${q.caseId}</h1>
+    <h2>${money(q.annual)} <span style="font-size:16px;color:#586E73;">a year, about ${money(q.monthly)} a month</span></h2>
     <table>
       ${row('Base price', q.receipt.base, '$20,000 contents, $1M liability, $1,000 deductible (invented constant)')}
       ${q.receipt.lines.map((l) => row(l.label, l.dollars, l.source, l.capped)).join('')}
-      <tr style="border-top:2px solid #2F2A22;"><td style="padding-top:10px;font-weight:600;">Total</td><td style="padding-top:10px;text-align:right;font-family:Menlo,monospace;font-weight:600;">${money(q.annual)}</td></tr>
+      <tr style="border-top:2px solid #17343A;"><td style="padding-top:10px;font-weight:600;">Total</td><td style="padding-top:10px;text-align:right;font-family:Menlo,monospace;font-weight:600;">${money(q.annual)}</td></tr>
     </table>
-    <p style="font-size:12px;color:#6F6453;margin-top:18px;">${q.label}</p>
+    <p style="font-size:12px;color:#586E73;margin-top:18px;">${q.label}</p>
   </body></html>`;
 }
 
@@ -194,9 +194,9 @@ export default function QuoteScreen() {
       footer={
         <>
           <Button
-            label="View as underwriter"
-            hint="Opens the same case on the underwriter desk in your browser"
-            onPress={() => WebBrowser.openBrowserAsync(`${WEB_URL}${q.underwriterUrl}`)}
+            label="Open web receipt"
+            hint="Opens the same quote and its sourced facts in your browser"
+            onPress={() => WebBrowser.openBrowserAsync(`${WEB_URL}/intact/cases/${q.caseId}`)}
           />
           <Button
             kind="link"
@@ -210,8 +210,8 @@ export default function QuoteScreen() {
       }
     >
       <Kicker>{q.address}</Kicker>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 }} accessible accessibilityLabel={`${approve ? 'Approved' : 'Referred to an advisor'}. ${money(q.annual)} a year, about ${money(q.monthly)} a month.`}>
-        <Text style={[st.chip, approve ? st.approve : st.refer]}>{approve ? 'APPROVED' : 'REFERRED'}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 }} accessible accessibilityLabel={`${approve ? 'Estimate ready' : 'Referred to an advisor'}. ${money(q.annual)} a year, about ${money(q.monthly)} a month.`}>
+        <Text style={[st.chip, approve ? st.approve : st.refer]}>{approve ? 'ESTIMATE READY' : 'REFERRED'}</Text>
         <Mono style={{ color: C.dim }}>#{q.caseId}</Mono>
       </View>
       <Text style={st.price}>
@@ -233,7 +233,7 @@ export default function QuoteScreen() {
 
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
         <View style={{ flex: 1 }}>
-          <Button kind="secondary" label={speaking ? 'Stop reading' : 'Read my quote'} hint="Speaks the decision and the biggest factors aloud" onPress={readAloud} />
+          <Button kind="secondary" label={speaking ? 'Stop listening' : 'Listen to my quote'} hint="Speaks the decision and the biggest factors aloud" onPress={readAloud} />
         </View>
         <View style={{ flex: 1 }}>
           <Button kind="secondary" label="Share as PDF" hint="Makes a PDF of this receipt and opens the share sheet" onPress={sharePdf} />
@@ -252,25 +252,6 @@ export default function QuoteScreen() {
         </Pressable>
       ) : null}
 
-      <View style={st.advisory} accessible accessibilityLabel="What's around you. Advisory only, this never changes your price.">
-        <Kicker style={{ color: C.ink }}>What's around you</Kicker>
-        {context === 'loading' ? (
-          <View style={[st.skeleton, { height: 16, marginTop: 8, width: '80%' }]} />
-        ) : context === 'unavailable' ? (
-          <Dim style={{ fontSize: 14, marginTop: 6 }}>Could not reach Gemini for local context right now.</Dim>
-        ) : (
-          <>
-            <Body style={{ fontSize: 15, marginTop: 6 }}>{context.note}</Body>
-            {context.citations.map((c) => (
-              <Pressable key={c.uri} onPress={() => WebBrowser.openBrowserAsync(c.uri)} accessibilityRole="link" accessibilityLabel={c.title} style={{ minHeight: 32, justifyContent: 'center' }}>
-                <Text style={{ fontFamily: F.sansMedium, fontSize: 13, color: C.ink, textDecorationLine: 'underline' }}>{c.title}</Text>
-              </Pressable>
-            ))}
-          </>
-        )}
-        <Text style={st.advisoryLabel}>{context !== 'loading' && context !== 'unavailable' ? context.label : 'Advisory only. This never changes your price.'}</Text>
-      </View>
-
       <View style={{ marginTop: 22 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Kicker>Why this price</Kicker>
@@ -284,7 +265,7 @@ export default function QuoteScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="Peek the top factors in a pull-up sheet"
-            style={{ minHeight: 32, marginBottom: 8 }}
+            style={{ minHeight: 48, justifyContent: 'center', marginBottom: 8 }}
           >
             <Dim style={{ fontSize: 13 }}>Or pull up a quick peek of the top factors ↑ (the full list below always works too)</Dim>
           </Pressable>
@@ -308,7 +289,7 @@ export default function QuoteScreen() {
         <Text style={st.label}>{q.label}</Text>
 
         {verify === undefined ? (
-          <Pressable onPress={askGeminiToCheck} accessibilityRole="button" accessibilityLabel="Ask Gemini to independently check this arithmetic with code execution" style={{ minHeight: 32, marginTop: 10 }}>
+          <Pressable onPress={askGeminiToCheck} accessibilityRole="button" accessibilityLabel="Ask Gemini to independently check this arithmetic with code execution" style={{ minHeight: 48, justifyContent: 'center', marginTop: 10 }}>
             <Dim style={{ fontSize: 13, textDecorationLine: 'underline' }}>Ask Gemini to double-check this arithmetic</Dim>
           </Pressable>
         ) : verify === 'loading' ? (
@@ -320,6 +301,25 @@ export default function QuoteScreen() {
             {verify.output ? <Dim style={{ fontSize: 13, marginTop: 4 }}>{verify.output}</Dim> : null}
           </View>
         )}
+      </View>
+
+      <View style={st.advisory}>
+        <Kicker style={{ color: C.ink }}>What's around you · advisory only</Kicker>
+        {context === 'loading' ? (
+          <View style={[st.skeleton, { height: 16, marginTop: 8, width: '80%' }]} />
+        ) : context === 'unavailable' ? (
+          <Dim style={{ fontSize: 14, marginTop: 6 }}>Could not reach Gemini for local context right now.</Dim>
+        ) : (
+          <>
+            <Body style={{ fontSize: 15, marginTop: 6 }}>{context.note}</Body>
+            {context.citations.map((c) => (
+              <Pressable key={c.uri} onPress={() => WebBrowser.openBrowserAsync(c.uri)} accessibilityRole="link" accessibilityLabel={c.title} style={{ minHeight: 48, justifyContent: 'center' }}>
+                <Text style={{ fontFamily: F.sansMedium, fontSize: 13, color: C.ink, textDecorationLine: 'underline' }}>{c.title}</Text>
+              </Pressable>
+            ))}
+          </>
+        )}
+        <Text style={st.advisoryLabel}>{context !== 'loading' && context !== 'unavailable' ? context.label : 'Advisory only. This never changes your price.'}</Text>
       </View>
 
       {q.recommendations.length ? (
@@ -364,13 +364,13 @@ export default function QuoteScreen() {
 }
 
 const st = StyleSheet.create({
-  skeleton: { backgroundColor: C.land, borderRadius: 4, marginTop: 14 },
-  chip: { fontFamily: F.monoMedium, fontSize: 12, letterSpacing: 1.4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, overflow: 'hidden', borderWidth: 1 },
+  skeleton: { backgroundColor: C.land, borderRadius: 12, marginTop: 14 },
+  chip: { fontFamily: F.sansBold, fontSize: 11, letterSpacing: 1, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, overflow: 'hidden', borderWidth: 1 },
   approve: { backgroundColor: C.moss, borderColor: C.moss, color: C.paper },
   refer: { backgroundColor: C.ochreSoft, borderColor: C.ochre, color: C.ink },
-  price: { fontFamily: F.serif, fontSize: 46, lineHeight: 52, color: C.ink, marginTop: 8, fontVariant: ['tabular-nums'] },
+  price: { fontFamily: F.sansBold, fontSize: 46, lineHeight: 52, color: C.ink, marginTop: 8, letterSpacing: -1.2, fontVariant: ['tabular-nums'] },
   per: { fontFamily: F.sans, fontSize: 18, color: C.dim },
-  note: { fontFamily: F.sans, fontSize: 14, lineHeight: 20, color: C.ink, backgroundColor: C.ochreSoft, padding: 10, borderRadius: 4, marginTop: 12 },
+  note: { fontFamily: F.sans, fontSize: 14, lineHeight: 20, color: C.ink, backgroundColor: C.ochreSoft, padding: 12, borderRadius: 12, marginTop: 12 },
   line: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.rule, borderStyle: 'dashed' },
   lineLabel: { fontFamily: F.sansMedium, fontSize: 16, color: C.ink, flexShrink: 1 },
   leader: { flex: 1, minWidth: 8 },
@@ -378,10 +378,10 @@ const st = StyleSheet.create({
   cap: { fontFamily: F.monoMedium, fontSize: 10, letterSpacing: 1, color: C.ink, borderWidth: 1, borderColor: C.ink, paddingHorizontal: 4, borderRadius: 3 },
   total: { flexDirection: 'row', alignItems: 'baseline', gap: 8, borderTopColor: C.ink, borderTopWidth: 2, borderStyle: 'solid' },
   label: { fontFamily: F.sans, fontSize: 13, color: C.dim, marginTop: 6 },
-  rec: { marginTop: 22, padding: 14, borderRadius: 4, borderWidth: 1, borderColor: C.ochre, backgroundColor: C.ochreSoft },
-  advisory: { marginTop: 18, padding: 14, borderRadius: 4, borderWidth: 1, borderColor: C.water, backgroundColor: 'rgba(200,210,203,0.35)' },
+  rec: { marginTop: 22, padding: 16, borderRadius: 14, backgroundColor: C.ochreSoft },
+  advisory: { marginTop: 18, padding: 16, borderRadius: 14, backgroundColor: C.land },
   advisoryLabel: { fontFamily: F.sansMedium, fontSize: 12, color: C.dim, marginTop: 10 },
   sheetBg: { backgroundColor: C.paper },
-  verifyBox: { marginTop: 10, padding: 10, borderRadius: 4, borderWidth: 1, borderColor: C.rule, backgroundColor: C.land },
+  verifyBox: { marginTop: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: C.rule, backgroundColor: C.land },
   code: { fontSize: 12, lineHeight: 17, color: C.ink, marginTop: 6 },
 });

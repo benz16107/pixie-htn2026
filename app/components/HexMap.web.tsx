@@ -23,7 +23,7 @@ export default function HexMap({ hexes, center, home, label }: { hexes: Hex[]; c
             key={h.cell}
             points={h.ring.map(xy).join(' ')}
             fill={fill(h)}
-            stroke={h.cell === home ? C.ink : 'rgba(143,99,39,0.55)'}
+            stroke={h.cell === home ? C.ink : 'rgba(54,119,131,0.55)'}
             strokeWidth={h.cell === home ? 2.5 : 0.8}
           />
         ))}

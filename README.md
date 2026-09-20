@@ -58,7 +58,7 @@ What to read off it:
 - One Sentry span wraps each decision, carrying depth, models, verdict, interval, calls, tokens and
   cost.
 
-The API has 46 routes, the web app has 9 pages, the phone app has 6 routes on Expo Router.
+The API has 46 routes, the web app has 12 user-facing pages across Federato and Intact modes, and the phone app has 6 routes on Expo Router.
 
 ## The six invariants
 

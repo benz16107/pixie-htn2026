@@ -4,14 +4,14 @@
 
 "Pixie helps an underwriter decide what to investigate before deciding what to insure. Missing facts produce a score interval. Agents gather evidence, and code recomputes the decision."
 
-For renter tracks: "Pixie gives a renter an itemised quote and sends difficult cases into the same underwriting desk. The phone and desk use the same API, with separate rules for renters and commercial property."
+For renter tracks: "Pixie gives a renter an itemised quote and sends difficult cases to an advisor with the same receipt and sourced facts. The Intact app and Federato desk use one risk engine with separate rules and interfaces."
 
 ## Prepare before judging
 
-Everything runs on macserver. Turn on Tailscale on the laptop and phone. Open `http://macserver:3100/queue`; Expo Go uses `exp://100.95.223.110:8081`. Verify that IP with `tailscale ip -4` on macserver if it changes. The phone must use a reachable `EXPO_PUBLIC_API_URL`, not localhost. A fixture-only phone is not proof of a live Gemini or referral workflow.
+Everything runs on macserver. Turn on Tailscale on the laptop and phone. Open `http://macserver:3100/queue` for Federato or `http://macserver:3100/intact` for Intact. The product switch in the top-left moves between the two complete interfaces. Expo Go uses `exp://100.95.223.110:8081`. Verify that IP with `tailscale ip -4` on macserver if it changes. The phone must use a reachable `EXPO_PUBLIC_API_URL`, not localhost. A fixture-only phone is not proof of a live Gemini or referral workflow.
 
 1. Click **reset demo** once before rehearsal. It restores the filed guideline and case actions. It cannot unsend emails or texts, and clearing deduplication means the next send can send again.
-2. Open three tabs: `/cases/138`, `/live`, and the screen named on your track card. Keep `/backtest` ready for questions.
+2. For commercial tracks, open `/cases/138`, `/live`, and the screen named on your track card. For renter tracks, open `/intact`, `/intact/quotes`, and the Expo app. Keep `/backtest` ready for questions.
 3. On case 138, inspect the current score and provenance. Recorded estimates, broker replies and guideline edits change the display. Read the screen instead of reciting a memorised value.
 4. On `/live`, select **Case run** or press `2`. Confirm the **RECORDED RUN** badge. Press `e` to skip to the end; `[` and `]` seek five seconds through the recording. **Run the demo** runs a short queue/case/actions sequence. It does not send the draft for you.
 5. On the phone, complete one quote with a prepared Toronto address. Keep its receipt visible. If using Gemini, warm the exact photo and address you will show.

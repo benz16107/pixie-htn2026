@@ -1,16 +1,16 @@
-// Cartographic palette, shared with web/src/app/globals.css.
+// Intact consumer palette. The Federato desk has its own dark operating palette.
 export const C = {
-  land: '#ECE6D6',
-  paper: '#F3EFE4',
-  ink: '#2F2A22',
-  dim: '#6F6453',
-  rule: '#D4CAB4',
-  water: '#C8D2CB',
-  ochre: '#8F6327',
-  ochreSoft: '#E4D9BF',
-  hex: '#B7813A',
-  rust: '#A2492F',
-  moss: '#5E6F4A',
+  land: '#E1E9EA',
+  paper: '#F4F7F6',
+  ink: '#17343A',
+  dim: '#586E73',
+  rule: '#C1D0D2',
+  water: '#B7D3D8',
+  ochre: '#C83B31',
+  ochreSoft: '#F3D8D4',
+  hex: '#367783',
+  rust: '#A42D27',
+  moss: '#14755F',
 };
 
 export const F = {

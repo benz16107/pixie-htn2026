@@ -10,7 +10,7 @@ Opening: "The renter can get and share an explained quote from the phone, and a 
 
 ## Prepare
 
-Open Expo Go on a real device with a reachable EXPO_PUBLIC_API_URL. Check camera permission, the prepared address, PDF sharing and Reduce Motion before judging. Keep a completed quote ready. Use the web app only for the final referral handoff.
+Open Expo Go on a real device with a reachable EXPO_PUBLIC_API_URL. Check camera permission, the prepared address, PDF sharing and Reduce Motion before judging. Keep a completed quote ready. Keep `/intact/quotes` open for the final referral handoff.
 
 ## Timed script
 
@@ -20,7 +20,7 @@ Open Expo Go on a real device with a reachable EXPO_PUBLIC_API_URL. Check camera
 | 0:30-1:35 | Enter the prepared address, inspect the map and answer the coverage questions. Show a native interaction rather than describing a list of packages. |
 | 1:35-2:35 | Open photo inventory if its provider is warmed. Show the image-picker permission and editable result. Otherwise demonstrate manual contents entry and explain the optional camera route. |
 | 2:35-3:45 | Show the itemised quote, bottom-sheet/inline receipt and PDF print/share action. Let the judge see the actual native sheet. |
-| 3:45-5:00 | Show Reduce Motion behaviour you rehearsed, then the same referred case in the web Renters view. Close on one API and a phone-specific interface. |
+| 3:45-5:00 | Show Reduce Motion behaviour you rehearsed, then the same referred case in `/intact/quotes`. Close on a consumer-native app, a separate operations surface and one shared API. |
 
 ## Service detail to know
 

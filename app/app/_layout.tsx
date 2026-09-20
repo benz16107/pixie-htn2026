@@ -6,7 +6,7 @@ import { Link, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
@@ -58,6 +58,13 @@ function RootLayout() {
           headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: C.paper },
           animation: reduced ? 'fade' : 'default',
+          headerTitle: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.ochre }} />
+              <Text style={{ fontFamily: F.sansBold, fontSize: 15, color: C.ink, letterSpacing: 1.1 }}>PIXIE</Text>
+              <Text style={{ fontFamily: F.sansMedium, fontSize: 11, color: C.dim }}>RENTERS</Text>
+            </View>
+          ),
           headerRight: () => (
             <Link href="/about" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel="About Pixie: sources, fairness and limits" hitSlop={12} style={{ minHeight: 44, justifyContent: 'center' }}>
@@ -67,7 +74,7 @@ function RootLayout() {
           ),
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'PIXIE' }} />
+        <Stack.Screen name="index" options={{ title: 'Pixie renters' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
         <Stack.Screen name="inventory" options={{ title: 'Photograph your apartment' }} />

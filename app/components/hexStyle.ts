@@ -7,6 +7,6 @@ export function shader(hexes: Hex[]) {
   const vs = hexes.map((h) => h.value);
   const lo = Math.min(...vs);
   const span = Math.max(1, Math.max(...vs) - lo);
-  return (h: Hex) => `rgba(183,129,58,${LEVEL_ALPHA[Math.min(4, Math.floor(((h.value - lo) / span) * 5))]})`;
+  return (h: Hex) => `rgba(54,119,131,${LEVEL_ALPHA[Math.min(4, Math.floor(((h.value - lo) / span) * 5))]})`;
 }
 export const LEVEL_LABEL = ['Lowest fifth', 'Low', 'Middle', 'High', 'Highest fifth'];

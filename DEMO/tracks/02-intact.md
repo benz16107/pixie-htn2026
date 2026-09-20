@@ -10,21 +10,21 @@ Opening: "A renter gets an itemised quote, and a case we should not auto-price r
 
 ## Prepare
 
-Open Expo Go on the address screen and `/queue?view=consumer` on the laptop. Use 180 Queen St W, Toronto. Rehearse an upper-unit quote and a basement/claims referral; confirm the displayed decision before the judge.
+Open Expo Go on the address screen and `/intact` on the laptop. Use 180 Queen St W, Toronto. Keep `/intact/quotes` ready with one ready estimate and one basement referral. Rehearse the exact referral inputs and confirm the displayed decision before the judge.
 
 ## Timed script
 
 | Time | Show and say |
 |---|---|
-| 0:00-0:35 | Name the renter problem: choosing coverage without understanding the price. |
-| 0:35-1:40 | Enter the prepared address and answer the coverage questions. Explain contents value, unit level and claims without opening every optional tool. |
-| 1:40-2:50 | Open the quote receipt. Read the actual annual amount and the largest factors. Show their source or explanation. Do not recite an old $214.80 figure. |
-| 2:50-4:15 | Use the rehearsed referral inputs. Open the resulting case id in the desk or refresh the consumer queue. Show the same answers and receipt on both devices. |
-| 4:15-5:00 | Explain the separate tenant rules and shared API. Close with the next validation step: test comprehension and referral handling with renters and underwriters. |
+| 0:00-0:30 | Start on `/intact`. Point to the separate Intact mode and say the renter journey has its own interface and rules. |
+| 0:30-1:35 | Move to the phone. Enter the prepared address, inspect the Toronto block and answer the three coverage steps. Skip photo inventory for this track. |
+| 1:35-2:45 | Open the quote receipt. Read the amount on screen and the largest receipt lines. Point out the source under one place factor and the exact-sum label. |
+| 2:45-4:15 | Open the rehearsed basement referral, then refresh `/intact/quotes`. Open its Intact case page and show that the advisor receives the same receipt and applicant facts. |
+| 4:15-5:00 | Use the top-left switch once to reveal the Federato handoff. Explain that interfaces and rules stay separate while provenance and rule execution share one engine. |
 
 ## Service detail to know
 
-The Toronto data pack supplies local risk inputs. `tenant.py` applies separate tenant rules and computes the receipt in cents. The API persists the quote so both clients open the same case. Open-queue referrals appear after commercial cases; approved tenant quotes belong in the consumer view. Gemini inventory is optional and editable, not required to get a quote.
+The Toronto data pack supplies local risk inputs. `tenant.py` applies separate tenant rules and computes the receipt in cents. The API persists the quote so the Expo app and Intact dashboard open the same case. `/intact/quotes` contains renter quotes only. A referral can continue into the Federato desk without changing the original receipt. Gemini inventory is optional and editable, not required to get a quote.
 
 ## Evidence
 
@@ -36,7 +36,7 @@ Code: `api/src/atlas_api/tenant.py`, `packs/toronto/`, `app/app/quote.tsx`. Test
 
 ## If it fails
 
-Show the saved phone receipt and its corresponding desk case. If the phone is in fixture mode, label it as a sample and do not claim it just created a server referral.
+Show the saved phone receipt and its corresponding `/intact/cases/TQ-…` page. If the phone is in fixture mode, label it as a sample and do not claim it just created a server referral.
 
 ## Likely question
 

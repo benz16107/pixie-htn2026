@@ -51,7 +51,7 @@ export default function MapScreen() {
       <View style={st.legend} accessible accessibilityLabel="Legend: five shades from the fewest to the most break-ins among the cells on this map">
         {LEVEL_ALPHA.map((a, i) => (
           <View key={i} style={{ flex: 1 }}>
-            <View style={{ height: 12, borderRadius: 2, backgroundColor: `rgba(183,129,58,${a})`, borderWidth: 0.5, borderColor: C.rule }} />
+            <View style={{ height: 12, borderRadius: 2, backgroundColor: `rgba(54,119,131,${a})`, borderWidth: 0.5, borderColor: C.rule }} />
           </View>
         ))}
       </View>
@@ -75,6 +75,6 @@ export default function MapScreen() {
 }
 
 const st = StyleSheet.create({
-  map: { height: 340, marginTop: 14, borderRadius: 4, overflow: 'hidden', borderWidth: 1, borderColor: C.rule, backgroundColor: C.land },
+  map: { height: 340, marginTop: 14, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.rule, backgroundColor: C.land },
   legend: { flexDirection: 'row', gap: 3, marginTop: 10 },
 });

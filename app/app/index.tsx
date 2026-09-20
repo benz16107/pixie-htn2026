@@ -1,8 +1,8 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Body, Button, Choice, Contours, Dim, Kicker, Screen, Title } from '@/components/ui';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Body, Button, Choice, Dim, Kicker, Screen, Title } from '@/components/ui';
 import { EXAMPLES, type Place } from '@/lib/api';
 import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
@@ -13,6 +13,8 @@ export default function AddressScreen() {
   const [picked, setPicked] = useState<Place | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const addressRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const pickExample = (i: number) => {
     const ex = EXAMPLES[i];
@@ -53,7 +55,12 @@ export default function AddressScreen() {
   };
 
   const go = async (withMap: boolean) => {
-    if (!text.trim()) return setError('Type an address, use your location, or pick an example.');
+    if (!text.trim()) {
+      setError('Type an address, use your location, or pick an example.');
+      addressRef.current?.focus();
+      scrollRef.current?.scrollTo({ y: 250, animated: true });
+      return;
+    }
     setBusy(true);
     const p = await resolve();
     setBusy(false);
@@ -64,6 +71,7 @@ export default function AddressScreen() {
 
   return (
     <Screen
+      scrollRef={scrollRef}
       footer={
         <>
           <Button label="Continue to the map" onPress={() => go(true)} disabled={busy} />
@@ -77,19 +85,27 @@ export default function AddressScreen() {
       }
     >
       <View style={{ paddingTop: 12, paddingBottom: 20 }}>
-        <Contours />
-        <Kicker>Tenant insurance, Toronto</Kicker>
-        <Title style={{ marginTop: 6 }}>See why before you pay</Title>
+        <Kicker>Tenant insurance · Toronto</Kicker>
+        <Title style={{ marginTop: 8 }}>Know the price before you buy.</Title>
         <Body style={{ marginTop: 10 }}>
-          Your address sets part of the price. Pixie shows each part, where it comes from, and how much it moves the total.
-          Three questions after that.
+          Pixie turns your address and three answers into an itemised estimate. You see what changed the price, which source supplied it, and when a person needs to review it.
         </Body>
+      </View>
+
+      <View style={st.coverage} accessible accessibilityLabel="The quote covers your place, your things, and your liability">
+        <View style={st.coverageHead}><Text style={st.coverageTitle}>Your renter quote</Text><Text style={st.coverageTime}>ABOUT 2 MIN</Text></View>
+        {['Your place', 'Your things', 'Your liability'].map((label, i) => (
+          <View key={label} style={st.coverageLine}>
+            <Text style={st.coverageIndex}>0{i + 1}</Text><Text style={st.coverageName}>{label}</Text><Text style={st.coverageState}>{i === 0 ? 'Address' : i === 1 ? 'One amount' : 'Two choices'}</Text>
+          </View>
+        ))}
       </View>
 
       <Text nativeID="addr-label" style={st.label}>
         Your address
       </Text>
       <TextInput
+        ref={addressRef}
         value={text}
         onChangeText={(t) => {
           setText(t);
@@ -100,6 +116,7 @@ export default function AddressScreen() {
         accessibilityLabel="Your address"
         accessibilityLabelledBy="addr-label"
         aria-invalid={!!error}
+        aria-describedby={error ? 'addr-error' : undefined}
         autoComplete="street-address"
         textContentType="fullStreetAddress"
         returnKeyType="next"
@@ -107,7 +124,7 @@ export default function AddressScreen() {
         style={[st.input, error ? { borderColor: C.rust } : null]}
       />
       {error ? (
-        <Text accessibilityLiveRegion="polite" role="alert" style={st.error}>
+        <Text nativeID="addr-error" accessibilityLiveRegion="polite" role="alert" style={st.error}>
           {error}
         </Text>
       ) : null}
@@ -116,12 +133,12 @@ export default function AddressScreen() {
         {busy ? <ActivityIndicator color={C.ink} accessibilityLabel="Working" /> : null}
       </View>
 
-      <Kicker style={{ marginTop: 28, marginBottom: 10 }}>Or try an example</Kicker>
+      <Kicker style={{ marginTop: 28, marginBottom: 10 }}>Demo addresses</Kicker>
       {EXAMPLES.map((ex, i) => (
         <Choice key={ex.address} role="button" title={ex.address} detail={ex.hint} selected={picked?.address === ex.address} onPress={() => pickExample(i)} />
       ))}
       <Dim style={{ fontSize: 13, marginTop: 6 }}>
-        No account, no name, no email. Prices are illustrative, not an Intact price.
+        No account, name, or email. Prices are illustrative Pixie estimates, not an Intact price or offer.
       </Dim>
     </Screen>
   );
@@ -133,7 +150,7 @@ const st = StyleSheet.create({
     minHeight: 50,
     borderWidth: 1,
     borderColor: C.ink,
-    borderRadius: 4,
+    borderRadius: 14,
     paddingHorizontal: 14,
     fontFamily: F.sans,
     fontSize: 17,
@@ -141,4 +158,12 @@ const st = StyleSheet.create({
     backgroundColor: C.paper,
   },
   error: { fontFamily: F.sans, fontSize: 14, color: C.rust, marginTop: 6 },
+  coverage: { marginBottom: 24, borderWidth: 1, borderColor: C.rule, borderRadius: 16, overflow: 'hidden', backgroundColor: C.ink },
+  coverageHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#365158' },
+  coverageTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.paper },
+  coverageTime: { fontFamily: F.monoMedium, fontSize: 10, color: '#AFC1C4', letterSpacing: 0.8 },
+  coverageLine: { minHeight: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#365158' },
+  coverageIndex: { width: 34, fontFamily: F.mono, fontSize: 11, color: '#FF8B7C' },
+  coverageName: { flex: 1, fontFamily: F.sansMedium, fontSize: 15, color: C.paper },
+  coverageState: { fontFamily: F.sans, fontSize: 12, color: '#AFC1C4' },
 });

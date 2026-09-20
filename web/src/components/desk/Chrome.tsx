@@ -6,13 +6,18 @@ import { useKeys } from "./keys";
 import { ResetDemo } from "./ResetDemo";
 import { Kbd } from "./Kbd";
 
-const DESTS = [
+const FEDERATO_DESTS = [
   { key: "q", href: "/queue", label: "queue" },
   { key: "r", href: "/guideline", label: "guideline" },
   { key: "m", href: "/map", label: "portfolio" },
   { key: "a", href: "/ask", label: "ask" },
   { key: "b", href: "/backtest", label: "backtest" },
   { key: "l", href: "/live", label: "demo" },
+];
+
+const INTACT_DESTS = [
+  { href: "/intact", label: "overview" },
+  { href: "/intact/quotes", label: "renter quotes" },
 ];
 
 const GLOBAL_KEYS: [string, string][] = [
@@ -55,6 +60,7 @@ const PAGE_KEYS: Record<string, [string, string][]> = {
 export function Chrome() {
   const path = usePathname();
   const router = useRouter();
+  const intact = path.startsWith("/intact");
   const [help, setHelp] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (help) dialog.current?.showModal(); else dialog.current?.close(); }, [help]);
@@ -75,6 +81,13 @@ export function Chrome() {
     };
   }, []);
 
+  useEffect(() => {
+    document.documentElement.dataset.product = intact ? "intact" : "federato";
+    return () => {
+      delete document.documentElement.dataset.product;
+    };
+  }, [intact]);
+
   // Rendered after mount only: a server-rendered clock would hydrate to a different second.
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString("en-CA", { hour12: false }));
@@ -85,32 +98,40 @@ export function Chrome() {
 
   useKeys(
     (e, leader) => {
+      if (intact) return false;
       if (e.key === "?") return setHelp((h) => !h), true;
       if (e.key === "Escape" && help) return setHelp(false), true;
       if (leader === "g") {
-        const d = DESTS.find((x) => x.key === e.key);
+        const d = FEDERATO_DESTS.find((x) => x.key === e.key);
         if (d) return router.push(d.href), true;
       }
       return false;
     },
-    [help, router],
+    [help, intact, router],
   );
 
   if (path.startsWith("/live")) return null; // the live desk owns its whole screen
 
   const section = path.startsWith("/cases") ? "/cases" : path;
-  const keys = [...(PAGE_KEYS[section] ?? []), ...GLOBAL_KEYS];
+  const keys = intact ? [] : [...(PAGE_KEYS[section] ?? []), ...GLOBAL_KEYS];
 
   return (
     <>
-      <header className="desk-chrome flex h-[30px] items-stretch border-b border-edge bg-land text-[11px]">
-        <span className="flex items-center gap-2 border-r border-edge px-3 font-semibold tracking-[0.18em] text-ink">
-          PIXIE
-          <span className="hidden font-normal tracking-[0.06em] text-faint xl:inline">UNDERWRITING DESK</span>
-        </span>
+      <header className={`desk-chrome product-chrome flex h-[30px] items-stretch border-b border-edge bg-land text-[11px] ${intact ? "intact-chrome" : ""}`}>
+        <span className="flex items-center border-r border-edge px-3 font-semibold tracking-[0.18em] text-ink">PIXIE</span>
+        <div className="product-switch flex items-center gap-0.5 border-r border-edge px-1" role="group" aria-label="Product mode">
+          <Link href="/queue" aria-current={!intact ? "page" : undefined} className={!intact ? "product-switch-on" : ""}>
+            Federato
+          </Link>
+          <Link href="/intact" aria-current={intact ? "page" : undefined} className={intact ? "product-switch-on" : ""}>
+            Intact
+          </Link>
+        </div>
         <nav aria-label="Main" className="flex shrink-0">
-          {DESTS.map((d) => {
-            const on = path.startsWith(d.href) || (d.href === "/queue" && path.startsWith("/cases"));
+          {(intact ? INTACT_DESTS : FEDERATO_DESTS).map((d) => {
+            const on = intact
+              ? d.href === "/intact" ? path === "/intact" : path.startsWith(d.href)
+              : path.startsWith(d.href) || (d.href === "/queue" && path.startsWith("/cases"));
             return (
               <Link
                 key={d.href}
@@ -125,12 +146,14 @@ export function Chrome() {
             );
           })}
         </nav>
-        <span className="ml-auto flex shrink-0 items-center gap-3 pr-3 text-[10px] text-dim">
-          <ResetDemo />
+        <span className="chrome-status ml-auto flex shrink-0 items-center gap-3 pr-3 text-[10px] text-dim">
+          {!intact && <ResetDemo />}
           {process.env.NEXT_PUBLIC_FIXTURES === "1" && <span className="text-ochre">BUNDLED SAMPLES</span>}
-          <button onClick={() => setHelp(true)} className="hover:text-ink" aria-haspopup="dialog">
-            keys <kbd className="key">?</kbd>
-          </button>
+          {!intact && (
+            <button onClick={() => setHelp(true)} className="hover:text-ink" aria-haspopup="dialog">
+              keys <kbd className="key">?</kbd>
+            </button>
+          )}
           <span className="flex items-center gap-1.5" title={`API at localhost:8000 is ${api}`}>
             <span
               aria-hidden

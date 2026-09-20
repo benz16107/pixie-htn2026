@@ -1,5 +1,16 @@
 # Atlas design: the interval desk (synthesized)
 
+## Product visual systems
+
+Pixie has two product modes that share one decision engine but use separate visual systems. The global product switch changes the full navigation, route family and interface language instead of applying a local filter.
+
+- **Federato** remains the dark, compact underwriter desk. It prioritizes dense evidence, queue triage, provenance and rapid case comparison.
+- **Intact** uses a light blue-grey field (`#edf2f3` and `#f8faf9`), navy text (`#17343a`), vermilion actions (`#c83b31`) and restrained teal and moss status colors. Public Sans carries interface copy, while DM Mono carries amounts, sources and operational labels.
+- Renter quote queues and receipts live under `/intact`. A referred renter case can continue into Federato for underwriting work, but the consumer and advisor screens retain the Intact visual system.
+- The Expo app uses the Intact system. It has a solid safe-area footer, 52px primary actions, visible step progress and a quote receipt placed before optional local context.
+
+**The Product Boundary Rule.** Treat the switch as a change of product context. Do not mix Federato navigation or desk density into Intact quote screens, and do not restyle the Federato desk as a consumer app.
+
 ## Problem
 
 Atlas must win Federato first and Intact second from one engine, built solo with 2-3 coding agents between 17:45 Saturday and 08:00 Sunday, while making ten stacked tracks load-bearing. The shape is non-obvious because of what the real data does, not what the brief implies:

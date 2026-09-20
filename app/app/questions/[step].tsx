@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useRef } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Button, Choice, Dim, Kicker, Screen, Title } from '@/components/ui';
+import { Body, Button, Choice, Dim, Kicker, Progress, Screen, Title } from '@/components/ui';
 import type { Answers } from '@/lib/api';
 import { useQuote } from '@/lib/store';
 import { C, CONTENTS_MAX as MAX, CONTENTS_MIN as MIN, CONTENTS_STEP as STEP, F } from '@/lib/theme';
@@ -125,6 +125,7 @@ export default function Question() {
       footer={<Button label={last ? 'See my quote' : 'Next question'} onPress={() => router.push(last ? '/quote' : `/questions/${i + 2}`)} />}
     >
       <Stack.Screen options={{ title: `Question ${i + 1} of 3` }} />
+      <Progress current={i + 1} total={3} />
       <Kicker>
         Question {i + 1} of 3 · {place.address}
       </Kicker>
@@ -137,8 +138,8 @@ export default function Question() {
 
 const st = StyleSheet.create({
   big: { fontFamily: F.monoMedium, fontSize: 40, color: C.ink, fontVariant: ['tabular-nums'] },
-  step: { width: 48, height: 48, borderRadius: 4, borderWidth: 1, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  step: { width: 48, height: 48, borderRadius: 14, borderWidth: 1, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
   stepText: { fontFamily: F.monoMedium, fontSize: 24, color: C.ink },
-  scanLink: { marginTop: 18, minHeight: 44, justifyContent: 'center', borderRadius: 4, borderWidth: 1, borderColor: C.rule, borderStyle: 'dashed', paddingHorizontal: 12 },
+  scanLink: { marginTop: 18, minHeight: 48, justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: C.rule, borderStyle: 'dashed', paddingHorizontal: 14 },
   scanLinkText: { fontFamily: F.sansMedium, fontSize: 15, color: C.ink, textDecorationLine: 'underline' },
 });

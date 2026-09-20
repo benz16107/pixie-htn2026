@@ -29,7 +29,7 @@ The replay screen reads stored events. It does not make new model calls. **Run l
 
 ## The renter flow
 
-The Expo app collects a Toronto address and coverage answers. The Toronto pack supplies local risk data; separate tenant rules compute the quote and an itemised receipt. The receipt uses code and integer-cent arithmetic. A referred tenant quote appears in the desk queue; approved quotes are available under the consumer view.
+The Expo app collects a Toronto address and coverage answers. The Toronto pack supplies local risk data; separate tenant rules compute the estimate and an itemised receipt. The receipt uses code and integer-cent arithmetic. Ready estimates and referrals appear in the Intact quote list. A referred quote can continue into the Federato desk with the same receipt and facts.
 
 Gemini can suggest a photo inventory and item-value ranges. Those estimates are model-generated inputs that the renter reviews. Code sums them and computes the final price. Do not say that every number anywhere in Pixie is model-free. Backboard probabilities are also explicitly model judgements. Neither a probability nor model prose directly supplies the commercial engine's score.
 

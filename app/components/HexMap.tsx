@@ -39,7 +39,7 @@ export default function HexMap({ hexes, center, home, label }: { hexes: Hex[]; c
           key={h.cell}
           coordinates={h.ring.map(([latitude, longitude]) => ({ latitude, longitude }))}
           fillColor={fill(h)}
-          strokeColor={h.cell === home ? C.ink : 'rgba(143,99,39,0.55)'}
+          strokeColor={h.cell === home ? C.ink : 'rgba(54,119,131,0.55)'}
           strokeWidth={h.cell === home ? 2.5 : 0.8}
         />
       ))}

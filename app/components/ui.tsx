@@ -1,5 +1,4 @@
-import { BlurView } from 'expo-blur';
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextProps, type ViewStyle } from 'react-native';
 import Animated, { cubicBezier } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +12,14 @@ export const Body = (p: TextProps) => <Text {...p} style={[s.body, p.style]} />;
 export const Dim = (p: TextProps) => <Text {...p} style={[s.body, s.dim, p.style]} />;
 export const Kicker = (p: TextProps) => <Text {...p} style={[s.kicker, p.style]} />;
 export const Mono = (p: TextProps) => <Text {...p} style={[s.mono, p.style]} />;
+
+export function Progress({ current, total }: { current: number; total: number }) {
+  return (
+    <View accessible accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: total, now: current }} style={s.progressTrack}>
+      <View style={[s.progressValue, { width: `${(current / total) * 100}%` }]} />
+    </View>
+  );
+}
 
 // Press feedback: scale on press-in through a Reanimated CSS transition, 120ms strong ease-out.
 function Pressed({ pressed, children, style }: { pressed: boolean; children: ReactNode; style: ViewStyle | ViewStyle[] }) {
@@ -46,6 +53,7 @@ export function Button({ label, onPress, kind = 'primary', hint, disabled }: But
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      style={kind === 'primary' ? { width: '100%' } : undefined}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={hint}
@@ -95,50 +103,38 @@ export function Choice({
   );
 }
 
-// A thin contour texture: used once, behind the first screen's heading.
+// A Toronto-block line drawing used once on the entry screen.
 export function Contours({ height = 180 }: { height?: number }) {
   const paths = [
-    [300, 60, 7],
-    [40, 150, 5],
-  ].flatMap(([cx, cy, n]) =>
-    Array.from({ length: n }, (_, i) => {
-      const r = (i + 1) * 20;
-      let d = '';
-      for (let a = 0; a <= 48; a++) {
-        const t = (a / 48) * Math.PI * 2;
-        const w = r * (1 + 0.12 * Math.sin(3 * t + i) + 0.07 * Math.sin(5 * t + cx));
-        d += `${a ? 'L' : 'M'}${(cx + w * Math.cos(t)).toFixed(1)},${(cy + 0.8 * w * Math.sin(t)).toFixed(1)}`;
-      }
-      return <Path key={`${cx}-${i}`} d={d} fill="none" stroke="#BFB295" strokeWidth={(i + 1) % 3 ? 0.6 : 1.1} opacity={0.6} />;
-    }),
-  );
+    'M-20 42 L112 42 L112 8 M112 42 L214 42 L214 92 L410 92',
+    'M-10 118 L68 118 L68 76 L162 76 L162 154 L294 154 L294 118 L410 118',
+    'M28 -10 L28 166 M258 -10 L258 72 M348 72 L348 190',
+  ];
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { height }]} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
       <Svg width="100%" height={height} viewBox={`0 0 390 ${height}`} preserveAspectRatio="xMidYMid slice">
-        {paths}
+        {paths.map((d, i) => <Path key={d} d={d} fill="none" stroke={i === 1 ? C.ochre : C.hex} strokeWidth={i === 1 ? 2 : 1} opacity={i === 1 ? 0.32 : 0.2} />)}
       </Svg>
     </View>
   );
 }
 
-// Scrollable content with a frosted, floating bottom bar (expo-blur) that content scrolls under,
-// staying above the home indicator. The bar's own height reserves matching scroll padding so the
-// last line of content is never hidden behind it.
-export function Screen({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+// Scrollable content with a solid bottom action bar above the home indicator. The bar's measured
+// height reserves matching scroll padding so the last line of content is never hidden behind it.
+export function Screen({ children, footer, scrollRef }: { children: ReactNode; footer?: ReactNode; scrollRef?: RefObject<ScrollView | null> }) {
   const inset = useSafeAreaInsets();
   const [footerH, setFooterH] = useState(0);
   return (
     <View style={{ flex: 1, backgroundColor: C.paper }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled">
-        {children}
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled">
+        <View style={s.screenInner}>{children}</View>
       </ScrollView>
       {footer ? (
         <View
           onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
           style={[s.footer, { paddingBottom: Math.max(inset.bottom, 12) }]}
         >
-          <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
-          <View style={{ gap: 6 }}>{footer}</View>
+          <View style={s.footerInner}>{footer}</View>
         </View>
       ) : null}
     </View>
@@ -146,22 +142,26 @@ export function Screen({ children, footer }: { children: ReactNode; footer?: Rea
 }
 
 export const s = StyleSheet.create({
-  title: { fontFamily: F.serif, fontSize: 30, lineHeight: 34, color: C.ink, letterSpacing: -0.3 },
+  screenInner: { width: '100%', maxWidth: 660, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20 },
+  title: { fontFamily: F.sansBold, fontSize: 32, lineHeight: 35, color: C.ink, letterSpacing: -0.8 },
   body: { fontFamily: F.sans, fontSize: 16, lineHeight: 23, color: C.ink },
   dim: { color: C.dim },
-  kicker: { fontFamily: F.sansBold, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: C.dim },
+  kicker: { fontFamily: F.sansBold, fontSize: 11, letterSpacing: 1.1, textTransform: 'uppercase', color: C.dim },
   mono: { fontFamily: F.mono, fontSize: 14, color: C.ink, fontVariant: ['tabular-nums'] },
-  btn: { minHeight: 48, borderRadius: 4, paddingHorizontal: 18, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
-  primary: { backgroundColor: C.ink },
+  btn: { minHeight: 52, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
+  primary: { backgroundColor: C.ochre },
   secondary: { borderWidth: 1, borderColor: C.ink, backgroundColor: C.paper },
   link: { minHeight: 44, paddingHorizontal: 4 },
   disabled: { opacity: 0.45 },
   btnText: { fontFamily: F.sansBold, fontSize: 16, color: C.ink },
   linkText: { textDecorationLine: 'underline', fontFamily: F.sansMedium },
-  choice: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', minHeight: 56, padding: 14, borderRadius: 4, borderWidth: 1, borderColor: C.rule, backgroundColor: C.paper, marginBottom: 10 },
-  choiceOn: { borderColor: C.ink, borderWidth: 1.5, backgroundColor: C.land },
+  choice: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', minHeight: 62, padding: 15, borderRadius: 14, borderWidth: 1, borderColor: C.rule, backgroundColor: C.paper, marginBottom: 10 },
+  choiceOn: { borderColor: C.ochre, borderWidth: 1.5, backgroundColor: C.ochreSoft },
   choiceTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.ink, marginBottom: 2 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: C.dim, marginTop: 2 },
-  radioOn: { borderColor: C.ink, borderWidth: 6 },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: 1, borderTopColor: C.rule, paddingHorizontal: 20, paddingTop: 12, gap: 6 },
+  radioOn: { borderColor: C.ochre, borderWidth: 6 },
+  progressTrack: { width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: C.rule, marginBottom: 20 },
+  progressValue: { height: '100%', borderRadius: 2, backgroundColor: C.ochre },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: C.paper, paddingTop: 12, gap: 6 },
+  footerInner: { width: '100%', maxWidth: 660, alignSelf: 'center', paddingHorizontal: 20, gap: 6 },
 });

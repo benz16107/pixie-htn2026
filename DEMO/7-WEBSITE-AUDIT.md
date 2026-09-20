@@ -8,7 +8,7 @@ The strongest part is the connection between provenance, a score interval, an ed
 
 The weakest parts were ambiguous live/replay states, misleading action success, too much material in each pitch, and layouts that overlapped or spilled beyond narrow screens. Provider readiness also varies substantially. Twelve names in a track list do not mean twelve equally strong service integrations.
 
-The recommended commercial story is one incomplete case, one missing fact, one recomputation. Add only the service-specific workflow for that judge. Intact, Expo and Gemini should begin on the phone. Do not switch between both products at every table.
+The recommended commercial story is one incomplete case, one missing fact, one recomputation. Add only the service-specific workflow for that judge. Intact, Expo and Gemini now begin on the Intact overview and move to the phone. Use the product switch once to prove the handoff; do not alternate between both products throughout the pitch.
 
 ## Findings and implemented fixes
 
@@ -25,7 +25,9 @@ The recommended commercial story is one incomplete case, one missing fact, one r
 | Medium | Tables, offscreen tooltips, dense case panels and the toolbar created horizontal page overflow. | Narrow layouts stack, tables scroll within panels, the toolbar wraps and hidden tooltips no longer extend the document. |
 | Medium | Ask treated large IDs/years as currency and used the first number in prose as a verification check. | Currency formatting depends on the column; IDs and years retain their meaning. The heuristic verification badge was removed. The result reports row counts and cached/live/sample origin. |
 | Medium | Portfolio cells and submission pins used different H3 resolutions in peril filtering. | The page requests matching resolution-5 cells so its membership comparison is meaningful. |
-| Medium | The API had a consumer view that the web queue ignored. | The queue has a Renters filter and honours `view=consumer`, so phone quotes can be found in the desk. |
+| Medium | The API had a consumer view that the web queue ignored. | The Intact quote page now uses that view directly. The old `/queue?view=consumer` URL redirects to `/intact/quotes` so renter cases do not mix with the commercial blotter. |
+| High | Federato commercial work and Intact renter quotes shared the same dark navigation and queue, which blurred the audience and made the renter story look like a filter. | A persistent PIXIE switch now opens two complete modes. Federato retains the dense dark desk. Intact has a light renter-operations overview, renter-only queue and advisor case pages. |
+| Medium | The Expo app used the old cartographic styling and put optional local context ahead of the price receipt. | The app now matches Intact mode, adds visible three-step progress and larger actions, and puts the auditable price before the optional Gemini context. Expo web CORS is allowed for the demo origins. |
 | Medium | An open estimated premium could leave the broker-request button disabled. | The button recognises unresolved case facts even when the single-fact flipper list is empty. |
 | Medium | Help was a visual overlay without a complete keyboard focus boundary. | A native modal dialog holds focus; Escape closes it. Background shortcuts do not run through the modal. Chart details are keyboard-focusable. |
 | Medium | Privacy copy said no personal data was stored despite persisted addresses and optional messages/photos. | The page describes stored quote inputs, enabled integrations, caching and reset limits. It makes no unsupported deletion promise. |
@@ -42,7 +44,7 @@ Scores use 0 for broken, 2 for usable with material gaps, and 4 for thoroughly v
 | Accessibility | 1/4 | 2/4 | Focusable chart details, modal focus, explicit errors and brighter secondary text. Small data labels and some compact targets remain; no screen-reader or WCAG certification claim. |
 | Performance and resilience | 2/4 | 3/4 | Explicit failures, scoped streams, timer cleanup and a shorter offline fallback path. No formal Lighthouse or load benchmark; external tiles/models remain network-dependent. |
 | Responsive layout | 1/4 | 3/4 | Desktop 1280×800 and mobile 390×844 browser checks. Panels stack and document overflow was corrected. Dense tables intentionally scroll horizontally inside their panels. |
-| Theme and visual consistency | 3/4 | 3/4 | Existing IBM Plex typography, dark surfaces and amber/jade/rust meaning retained. Secondary text is clearer. This pass did not introduce a second theme. |
+| Theme and visual consistency | 3/4 | 4/4 | Federato retains IBM Plex, dark surfaces and amber/jade/rust decision meaning. Intact uses a separate light blue-grey, navy and vermilion service system across web and Expo. The product switch makes the boundary explicit. |
 | Integrity of displayed results | 1/4 | 3/4 | Replay/source labels, real send status, local/provider memory distinction and removal of the Ask verification heuristic. Provider truth still depends on inspecting the returned backend/status. |
 
 The Impeccable static detector returned no findings for `web/src`. That is not proof that the rendered design has no issues. The browser pass found the layout problems above.
@@ -61,7 +63,7 @@ Ben's design checklist was also applied to the changed screens. The app has a wo
 - API-down checks verify that the queue does not impersonate sample data and the labelled bundled demo remains available with live mode disabled.
 - Mutating checks used a copied SQLite database and dry actions. No audit email, text message or fresh paid model run was sent.
 
-The inspection captured every website screen at desktop and mobile sizes, then checked the corrected layout boundaries. The browser assertions and screenshots are local artifacts under `/tmp/pixie-audit/`; the regression tests remain in `api/tests/test_demo_safety.py` and the reusable HTTP check is `web/smoke.mjs`.
+The inspection captured every website screen at desktop and mobile sizes, then checked the corrected layout boundaries. Current Intact screenshots are in `web/screenshots/intact-dashboard.png`, `web/screenshots/intact-case.png`, `web/screenshots/intact-dashboard-mobile.png` and `app/screenshots/`. The regression tests remain in `api/tests/test_demo_safety.py` and the reusable HTTP check is `web/smoke.mjs`.
 
 ## Remaining work, ranked for the hackathon
 

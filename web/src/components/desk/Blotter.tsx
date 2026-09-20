@@ -19,12 +19,11 @@ const TILES = (rows: (Row & Extras)[]) => [
   { label: "value at stake", value: money(rows.reduce((n, r) => n + r.valueAtStake, 0)), note: "total insured value in view" },
 ];
 
-export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all" | "consumer"; declines: DeclinesInsight | null; t?: Thresholds }) {
+export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; declines: DeclinesInsight | null; t?: Thresholds }) {
   const router = useRouter();
   const [here, setHere] = useState<Ranked | null>(null);
   const [filter, setFilter] = useState("");
   const onCursor = useCallback((r: Ranked | null) => setHere(r), []);
-  const desk = rows.filter((r) => r.region !== "toronto").length;
 
   useKeys(
     (e) => {
@@ -46,14 +45,13 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
           </div>
         ))}
         <p className="cond hidden max-w-[52ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          Ranked by score, the undecided first. {desk} commercial submissions, {rows.length - desk} Toronto renter referrals.
+          Ranked by score, with the undecided first. Renter quotes live in the separate Intact mode.
         </p>
         <div className="ml-auto flex items-stretch border-l border-rule" role="group" aria-label="Which submissions">
           {(
             [
               ["open", "open"],
               ["all", "everything"],
-              ["consumer", "renters"],
             ] as const
           ).map(([v, label]) => (
             <Link
@@ -89,7 +87,7 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
         left={
           <>
             <span className="text-ochre">BLOTTER</span>
-            <span>showing {view === "open" ? "open submissions" : view === "consumer" ? "renter quotes" : "every submission"}</span>
+            <span>showing {view === "open" ? "open submissions" : "every submission"}</span>
             {here && (
               <span className="truncate text-ink">
                 #{here.caseId} {here.insured}

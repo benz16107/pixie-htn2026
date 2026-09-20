@@ -110,6 +110,19 @@ def test_cors_allows_web_localhost(client):
     assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
 
 
+def test_cors_allows_expo_web(client):
+    resp = client.options(
+        "/quote/tenant",
+        headers={
+            "Origin": "http://localhost:8081",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "http://localhost:8081"
+
+
 def test_map_endpoints(client):
     pins = client.get("/map/pins").json()
     assert len(pins) == 21 and {"caseId", "decision", "site", "cell", "perils"} <= set(pins[0])

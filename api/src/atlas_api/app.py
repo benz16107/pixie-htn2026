@@ -123,7 +123,13 @@ def rescore_book() -> None:
 app = FastAPI(title="Pixie API", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3100"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3100",
+        "http://localhost:8081",
+        "http://macserver:8081",
+        "http://100.95.223.110:8081",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
