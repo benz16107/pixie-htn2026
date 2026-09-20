@@ -91,7 +91,7 @@ Before that fix the interval stayed narrowed after a reset and the next judge sa
 2. Open a case with a missing premium (e.g. SUB-138), click "request broker info" -- a real Gmail
    send to the demo broker inbox (`benz16107+broker@gmail.com`).
 3. Reply from that inbox with a premium figure, then `POST /composio/cases/138/broker-reply/check`
-   (there is no button yet) -- the case's own event lane shows a `finding` (Known premium, sourced
+   (the case page now has a broker-reply control) -- the case's own event lane shows a `finding` (Known premium, sourced
    to the message id) followed by an `assessment` narrowing the interval, with no human re-running
    anything. Add `?replay=true` to run the same thing from the captured reply with no network.
 4. Refer a case -- `POST /composio/cases/{id}/review/book` puts a real 15-minute hold on the

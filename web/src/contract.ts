@@ -65,7 +65,7 @@ export interface CaseView {
 }
 
 export interface DeskEvent {
-  id: string; caseId: string; seq: number; tMs: number;
+  id: string; caseId: string; runId?: string; seq: number; tMs: number;
   actor: Actor; kind: string; to?: Actor; inReplyTo?: string;
   body: Record<string, unknown>; refs: string[];
 }

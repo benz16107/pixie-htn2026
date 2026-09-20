@@ -21,7 +21,7 @@ export function RecordButton() {
     setState("recording");
   }
 
-  if (state === "unavailable") {
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN || state === "unavailable") {
     return <span className="font-mono text-[10px] text-dim">no replay (DSN unset)</span>;
   }
   return (

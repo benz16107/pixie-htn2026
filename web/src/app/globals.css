@@ -33,7 +33,7 @@
   /* ink */
   --color-ink: #cfd7dd; /* primary text and the one bright hairline */
   --color-dim: #8a97a3; /* labels, sources, everything read on demand */
-  --color-faint: #5d6a75; /* disabled, placeholder */
+  --color-faint: #8997a3; /* disabled, placeholder */
 
   /* structure */
   --color-rule: #232c34; /* the hairline that does 90% of the dividing */
@@ -153,4 +153,72 @@ body {
     .lane-card { transform: none; }
     .sheet { transform: none; }
   }
+}
+
+/* Dense desktop panels become a readable document on smaller screens. */
+.desk-chrome { overflow-x: auto; scrollbar-width: thin; }
+.desk-chrome > * { flex-shrink: 0; }
+.case-page > div:nth-of-type(1) > section:first-child { overflow-y: auto; }
+.whatif > div:first-child { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 1fr); gap: 12px; }
+.whatif > div:first-child > div { width: auto; min-width: 0; }
+.whatif > div:first-child > div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+.whatif input { touch-action: pan-y; }
+@media (min-width: 1600px) {
+  .whatif > div:first-child { grid-template-columns: 176px minmax(0, 1fr) 180px; }
+  .whatif > div:first-child > div:nth-child(2) { grid-column: auto; grid-row: auto; }
+}
+@media (max-width: 1100px) {
+  .case-page, .guideline-page, .queue-page, .map-page, .live-page { height: auto; min-height: calc(100dvh - 30px); overflow: visible; display: block; }
+  .case-page > header, .guideline-page > header, .queue-page > header { height: auto; min-height: 46px; flex-wrap: wrap; overflow: visible; padding-block: 8px; row-gap: 8px; }
+  .case-page > div, .guideline-page > div, .queue-page > div, .map-page { grid-template-columns: minmax(0, 1fr); }
+  .case-page > div:nth-of-type(1) > section:first-child { min-height: 620px; overflow: visible; }
+  .case-page > div:nth-of-type(1) > aside { border-top: 1px solid var(--color-edge); }
+  .case-page > div:nth-of-type(2) { min-height: 320px; }
+  .case-page > div:nth-of-type(2) > div, .case-page > div:nth-of-type(2) > section { min-height: 260px; }
+  .case-page [role="tablist"] { overflow-x: auto; flex-shrink: 0; }
+  .case-page [role="tab"] { white-space: nowrap; }
+  .case-page [role="tabpanel"] { min-height: 220px; }
+  .queue-page > div > div:first-child { height: 520px; }
+  .guideline-page > div > div { overflow: auto; }
+  .guideline-page > header { overflow-x: auto; flex-wrap: nowrap; }
+  .map-page > div:first-child { min-height: 520px; }
+  .live-page > header { flex-wrap: wrap; height: auto; padding-block: 8px; overflow: visible; }
+  .live-page > div:nth-of-type(1) { flex-wrap: wrap; padding-block: 6px; }
+  .live-page > div:nth-of-type(1) nav { overflow-x: auto; max-width: 100%; }
+  .live-page > div:nth-of-type(2) { grid-template-columns: minmax(0, 1fr); }
+  .live-page > div:nth-of-type(2) > aside:first-child { max-height: 220px; }
+  .live-page > div:nth-of-type(2) > section { min-height: 420px; }
+  .live-page > div:nth-of-type(2) > aside:last-child { height: 380px; }
+  .live-page > div:nth-of-type(3) { grid-template-columns: minmax(0, 1fr); min-height: 300px; }
+  .live-page > div:nth-of-type(3) > div { min-height: 230px; }
+}
+@media (max-width: 600px) {
+  body { font-size: 13px; }
+  .desk-chrome { height: 40px; }
+  .desk-chrome nav a { padding-inline: 12px; }
+  main { max-width: 100%; }
+  main button, main input:not([type="range"]), main select { min-height: 32px; }
+  .case-page > header h1 { order: -1; flex-basis: 100%; padding-inline: 0; }
+  .case-page > header > span:last-child { max-width: 100%; }
+  .case-page > header > span:last-child > div { flex-wrap: wrap; }
+  .case-page > div:nth-of-type(2) { display: block; }
+  .case-page > div:nth-of-type(2) > div { overflow-x: auto; }
+  .case-page section, .case-page aside { min-width: 0; }
+  .case-page > div:nth-of-type(1) > section:first-child { padding-inline: 12px; }
+  .queue-page > header > div { padding-inline: 10px; }
+  .map-page > div:first-child > div.absolute { max-width: calc(100% - 24px); left: 12px; }
+  .map-page nav, .map-page > div:first-child > div:last-child { flex-wrap: wrap; }
+  .live-page > header > div { flex-wrap: wrap; margin-left: 0; }
+  .live-page > div:nth-of-type(1) nav { gap: 4px; }
+  .live-page > div.absolute { padding: 12px; }
+  .live-page > div.absolute > div { width: 100%; max-height: 80dvh; overflow: auto; }
+}
+
+@media (max-width: 1100px) {
+  .queue-page > div > * { min-width: 0; }
+  .live-page > header > div { min-width: 0; max-width: 100%; flex-shrink: 1; flex-wrap: wrap; }
+}
+@media (max-width: 600px) {
+  .waterfall-tip { position: fixed; inset: auto 12px 12px; width: auto; transform: none; z-index: 60; }
+  .case-page [role="tabpanel"] { overflow-x: auto; }
 }

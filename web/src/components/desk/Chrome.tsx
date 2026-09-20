@@ -1,21 +1,22 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useKeys } from "./keys";
+import { ResetDemo } from "./ResetDemo";
 import { Kbd } from "./Kbd";
 
 const DESTS = [
-  { key: "q", href: "/queue", label: "blotter" },
-  { key: "r", href: "/guideline", label: "rules" },
-  { key: "m", href: "/map", label: "book" },
+  { key: "q", href: "/queue", label: "queue" },
+  { key: "r", href: "/guideline", label: "guideline" },
+  { key: "m", href: "/map", label: "portfolio" },
   { key: "a", href: "/ask", label: "ask" },
-  { key: "b", href: "/backtest", label: "proof" },
-  { key: "l", href: "/live", label: "live" },
+  { key: "b", href: "/backtest", label: "backtest" },
+  { key: "l", href: "/live", label: "demo" },
 ];
 
 const GLOBAL_KEYS: [string, string][] = [
-  ["g then q / r / m / a / b / l", "go to blotter, rules, book, ask, proof, live"],
+  ["g then q / r / m / a / b / l", "go to queue, guideline, portfolio, ask, backtest, demo"],
   ["?", "this sheet"],
   ["Esc", "close anything open"],
 ];
@@ -30,7 +31,7 @@ const PAGE_KEYS: Record<string, [string, string][]> = {
   ],
   "/guideline": [
     ["1 – 5", "load a scenario into the document"],
-    ["a", "apply the pending edits and re-score all 158"],
+    ["a", "apply the pending edits and re-score the book"],
     ["d", "discard the pending edits"],
     ["r", "restore the guideline as filed on disk"],
   ],
@@ -55,6 +56,8 @@ export function Chrome() {
   const path = usePathname();
   const router = useRouter();
   const [help, setHelp] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { if (help) dialog.current?.showModal(); else dialog.current?.close(); }, [help]);
   const [api, setApi] = useState<"…" | "up" | "down">("…");
   const [clock, setClock] = useState("");
 
@@ -100,12 +103,12 @@ export function Chrome() {
 
   return (
     <>
-      <header className="flex h-[30px] items-stretch border-b border-edge bg-land text-[11px]">
+      <header className="desk-chrome flex h-[30px] items-stretch border-b border-edge bg-land text-[11px]">
         <span className="flex items-center gap-2 border-r border-edge px-3 font-semibold tracking-[0.18em] text-ink">
           PIXIE
           <span className="hidden font-normal tracking-[0.06em] text-faint xl:inline">UNDERWRITING DESK</span>
         </span>
-        <nav aria-label="Main" className="flex">
+        <nav aria-label="Main" className="flex shrink-0">
           {DESTS.map((d) => {
             const on = path.startsWith(d.href) || (d.href === "/queue" && path.startsWith("/cases"));
             return (
@@ -122,8 +125,9 @@ export function Chrome() {
             );
           })}
         </nav>
-        <span className="ml-auto flex items-center gap-4 pr-3 text-[10px] text-dim">
-          <span className="hidden tracking-[0.1em] lg:inline">FEDERATO SNAPSHOT · 158 SUBMISSIONS</span>
+        <span className="ml-auto flex shrink-0 items-center gap-3 pr-3 text-[10px] text-dim">
+          <ResetDemo />
+          {process.env.NEXT_PUBLIC_FIXTURES === "1" && <span className="text-ochre">BUNDLED SAMPLES</span>}
           <button onClick={() => setHelp(true)} className="hover:text-ink" aria-haspopup="dialog">
             keys <kbd className="key">?</kbd>
           </button>
@@ -134,7 +138,7 @@ export function Chrome() {
             />
             API {api}
           </span>
-          <span className="num w-[58px] text-right tabular-nums text-faint">{clock || "--:--:--"}</span>
+          <span className="num hidden xl:inline w-[58px] text-right tabular-nums text-faint">{clock || "--:--:--"}</span>
           <Link href="/privacy" className="hover:text-ink">
             privacy
           </Link>
@@ -144,14 +148,10 @@ export function Chrome() {
         </span>
       </header>
 
-      {help && (
-        <div className="fixed inset-0 z-50 bg-paper/88 p-6" role="presentation" onClick={() => setHelp(false)}>
+      <dialog ref={dialog} onKeyDown={(e) => { if (e.key === "Tab") { e.preventDefault(); dialog.current?.querySelector<HTMLButtonElement>("button")?.focus(); } }} onCancel={() => setHelp(false)} onClick={(e) => { if (e.target === e.currentTarget) setHelp(false); }} className="fixed inset-0 z-50 m-auto max-h-[85dvh] w-[min(560px,calc(100vw-32px))] overflow-auto border border-edge bg-land p-0 text-ink backdrop:bg-paper/85" aria-label="Keyboard shortcuts">
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Keyboard shortcuts"
             onClick={(e) => e.stopPropagation()}
-            className="sheet mx-auto mt-[10vh] w-[560px] border border-edge bg-land shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            className="sheet"
           >
             <p className="flex items-center justify-between border-b border-edge px-4 py-2">
               <span className="kicker">Keyboard</span>
@@ -170,8 +170,7 @@ export function Chrome() {
               ))}
             </dl>
           </div>
-        </div>
-      )}
+        </dialog>
     </>
   );
 }

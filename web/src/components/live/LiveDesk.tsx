@@ -1,6 +1,8 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ResetDemo } from "../desk/ResetDemo";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CaseView, DeskEvent, Hex } from "@/contract";
 import { Swimlanes } from "../Swimlanes";
 import { CasePanel, Chatter, QueueRail, SweepBoard } from "./Panels";
@@ -19,6 +21,15 @@ const LANES = ["lead", "intake", "appetite", "hazard", "portfolio", "challenger"
 const SPECIALISTS = new Set(["intake", "appetite", "hazard", "portfolio"]);
 const BEATS = ["Queue", "Case run", "Actions", "Backtest", "Toronto", "Close"] as const;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
+
+async function readOutbox(id: string): Promise<OutboxItem[]> {
+  try {
+    const res = await fetch(`${PROXY}/outbox/${id}`);
+    if (!res.ok) return [];
+    const items = await res.json();
+    return Array.isArray(items) ? items : [];
+  } catch { return []; }
+}
 
 export type LiveProps = {
   rows: Row[];
@@ -51,9 +62,12 @@ export function LiveDesk(props: LiveProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [showEmail, setShowEmail] = useState(false);
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
+  const picked = useRef<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<string>("");
   const [reduced, setReduced] = useState(false);
-  const [, setScript] = useState<ReturnType<typeof setTimeout>[]>([]);
+  const script = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [quoteError, setQuoteError] = useState("");
+  useEffect(() => () => script.current.forEach(clearTimeout), []);
   const run = useRun({ rows, recorded, offlineEvents, apiUp });
 
   useEffect(() => {
@@ -79,10 +93,9 @@ export function LiveDesk(props: LiveProps) {
       }
       if (m.kind === "action") {
         setEmailStatus(`${m.channel ?? "email"}: ${m.status ?? "sent"}`);
-        fetch(`${PROXY}/outbox/${m.caseId}`)
-          .then((r) => r.json() as Promise<OutboxItem[]>)
-          .then(setOutbox)
-          .catch(() => {});
+        if (picked.current === m.caseId) void readOutbox(m.caseId).then((items) => {
+          if (picked.current === m.caseId) setOutbox(items);
+        });
       }
     });
     es.onerror = () => es.close();
@@ -91,7 +104,9 @@ export function LiveDesk(props: LiveProps) {
 
   const pick = useCallback(
     async (id: string) => {
+      picked.current = id;
       setSelected(id);
+      setOutbox([]);
       setMode("focus");
       if (!details[id] && apiUp) {
         const res = await fetch(`${PROXY}/cases/${id}`).catch(() => null);
@@ -100,10 +115,9 @@ export function LiveDesk(props: LiveProps) {
           setDetails((d) => ({ ...d, [id]: view }));
         }
       }
-      fetch(`${PROXY}/outbox/${id}`)
-        .then((r) => r.json() as Promise<OutboxItem[]>)
-        .then(setOutbox)
-        .catch(() => setOutbox([]));
+      if (apiUp) void readOutbox(id).then((items) => {
+        if (picked.current === id) setOutbox(items);
+      });
     },
     [apiUp, details],
   );
@@ -128,13 +142,16 @@ export function LiveDesk(props: LiveProps) {
     setRegion("toronto");
     setPhoneTab("quote");
     setShowEmail(false);
-    if (quote || !apiUp) return;
+    if (quote) return;
+    if (!apiUp) { setQuoteError("The quote needs the API. Open the saved receipt on the phone instead."); return; }
+    setQuoteError("");
     const res = await fetch(`${PROXY}/quote/tenant`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ address: "180 Queen St W, Toronto", answers: { contentsValue: 30000, unitLevel: "upper", claims3yr: 0, deductible: 1000 } }),
     }).catch(() => null);
     if (res?.ok) setQuote((await res.json()) as Quote);
+    else setQuoteError("The quote could not load. Select Toronto to retry.");
   }, [apiUp, quote]);
 
   const sendEmail = useCallback(async () => {
@@ -144,8 +161,8 @@ export function LiveDesk(props: LiveProps) {
     const res = await fetch(`${PROXY}/actions/${selected}/request-info`, { method: "POST" }).catch(() => null);
     const out = res?.ok ? ((await res.json()) as OutboxItem) : null;
     setEmailStatus(out?.status ? `gmail: ${out.status}` : "the API refused the send");
-    const box = await fetch(`${PROXY}/outbox/${selected}`).then((r) => r.json() as Promise<OutboxItem[]>).catch(() => []);
-    setOutbox(box);
+    const box = await readOutbox(selected);
+    if (picked.current === selected) setOutbox(box);
   }, [selected]);
 
   const sendDigest = useCallback(async () => {
@@ -157,14 +174,13 @@ export function LiveDesk(props: LiveProps) {
       body: JSON.stringify({ n: 3 }),
     }).catch(() => null);
     if (res?.ok) setDigest((await res.json()) as DigestState);
+    else setDigest({ text: "The digest could not be sent. Check the API and Linq connection, then retry.", status: "failed", caseIds: [] });
     setSendingDigest(false);
   }, []);
 
   const stopScript = useCallback(() => {
-    setScript((t) => {
-      t.forEach(clearTimeout);
-      return [];
-    });
+    script.current.forEach(clearTimeout);
+    script.current = [];
   }, []);
 
   /** One click runs the whole story: sweep the queue, deep-dive 138, then the broker email. */
@@ -175,7 +191,7 @@ export function LiveDesk(props: LiveProps) {
     setShowEmail(false);
     setBeat(0);
     startSweep();
-    setScript([
+    script.current = [
       setTimeout(() => {
         setBeat(1);
         startFocus("138");
@@ -185,31 +201,33 @@ export function LiveDesk(props: LiveProps) {
         setShowEmail(true);
         setPhoneTab("digest");
       }, 34000),
-    ]);
+    ];
   }, [startFocus, startSweep, stopScript]);
 
   /** The six demo beats, driven by the keys, the beat buttons, or the scripted run. */
   const goBeat = useCallback(
     (i: number) => {
+      stopScript();
       setBeat(i);
       const acts = [
         () => { stopScript(); setOverlay(null); setRegion("desk"); setShowEmail(false); startSweep(); },
         () => { stopScript(); setOverlay(null); setRegion("desk"); setShowEmail(false); startFocus("138"); },
-        () => { setOverlay(null); setShowEmail(true); setPhoneTab("digest"); },
+        () => { setOverlay(null); void pick(selected ?? "138"); setShowEmail(true); setPhoneTab("digest"); },
         () => setOverlay("backtest"),
         () => { setOverlay(null); loadQuote(); },
         () => setOverlay("close"),
       ];
       acts[i]?.();
     },
-    [loadQuote, startFocus, startSweep, stopScript],
+    [loadQuote, pick, selected, startFocus, startSweep, stopScript],
   );
 
   // Keyboard shortcuts work from page load; typing in a field is left alone.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (e.metaKey || e.ctrlKey || t?.tagName === "INPUT" || t?.tagName === "TEXTAREA" || t?.isContentEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || t?.tagName === "INPUT" || t?.tagName === "TEXTAREA" || t?.tagName === "SELECT" || t?.isContentEditable) return;
+      if ((e.key === " " || e.key === "Enter") && t?.closest("button, a")) return;
       if (/^[1-6]$/.test(e.key)) return goBeat(Number(e.key) - 1);
       if (e.key === "Escape") setOverlay(null);
       if (e.key === "]") run.seek(run.elapsed + 5000);
@@ -218,13 +236,13 @@ export function LiveDesk(props: LiveProps) {
       if (e.key === "d") runDemo();
       if (e.key === " ") {
         e.preventDefault();
-        if (run.running) run.stop();
+        if (run.running) { stopScript(); run.stop(); }
         else runDemo();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goBeat, run, runDemo]);
+  }, [goBeat, run, runDemo, stopScript]);
 
   const focusCase = selected ? run.cases[selected] : undefined;
   const events = useMemo(
@@ -272,10 +290,12 @@ export function LiveDesk(props: LiveProps) {
   const caption = nowLine(latest, run.running);
 
   return (
-    <main className="grid h-screen grid-rows-[44px_26px_minmax(0,1fr)_226px_22px] overflow-hidden bg-paper">
+    <main className="live-page grid h-screen grid-rows-[44px_26px_minmax(0,1fr)_226px_22px] overflow-hidden bg-paper">
       {/* ------------------------------ top strip ------------------------------ */}
       <header className="flex items-center gap-3 overflow-hidden border-b border-edge bg-land px-4 text-[11px]">
-        <span className="shrink-0 text-[12px] font-semibold tracking-[0.18em] text-ochre">PIXIE LIVE</span>
+        <span className="shrink-0 text-[12px] font-semibold tracking-[0.18em] text-ochre">PIXIE DESK</span>
+        <span className="border border-ochre px-2 py-0.5 text-ochre">{run.source === "live" ? "LIVE RUN" : apiUp ? "RECORDED RUN" : "BUNDLED REPLAY"}</span>
+        <Link href="/queue" className="underline underline-offset-4">Queue</Link>
         <span className="num hidden shrink-0 2xl:inline">
           <b className="font-semibold">158</b> subs · <b className="font-semibold">{allRows.length}</b> open ·{" "}
           <b className="font-semibold">{deskRows.length}</b> desk · <b className="font-semibold">{decidedNow}</b> decided
@@ -300,14 +320,15 @@ export function LiveDesk(props: LiveProps) {
           </div>
           <div className="flex rounded-sm border border-rule" role="group" aria-label="Speed">
             {([1, 2, 4] as Speed[]).map((s) => (
-              <button key={s} onClick={() => run.setSpeed(s)} aria-pressed={run.speed === s} className={`num px-1.5 py-0.5 ${run.speed === s ? "bg-ochre text-paper" : "hover:bg-raise"}`}>
+              <button key={s} disabled={run.source === "live" && run.running} onClick={() => run.setSpeed(s)} aria-pressed={run.speed === s} className={`num px-1.5 py-0.5 ${run.speed === s ? "bg-ochre text-paper" : "hover:bg-raise"}`}>
                 {s}×
               </button>
             ))}
           </div>
-          <button onClick={() => run.start(mode === "focus" && selected ? [selected] : ["138"], "live")} className={btn} title="Ask the desk to think for real. Costs model calls.">
+          <button disabled={!apiUp || run.running} onClick={() => { stopScript(); pick(selected ?? "138"); void run.start([selected ?? "138"], "live"); }} className={btn} title="Ask the desk to think for real. Costs model calls.">
             Run live
           </button>
+          <ResetDemo />
           <RecordButton />
           <button
             onClick={runDemo}
@@ -330,8 +351,8 @@ export function LiveDesk(props: LiveProps) {
 
       <div className="flex items-center gap-2 border-b border-rule bg-paper px-4 text-[12px]">
         <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${run.running ? "animate-pulse bg-ochre motion-reduce:animate-none" : "bg-rule"}`} />
-        <p className="min-w-0 flex-1 truncate" aria-live="polite">
-          {caption}
+        <p className={`min-w-0 flex-1 truncate ${run.error ? "text-rust" : ""}`} title={run.error || quoteError || caption} aria-live="polite">
+          {run.error || quoteError || caption}
         </p>
         <nav className="relative z-30 flex shrink-0 gap-1" aria-label="Demo beats">
         {BEATS.map((b, i) => (
@@ -486,8 +507,8 @@ export function LiveDesk(props: LiveProps) {
                 <h2 className="cond text-[24px] font-semibold">Every number is code. Every decision is traceable.</h2>
                 <p className="mt-3 text-[13px] leading-relaxed">
                   The desk spent <b className="num">{run.totals.steps}</b> model steps and <b className="num">${run.totals.cost.toFixed(2)}</b> on{" "}
-                  {run.totals.total} submissions, and only where information could flip a decision. The same engine priced a Toronto renter from the
-                  same rules and the same caps, and it runs on your schema.
+                  {run.totals.total} submissions, and only where information could flip a decision. The same engine also prices Toronto renters using
+                  a separate renter guideline and documented price caps.
                 </p>
               </>
             )}
@@ -498,7 +519,9 @@ export function LiveDesk(props: LiveProps) {
         </div>
       )}
       <footer className="flex h-[22px] items-center gap-3 overflow-hidden border-t border-edge bg-land px-3 text-[10px] text-faint">
-        <span className="text-ochre">PIXIE LIVE</span>
+        <span className="text-ochre">PIXIE DESK</span>
+        <span className="border border-ochre px-2 py-0.5 text-ochre">{run.source === "live" ? "LIVE RUN" : apiUp ? "RECORDED RUN" : "BUNDLED REPLAY"}</span>
+        <Link href="/queue" className="underline underline-offset-4">Queue</Link>
         {!apiUp && <span className="text-rust">offline: replaying recorded runs from disk</span>}
         <span className="num">
           {decidedNow} of {deskRows.length} desk cases settled

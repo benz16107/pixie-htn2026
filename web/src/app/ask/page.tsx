@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 
 export default function AskPage() {
   return (
-    <main className="px-10 pb-12 pt-7">
+    <main className="px-4 pb-12 pt-7 sm:px-10">
       <p className="font-mono text-[11px] text-dim">ASK · FEDERATO QUERY API</p>
       <h1 className="mt-0.5 font-serif text-[32px] font-semibold leading-tight">Ask the book a question</h1>
       <p className="mb-6 mt-1 max-w-[70ch] text-dim">

@@ -40,7 +40,7 @@ export function Override({ caseId, current, bound = 5 }: { caseId: string; curre
     const when = new Date(current.at * 1000).toLocaleTimeString("en-CA", { hour: "2-digit", minute: "2-digit" });
     const moved = current.decision.kind !== current.engineDecision.kind;
     return (
-      <div className="mt-1.5 flex items-baseline gap-3 border-y border-ink/40 bg-ink/[0.06] px-2 py-1 text-[11px]">
+      <div className="mt-1.5 flex flex-wrap items-baseline gap-3 border-y border-ink/40 bg-ink/[0.06] px-2 py-1 text-[11px]">
         <span className="kicker shrink-0 text-ink">Underwriter adjusted</span>
         <span className="num shrink-0 font-medium text-ink">
           {current.points > 0 ? "+" : "−"}
@@ -74,7 +74,7 @@ export function Override({ caseId, current, bound = 5 }: { caseId: string; curre
 
   return (
     <form
-      className="mt-1.5 flex items-center gap-2 border-y border-rule px-2 py-1 text-[11px]"
+      className="mt-1.5 flex flex-wrap items-center gap-2 border-y border-rule px-2 py-1 text-[11px]"
       onSubmit={(e) => {
         e.preventDefault();
         void run(() => api.override(caseId, points, reason));

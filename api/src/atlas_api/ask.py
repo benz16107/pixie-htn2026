@@ -90,11 +90,11 @@ def _key(question: str) -> str:
 async def ask(question: str, store: CaseStore, *, use_cache: bool = True) -> dict[str, Any]:
     key = _key(question)
     if use_cache and (hit := store.cache_get(key)) is not None:
-        return hit
+        return {**hit, "path": "cache"}
     if os.environ.get("ATLAS_OFFLINE") == "1":
         return {"question": question, "rationale": "offline: this question is not cached", "attempts": [],
                 "finalPayload": None, "columns": [], "rows": [], "answer": "Offline, and this question has no cached answer.",
-                "runId": key}
+                "runId": key, "path": "offline"}
 
     from .federato import FederatoError
     client, graph, qb = federato_tools()
@@ -158,6 +158,6 @@ async def ask(question: str, store: CaseStore, *, use_cache: bool = True) -> dic
 
     result = {"question": question, "rationale": rationale, "attempts": attempts, "finalPayload": final,
               "columns": columns, "rows": rows, "answer": answer, "answerFallback": answer == template,
-              "runId": key}
+              "runId": key, "path": "live", "total": total}
     store.cache_set(key, result)
     return result

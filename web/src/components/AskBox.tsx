@@ -3,8 +3,8 @@ import { useState } from "react";
 import type { AskResult } from "@/contract";
 import { api } from "@/lib/api";
 
-const cell = (v: unknown) =>
-  typeof v === "number" ? (v >= 1000 ? `$${v.toLocaleString("en-US")}` : String(v)) : v === false ? "no" : v === true ? "yes" : String(v ?? "");
+const cell = (v: unknown, column: string) =>
+  typeof v === "number" ? (/premium|tiv|incurred|amount|limit|value/i.test(column) ? `$${v.toLocaleString("en-US")}` : v.toLocaleString("en-US", { useGrouping: !/year|id/i.test(column) })) : v === false ? "no" : v === true ? "yes" : String(v ?? "");
 
 function Attempt({ a, i, last }: { a: AskResult["attempts"][number]; i: number; last: boolean }) {
   const ok = !a.error && !a.lint.length;
@@ -34,10 +34,11 @@ function Attempt({ a, i, last }: { a: AskResult["attempts"][number]; i: number; 
 export function AskBox({ canned }: { canned: string[] }) {
   const [q, setQ] = useState(canned[0] ?? "");
   const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<AskResult | null>(null);
+  const [res, setRes] = useState<(AskResult & { path?: string; total?: number }) | null>(null);
   const [miss, setMiss] = useState("");
 
   const ask = async (question: string) => {
+    if (busy || !question.trim()) return;
     setQ(question);
     setBusy(true);
     setMiss("");
@@ -47,11 +48,8 @@ export function AskBox({ canned }: { canned: string[] }) {
     if (!r) setMiss("The API is unreachable and this question has no cached answer. Pick one of the questions below.");
   };
 
-  const claimed = res ? Number(res.answer.match(/\d[\d,]*/)?.[0].replaceAll(",", "")) : NaN;
-  const verified = res ? claimed === res.rows.length : false;
-
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-12">
+    <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-10">
       <div>
         <form onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(q); }}>
           <label htmlFor="q" className="kicker">Question, in plain English</label>
@@ -77,6 +75,7 @@ export function AskBox({ canned }: { canned: string[] }) {
           {canned.map((c) => (
             <li key={c}>
               <button
+                disabled={busy}
                 onClick={() => ask(c)}
                 aria-pressed={res?.question === c}
                 className={`rounded-sm border px-2.5 py-1 text-left text-[12px] transition-colors duration-150 ${res?.question === c ? "border-edge bg-land" : "border-rule hover:border-edge"}`}
@@ -105,12 +104,12 @@ export function AskBox({ canned }: { canned: string[] }) {
         {busy && <div className="mt-7 h-40 animate-pulse rounded-sm bg-land motion-reduce:animate-none" />}
         {res && !busy && (
           <>
-            <h2 id="ans-h" className="kicker">Answer</h2>
+            <h2 id="ans-h" className="kicker">Answer · {res.path === "sample" ? "bundled sample" : res.path === "cache" ? "cached result" : res.path === "live" ? "live query" : res.path === "offline" ? "offline" : "stored result"}</h2>
             <p className="mt-1 font-serif text-[20px] leading-snug">{res.answer}</p>
-            <p className={`mt-1.5 text-[12px] ${verified ? "text-moss" : "text-rust"}`}>
-              {verified ? "✓ Verified against rows" : "× Not verified"}: the answer says{" "}
-              <span className="num">{Number.isNaN(claimed) ? "no number" : claimed}</span>, the query returned{" "}
-              <span className="num">{res.rows.length}</span> rows.
+            <p className="mt-1.5 text-[12px] text-dim">
+              <span className="num">{res.rows.length}</span> rows shown
+              {typeof res.total === "number" && <> of <span className="num">{res.total}</span> matches</>}.
+              {res.path === "sample" ? " These rows come from a bundled sample." : " Inspect the query and source rows below."}
             </p>
             <div className="mt-4 max-h-[520px] overflow-auto">
               <table className="w-full border-collapse text-[12px]">
@@ -130,7 +129,7 @@ export function AskBox({ canned }: { canned: string[] }) {
                   {res.rows.map((r, i) => (
                     <tr key={i} className="border-b border-rule">
                       {res.columns.map((c) => (
-                        <td key={c} className={`py-1.5 pr-4 ${typeof r[c] === "number" ? "num" : ""}`}>{cell(r[c])}</td>
+                        <td key={c} className={`py-1.5 pr-4 ${typeof r[c] === "number" ? "num" : ""}`}>{cell(r[c], c)}</td>
                       ))}
                     </tr>
                   ))}

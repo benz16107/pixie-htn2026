@@ -37,7 +37,7 @@ function quoteFor(r: Reply): string {
 
 export function BrokerReply({ caseId }: { caseId: string }) {
   const router = useRouter();
-  const [replay, setReplay] = useState(true);
+  const [replay, setReplay] = useState(caseId === "138");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Reply | null>(null);
 
@@ -51,7 +51,8 @@ export function BrokerReply({ caseId }: { caseId: string }) {
 
   const undo = async () => {
     setBusy(true);
-    await api.demoReset();
+    const result = await api.resetCase(caseId);
+    if (!result.ok) { setBusy(false); setRes({ status: "failed", detail: result.status }); return; }
     setRes(null);
     setBusy(false);
     router.refresh();
@@ -78,7 +79,9 @@ export function BrokerReply({ caseId }: { caseId: string }) {
           ).map(([on, label]) => (
             <button
               key={label}
-              onClick={() => setReplay(on)}
+              disabled={busy || (on && caseId !== "138")}
+              title={on && caseId !== "138" ? "The captured reply belongs to case 138" : undefined}
+              onClick={() => { setReplay(on); setRes(null); }}
               aria-pressed={replay === on}
               className={`px-1.5 text-[10px] leading-[19px] transition-colors duration-150 ${
                 replay === on ? "bg-raise text-ochre" : "text-faint hover:text-ink"
@@ -91,9 +94,9 @@ export function BrokerReply({ caseId }: { caseId: string }) {
         <button onClick={check} disabled={busy} className={`${btn} border-ochre text-ochre hover:bg-ochre hover:text-paper`}>
           {busy ? "checking…" : "check for a reply"}
         </button>
-        {res && (
+        {res?.status === "applied" && (
           <button onClick={undo} disabled={busy} className={`${btn} border-edge text-dim hover:border-ink hover:text-ink`}>
-            undo
+            reset this case
           </button>
         )}
         {badge && (

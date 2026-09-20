@@ -98,7 +98,7 @@ def test_combined_stream_run_totals_reset_and_run_guard(tmp_path, monkeypatch):
         _record(store, "126")
 
         with client.stream("GET", "/events/stream?cases=138,126&replay=1&speed=50") as resp:
-            seen = [json.loads(ln[6:]) for ln in resp.iter_lines() if ln.startswith("data: ")]
+            seen = [json.loads(ln[6:]) for ln in resp.iter_lines() if ln.startswith("data: ") and ln != "data: {}"]
         assert len(seen) == 6 and {e["caseId"] for e in seen} == {"138", "126"}
         assert [e["tMs"] for e in seen] == sorted(e["tMs"] for e in seen)
 

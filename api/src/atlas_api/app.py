@@ -631,7 +631,7 @@ def backtest_report() -> dict[str, Any]:
 # ---------- one screen: combined stream, run totals, demo reset -----------------------------------
 
 @app.get("/events/stream", response_model=None)
-async def events_stream(request: Request, cases: str = "", replay: int = 0, speed: float = 1.0, after: int = 0):
+async def events_stream(request: Request, cases: str = "", replay: int = 0, speed: float = 1.0, after: int = 0, run_id: str | None = None):
     """Several cases on one SSE stream, in time order, each event carrying its caseId (the /live screen)."""
     store = get_store()
     ids = [c.strip().removeprefix("SUB-") for c in cases.split(",") if c.strip()] or \
@@ -647,17 +647,25 @@ async def events_stream(request: Request, cases: str = "", replay: int = 0, spee
                     await asyncio.sleep(max(0, e.t_ms - last) / 1000 / speed)
                 last = e.t_ms
                 yield _sse(e)
+            yield "event: done\ndata: {}\n\n"
             return
+        from .events import NoteP
+        closed: set[str] = set()
         cursors = {cid: after for cid in ids}
         idle = 0.0
         while idle < 180 and not await request.is_disconnected():
             batch = []
             for cid in ids:
-                for e in store.tail(cid, after_seq=cursors[cid]):
+                for e in store.tail(cid, after_seq=cursors[cid], run_id=run_id):
                     cursors[cid] = e.seq
                     batch.append(e)
             for e in sorted(batch, key=lambda e: (e.ts, e.seq)):
                 yield _sse(e)
+                if run_id and isinstance(e.payload, NoteP) and e.payload.calls is not None:
+                    closed.add(e.case_id)
+            if run_id and closed == set(ids):
+                yield "event: done\ndata: {}\n\n"
+                return
             idle = 0.0 if batch else idle + 0.25
             await asyncio.sleep(0.25)
 
@@ -783,14 +791,15 @@ def reset_guideline() -> dict[str, Any]:
     return _swap(guideline.describe(was, guideline.active_raw()), by="demo reset", hash_before=hash_before)
 
 
-def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
+def demo_reset(case_ids: list[str] | None = None, *, reset_guideline: bool = True) -> dict[str, Any]:
     """T14: drop the action events, outbox rows and human decisions, keep the recorded desk run and
     restore the stored view from it. Running it twice leaves the same state."""
     store = get_store()
     from . import override
 
     was = guideline.active_raw()
-    guideline.reset()
+    if reset_guideline:
+        guideline.reset()
     change = guideline.describe(was, guideline.active_raw())
     if change:
         _swap(change, by="demo reset", hash_before=guideline.digest(was))
@@ -806,8 +815,17 @@ def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
         override.refresh(store, cid)   # a case with no recorded run keeps its stored view; drop it there too
         if events or outbox:
             cleared[cid] = {"events": events, "outbox": outbox}
-    store.cache_set("linq:last_digest", [])
+    if case_ids is None:
+        store.cache_set("linq:last_digest", [])
     return {"reset": cleared, "cases": ids}
+
+
+@app.post("/cases/{case_id}/reset")
+def case_reset_route(case_id: str) -> dict[str, Any]:
+    cid = case_id.removeprefix("SUB-")
+    if get_store().get_case(cid) is None:
+        raise HTTPException(status_code=404, detail=f"no case {cid}")
+    return demo_reset([cid], reset_guideline=False)
 
 
 @app.post("/demo/reset")

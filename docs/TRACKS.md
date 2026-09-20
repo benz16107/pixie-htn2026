@@ -1,3 +1,5 @@
+> Current judging scripts and verified caveats are in [DEMO](../DEMO/README.md). This document preserves earlier implementation notes; do not use its old timings, counts or live-status claims as the booth script.
+
 # Sponsor tracks: what we built, and what is actually verified
 
 One row per track Pixie targets. The track list is the pitch map in `docs/PITCHES.md:11-26`

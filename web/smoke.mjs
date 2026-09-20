@@ -2,7 +2,7 @@
 // Renders every page against a running web server and fails on any 5xx or error page.
 // Usage: node smoke.mjs [baseUrl]   (default http://localhost:3100)
 const base = process.argv[2] ?? process.env.SMOKE_URL ?? "http://localhost:3100";
-const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const api = process.env.ATLAS_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 const idsFrom = async () => {
   try {
@@ -16,7 +16,7 @@ const idsFrom = async () => {
 };
 
 const paths = async () => [
-  "/", "/queue", "/queue?view=all", "/map", "/map?peril=flood", "/ask", "/backtest", "/live", "/privacy", "/terms", "/cases/nope-404",
+  "/", "/queue", "/queue?view=all", "/queue?view=consumer", "/guideline", "/map", "/map?peril=flood", "/ask", "/backtest", "/live", "/privacy", "/terms", "/cases/nope-404",
   ...(await idsFrom()).map((id) => `/cases/${id}`),
 ];
 

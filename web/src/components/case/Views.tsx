@@ -15,8 +15,8 @@ const DecisionSpace = dynamic(() => import("./DecisionSpace"), {
 });
 
 const TABS = [
-  { id: "2d" as const, label: "how the score was built" },
-  { id: "3d" as const, label: "every possible score" },
+  { id: "2d" as const, label: "score breakdown" },
+  { id: "3d" as const, label: "decision space" },
 ];
 
 /**
@@ -89,7 +89,7 @@ export function Views({
 
       {whatIf && (
         <>
-          <WhatIf caseId={caseId} fact={whatIf.fact} label={whatIf.label} start={whatIf.start} sensitivity={sensitivity} before={before} onState={setPin} />
+          <WhatIf key={`${caseId}-${whatIf.fact}-${whatIf.start}`} caseId={caseId} fact={whatIf.fact} label={whatIf.label} start={whatIf.start} sensitivity={sensitivity} before={before} onState={setPin} />
           {tab === "3d" && flip && (
             <p className="mt-1 text-[10px] text-dim">
               The boundary on the floor is {flip.display}: below it the case declines, at or above it the desk{" "}

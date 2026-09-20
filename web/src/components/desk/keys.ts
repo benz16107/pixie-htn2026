@@ -22,7 +22,8 @@ function wire() {
   if (wired || typeof window === "undefined") return;
   wired = true;
   window.addEventListener("keydown", (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target)) return;
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || typing(e.target) || document.querySelector("dialog[open]")) return;
+    if ((e.key === "Enter" || e.key === " ") && (e.target as HTMLElement | null)?.closest("button, a")) return;
     const active = Date.now() - leaderAt < 1400 ? leader : null;
     leader = null;
     for (let i = handlers.length - 1; i >= 0; i--) if (handlers[i](e, active)) return;

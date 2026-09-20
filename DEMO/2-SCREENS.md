@@ -1,112 +1,31 @@
-# Every screen, and how to drive it
+# Every website screen
 
-All on `http://macserver:3100`. Laptop needs Tailscale on.
+Use this as a map of what exists. The timed track cards choose a small subset.
 
-## /live — the desk working
+| Screen | What is built and worth showing | Weakness or caveat | Best use |
+|---|---|---|---|
+| `/queue` | Scored and routed submissions, filters, keyboard navigation, defects and book insights | The queue is a heuristic ordering, not a profit prediction. Synthetic commercial data and consumer referrals coexist. | Begin a commercial story, then open one case. |
+| `/cases/138` | Provenance, score waterfall, what-if, decision-space view, sensitivity, precedent, event lanes, memory, broker reply and bounded human override | Dense. Some optional provider panels disappear when unavailable. Hypothetical values must not be confused with confirmed facts. | Default commercial case. Keep Score breakdown selected; use 3D only for a specific explanation. |
+| `/cases/126` and `/cases/141` | Cross-case duplicate-account context, data issues and recall | Local Pixie recall is not evidence of a Backboard query. | Rox and Backboard. Compare the named insured and source labels. |
+| Other commercial cases | Routed, bound, declined and open states; case navigation | Not every case has a recording. No recorded events does not prove a live zero-call run. | Questions about scope or failures. |
+| Tenant case `/cases/TQ-…` | Quote receipt, geographic context and consumer referral | Demo prices, separate rules. Read the generated case id from the phone/API. | Connect Expo to the desk. |
+| `/guideline` | Editable bands, thresholds and caps; presets; apply, diff and reset | Preset descriptions are examples against filed rules. The returned diff is the measured result. | Federato's clearest interactive moment. Apply one preset and read changed cases. |
+| `/map` | H3 exposure cells, peril filters, case pins and cell tooltips and case navigation | Base-map tiles require the network. H3 aggregation is not a catastrophe-loss model. | Elastic or portfolio follow-up. |
+| `/ask` | Natural-language query, generated query text, rows and returned row counts | Cached answers now say cached. The old first-number verification badge was removed because a number in prose may be a year or amount, not a row count. Use prepared queries. | Query/data-quality tracks. Explain linting and execution. |
+| `/backtest` | Rule disagreement, declined cases, enrichment comparison, known misses and preregistration | Small retrospective synthetic sample, no proof of causality. | One result and one limitation, not a table-by-table tour. |
+| `/live` | Queue sweep, focused recorded/live runs, addressed agent events, map, action draft, phone panel and demo beats | Many controls. The prominent replay is the safe five-minute path. Real agent runs can take minutes. | OpenAI or orchestration. Use Case run, then end the replay if time is short. |
+| `/privacy`, `/terms` | Prototype/data-use disclosure and scope | No account system or self-service deletion. Reset cannot delete provider records or recall sent messages. | Available in navigation, not part of the pitch. |
 
-The demo centrepiece. Press **Run the demo** and talk over it.
+## Controls that matter
 
-| Control | What it does |
-|---|---|
-| Run the demo | Replays a recorded run of case 138. No model calls, cannot stall |
-| Run live | Actually runs the agents. About 60 s and $0.07. Only if a judge asks |
-| 1× 2× 4× | Replay speed |
-| Sweep / Focus | Sweep triages the whole queue at once; Focus walks one case |
-| Keys 1-6 | Jump between sections: queue, case run, actions, backtest, Toronto, close |
-| Space | Runs the sweep |
-| Record this | Starts a Sentry session replay on demand. For the Sentry judges |
-| Desk / Renter | Switches the right-hand panel between the commercial desk and the Toronto renter |
+- Navigation uses **queue**, **guideline**, **portfolio**, **ask**, **backtest**, **demo**. `?` opens the keyboard help dialog. Escape closes it. Keyboard focus stays in the dialog while open.
+- **reset demo** resets stored demo decisions/actions and restores filed rules. Use it between judges, not while another person is demonstrating.
+- **reset this case** in the broker reply panel clears only that case's demo actions and human changes, preserving other cases and active rules.
+- **Captured reply** is available only for case 138. It uses a captured email and recorded extraction, then performs verification and rescoring now. The panel labels the path.
+- Action results distinguish **sent**, **dry**, **not connected**, **failed** and **already handled**. An HTTP success does not mean a message was sent.
+- **RECORDED RUN**, **LIVE RUN** and **BUNDLED REPLAY** identify the event source. An API error elsewhere shows a retry screen instead of silently substituting sample cases.
+- On narrow screens, dense panels stack and long tables scroll inside their panels. The laptop layout remains the primary presentation format.
 
-The phone panel on the right mirrors the iMessage thread and uses the same API as your actual phone.
+## Leave these out of the default pitch
 
-## /cases/138 — one case, fully explained
-
-The case to open. It is the only one whose decision space has shape; the others fail on state or
-loss history, which no number can move, so their terrain is a flat plate. Say that rather than
-clicking into one and hoping.
-
-| Part | What to do |
-|---|---|
-| Score waterfall | Read left to right. Hover a bar for its rule text and source |
-| Waterfall / Decision space tabs | The second is the same decision in 3D. Drag to orbit, arrow keys work too |
-| Premium slider | Drag it. The decision changes live, and the flip marker shows where |
-| The case against | The Challenger's argument, its risks, and what would change its mind |
-| We wrote N like this | Elastic precedent. The `[elastic]` badge says it came from the index, not memory |
-| Folds at the bottom | Facts, factor bands, agent lanes, site and portfolio. They open full width |
-
-## /guideline — the carrier's appetite, editable
-
-The answer to "can it follow our strategy?" Open it, press a scenario, watch the book re-score in
-about 60 ms, and read the diff: how many cases changed, which declines became open, how much value
-moved into the queue, and which factor moved each one.
-
-| Scenario | What actually happens |
-|---|---|
-| Open Washington | #143 Aperture Cloud goes decline → open, $26.3M into the queue, rank 4 → 2 |
-| Open Texas | **Nothing changes.** 7 cases re-band on state, no decision moves: every Texas case also breaks the loss rule. Press this one for a sceptical judge |
-| Tolerate losses to $1.5M | 20 cases re-band, one decline becomes open ($13.4M) |
-| Premium floor to $75K | The book's only accept becomes a decline: #81, $18.5M, on a $58,800 premium |
-| Soften the hard-fail cap to 50 | 27 declines become open, $1.34B back in the queue |
-
-Press **Reset** (or `POST /demo/reset`) to put the original guideline back. A bad edit is refused
-with the reason: setting decline above accept answers "the decline threshold must sit below the
-accept threshold; otherwise no case can be open."
-
-## /queue — all 22 submissions
-
-Ranked by score midpoint, open first. Each row says what it is waiting on, how many risks the
-Challenger raised, and where the desk overruled the rules ("decline, desk: refer with subjectivity").
-16 of the 22 carry a real data defect from Federato's own data. Below the table, "what the book
-teaches" is an Elastic significant-terms panel over the declined book.
-
-## /backtest — the honest numbers
-
-Pre-registered before the first run; the commit hash is printed on the page. B4 is the headline, B3
-is the one to volunteer before a judge finds it.
-
-## /ask — plain English to a Federato query
-
-Click a cached question. You see what Intake tried, the lint pass, any retry, and the rows. The
-three cached questions are the safe path; a fresh question is a live model call.
-
-## /map — the book of business
-
-Hexes are concentration by TIV, pins are submissions. Filter by peril.
-
-## Two moments with no screen yet
-
-Both are curl against `http://macserver:8000`. Say that plainly: "this one has no button yet, so I
-am calling the API."
-
-### The broker replies and the case closes itself
-
-| Step | Command |
-|---|---|
-| Replay it (no network, always works) | `curl -XPOST 'http://macserver:8000/composio/cases/138/broker-reply/check?replay=true'` |
-| Or search the real inbox instead | `curl -XPOST http://macserver:8000/composio/cases/138/broker-reply/check` |
-| Put it back for the next judge | `curl -XPOST http://macserver:8000/demo/reset` |
-
-The reply is real: `api/fixtures/broker_reply_138.json` is a broker email exactly as Gmail returned
-it, with the model's reading of it recorded beside it. Every replay re-checks the quote against the
-message, folds the premium in as a Known fact sourced to the message id, and re-scores: 138 goes
-from 30-75 open to 92-92 accept. `path` in the response says which ran, `replay` or `live`, and a
-replay never says live. Checking twice applies nothing twice (`"deduped": true`). With no reply in
-the inbox, the live call says so in a sentence instead of an empty list.
-
-### What the desk remembered
-
-| Step | Command |
-|---|---|
-| Our own cross-case recall | `curl http://macserver:8000/cases/141/memory` |
-| Ask Backboard as well | `curl 'http://macserver:8000/cases/141/memory?live=true'` |
-
-Read `summary` out loud. `recalled` is one row per earlier case with why it came back (same insured,
-same state, same data issue), `from` says which store it came from, and `sources` keeps our own
-SQLite recall (no network, no third party) separate from Backboard's. `boundary` is the line to
-quote: memory may change which questions get asked, never a number and never a tier.
-
-## The phone
-
-Address → 3 questions → price. Then: photograph a room and Gemini returns an item list; "what's
-around you" names the nearest fire hall and the rail corridor with Google Maps citations; the
-receipt shares as a PDF; the quote reads itself aloud.
+Do not open the record-screen control, every preset, every memory source, all the map perils, or the full 3D decision space in one demonstration. Those are supporting details. A broker reply that closes a missing fact or a guideline change with a visible diff is easier to understand than a fast tour of every tab.

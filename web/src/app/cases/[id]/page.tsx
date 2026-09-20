@@ -79,7 +79,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   };
 
   return (
-    <main className="grid h-[calc(100vh-30px)] grid-rows-[36px_minmax(0,1fr)_206px_26px] overflow-hidden">
+    <main className="case-page grid h-[calc(100vh-30px)] grid-rows-[36px_minmax(0,1fr)_206px_26px] overflow-hidden">
       {/* ------------------------------- identity ------------------------------- */}
       <header className="flex items-center gap-3 overflow-hidden border-b border-edge bg-land px-3">
         <span className="shrink-0">
@@ -97,7 +97,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         <span className="ml-auto" />
         {view.kind === "commercial" && (
           <span className="shrink-0 pr-1">
-            <Actions caseId={view.caseId} facts={flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
+            <Actions caseId={view.caseId} facts={view.decision.kind === "open" ? view.facts.filter((f) => f.provenance !== "known").map((f) => f.id) : flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
           </span>
         )}
       </header>

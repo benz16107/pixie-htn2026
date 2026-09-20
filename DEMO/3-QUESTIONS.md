@@ -1,103 +1,48 @@
-# Questions you will get, and the answers
+# Questions and strong, supportable answers
 
-Say the honest half first. Every number here is real; if you are not sure of one, say you are not
-sure rather than reaching for it.
+## "Why does this need agents?"
 
-## About the numbers
+"The engine can score a complete case on its own. Agents help when evidence is missing: they choose tools, join records, ask specialists and explain the resulting calculation. We do not spend model calls on cases where code can already settle the question."
 
-**"Are these real prices?"**
-No. The renter receipt says illustrative on its face, and `packs/toronto/PRICING.md` documents
-every invented constant. It is a documented model, not an Intact quote.
+## "Is the score confidence?"
 
-**"Is this real data?"**
-It is Federato's own synthetic snapshot, which is what the challenge ships. The Toronto layers are
-real open data: Toronto Police break-and-enter, city fire stations, city basement-flooding study
-areas.
+"No. The endpoints are possible rule outcomes given the facts we have. A wider interval means unresolved inputs could change the decision. We have not calibrated it as a probability of loss."
 
-**"Did the model make up these numbers?"**
-No number in the product comes from a model. Every value carries its provenance, and a guard checks
-each model sentence against the computed facts before you see it. On its first live run that guard
-caught our own lead agent quoting $35,716,000 from a digest that had never been registered as a
-computed fact. We fixed the bug, not the guard.
+## "What stops hallucinations?"
 
-**"Why does it say Lakeside Medical Group Group?"**
-That duplicate word is in Federato's `Insured.json`. We print what they sent.
+"Typed outputs constrain the model. Tools compute the commercial risk numbers. An output guardrail checks numeric prose against those tool results and replaces unsupported sentences. It cannot prove that the underlying data or every nonnumeric statement is correct."
 
-## About the method
+## "Did you actually use this sponsor?"
 
-**"Six agents feels like a lot. What do they actually do?"**
-They decide what to look up, not what the answer is. Code computes every number. A case with
-nothing to resolve gets no model call at all. You can watch the cost meter: 15 calls, $0.057, 55
-seconds for case 138.
+Open the provider-labelled evidence named on the track card. Say whether this is a fresh provider call, cached provider output, a captured run, local fallback or code tested with a fake client. Those are different claims. A `memory` backend badge is a successful local fallback, not live Elastic. `queried:false` is not a Backboard retrieval.
 
-**"What does the enrichment actually change?"**
-Zero decision tiers, and I would rather tell you that than hide it. It moved all 38 intervals, the
-median move is 7.2 points, and it reranked 5 of the 6 open cases. The declines are structural hard
-fails on state, age and loss history, which outside data cannot move. It is on the backtest page.
+## "Does it reduce losses or save time?"
 
-**"Isn't the backtest tiny?"**
-Yes. 27 bound property policies, one accept, 26 declines. The one accept lost $629,200 on $58,800
-of premium, and we print that as a known miss rather than burying it. The claim is the method: B1
-to B4 were defined and committed before the first run, so we could not tune them afterwards.
+"We have not measured either in production. The backtest shows where the filed guideline disagrees with historical decisions and how enrichment moves scores and ranks. The human-time benefit is a hypothesis we would test with underwriters."
 
-**"You automated the easy half and left the hard half to a human."**
-That is the design. A decline is cheap to reverse and an accept is not, so the asymmetry belongs in
-the product. What changes is the cost of the referral: the case arrives with its interval, the fact
-that would settle it, the precedent from the book, the counter-argument, and a drafted email. The
-underwriter replies "1" by iMessage and the decision is written to the file with their name on it.
+## "Why would a carrier use this?"
 
-**"An underwriter would not trust this."**
-Probably not yet, and nobody on this project has written a line of insurance. That is why the claim
-is not that the score is right, it is that it is inspectable. A carrier swaps in their own guideline
-file and the whole desk follows, because the engine reads the file rather than embedding it.
+"They can inspect a proposed decision, see which unresolved fact matters, change the rule and measure its effect on the current book. That makes it possible to challenge the workflow rather than trust a paragraph."
 
-**"This is eleven sponsor APIs in a trenchcoat."**
-Fair challenge, so here is the test we applied: does removing it break something a user does?
-Elastic answers "have we written this before". Composio and Linq are how the decision leaves the
-building and how the human answer comes back. Sentry is how we prove a model did not invent a
-number. Gemini reads a room photo, which is the only way a renter gets a contents value without
-guessing. The ones that would not survive that test are marked unverified in our own docs.
+## "Is this production-ready?"
 
-## About the build
+"It is a hackathon prototype over synthetic commercial data and demo renter rates. Production work includes access control, privacy and retention design, model and rule validation, provider reliability, and workflow integration with a carrier. The current local desk should be operated as a demo."
 
-**"Who built this?"**
-One person, with AI coding agents working in parallel git worktrees, one agent per lane, merged at
-milestones. Every agent had to obey a written invariants file: no number comes from a model,
-missing is never a pass, provenance on every value, external lookups cached to disk so the demo
-runs offline.
+## "Are all the numbers computed without a model?"
 
-**"What would you do next?"**
-Measure it. Same cases, a real underwriter, with and without the desk, timed. If they reach the
-same decision in the same time without it, the desk is decoration. We built the instrument; the
-measurement is next.
+"The commercial score and quote arithmetic are code. Gemini suggests editable inventory values; Backboard can return labelled model probabilities. Those are model outputs, and we keep them distinct from confirmed facts and computed decisions."
 
-## The three hardest questions, and the honest answer
+## Better pitch wording
 
-These came out of our own research pass. If an industry judge is sharp, these are what they ask.
+| Avoid | Say instead |
+|---|---|
+| "The first system ever to do this" | "The distinctive part of this demo is the interval, the missing fact and the recomputation in one screen." |
+| "We prevented these losses" | "The retrospective report identifies rule disagreements and includes known misses." |
+| "Production autonomous underwriting" | "An inspectable underwriting prototype with a separate human override." |
+| "Every integration is live" | "This workflow uses Gmail through Composio. These other toolkits have implemented paths but are not connected." |
+| "The agents are running now" during replay | "This is the recorded agent run. The slider and rule editor recompute now." |
+| "Our data shows customers love it" | "The next test is whether an underwriter can find the missing fact faster than in their current workflow." |
+| "Tapbacks work end to end" | "The signed webhook path is tested. Real handset reaction delivery still needs confirmation." |
+| "Gemini sets no input number" | "Gemini proposes inventory estimates for review; code computes the quote from the selected inputs." |
 
-**"Your guard proves the model repeated your number. It does not prove the number is right."**
-Correct, and that is the limit of it. The check is for consistency between what the code computed
-and what the model said, not for whether the guideline itself is sensible. What makes the number
-defensible is separate: it comes from a rules file you can read, and the waterfall shows every step
-that produced it, so you can disagree with the rule rather than with the machine.
-
-**"Your Challenger is not independent. That is not effective challenge."**
-Also correct. In model-risk terms (SR 11-7), effective challenge means review by someone with
-distinct incentives and authority. Our Challenger is another agent in the same system reading the
-same facts. What it does buy is narrower and real: it is grounded in a deterministic sensitivity
-analysis, so it can only argue from facts the engine computed, and it forces the Lead to answer
-before a decision stands. Call it a structured second opinion, not governance.
-
-**"Where does your 'underwriters disagree' claim come from?"**
-Be careful here. The widely quoted figure is a 55% median difference between underwriters pricing
-the same policy, from the noise audit written up in *Noise*. It is **one unreplicated consultancy
-audit** at an unnamed company with no published protocol, and there is no peer-reviewed measurement
-of commercial property underwriter agreement. Do not present it as settled science. The better move
-is to turn it around: "nobody has measured it at your company. Run this alongside your desk for a
-month and it will tell you your own number." That is a first use case, not a weakness.
-
-## If you do not know
-
-"I do not know" beats a guess. Follow it with what you do know and where it is written down:
-`docs/TRACKS.md` marks every feature verified or unverified, and `docs/DEVILS-ADVOCATE.md` is our
-own list of what is weakest.
+You can make the pitch clearer, shorter and more specific. Do not invent customers, timings, benchmark gains, live calls, certifications or sponsor usage. A labelled rehearsal scenario is fine; presenting it as measured evidence is not.

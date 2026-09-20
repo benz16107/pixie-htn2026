@@ -1,3 +1,5 @@
+> Current judging scripts and verified caveats are in [DEMO](../DEMO/README.md). This document preserves earlier implementation notes; do not use its old timings, counts or live-status claims as the booth script.
+
 # Pixie: sponsor pitches
 
 Eleven 5-minute pitches for Sunday judging. Every number below was read off a source in this repo

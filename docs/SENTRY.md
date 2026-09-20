@@ -1,3 +1,5 @@
+> Website audit, 2026-09-20: the current checkout has no web/.env.local and no NEXT_PUBLIC_SENTRY_DSN in the build environment. Browser replay is therefore unavailable in this build. The API DSN and previously verified API traces are separate. Use [the current Sentry demo card](../DEMO/tracks/07-sentry.md); older setup claims below describe prior verification.
+
 # Sentry: what's instrumented, and why
 
 Lane A4. Full research and the ranked 12-item plan this follows: `docs/research/sentry.md` (that

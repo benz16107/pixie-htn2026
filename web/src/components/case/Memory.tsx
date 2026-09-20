@@ -19,7 +19,7 @@ const pct = (n: number | null) => (typeof n === "number" ? `${Math.round(n * 100
 export function Memory({ m }: { m: DeskMemory }) {
   const sources = Object.values(m.sources ?? {}).filter((s) => s.lines > 0 || s.live);
   return (
-    <section aria-labelledby="mem-h" className="grid grid-cols-[minmax(0,1fr)_248px] gap-x-4 px-3 py-2">
+    <section aria-labelledby="mem-h" className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_248px] gap-x-4 px-3 py-2">
       <h2 id="mem-h" className="sr-only">
         What the desk remembered
       </h2>
@@ -78,7 +78,7 @@ export function Memory({ m }: { m: DeskMemory }) {
             {sources.map((s) => (
               <li key={s.id} className="mb-1" title={s.store}>
                 <b className="font-medium text-dim">{s.name}</b>: {s.lines} line{s.lines === 1 ? "" : "s"},{" "}
-                {s.needsNetwork ? "needs the network" : "works with the Wi-Fi off"}
+                {s.id === "backboard" && s.queried === false ? "not queried for this view" : s.needsNetwork ? "provider retrieval requires the network" : "stored locally"}
               </li>
             ))}
           </ul>

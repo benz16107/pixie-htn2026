@@ -1,35 +1,60 @@
-# If it breaks
+# Recovery during rehearsal or judging
 
-Work top to bottom. Most of it is one command on macserver:
+## First response at the table
 
-    ssh macserver
-    ~/Code/hackathons/htn-2026/atlas/start.sh
+"That provider is not answering, so I will show the captured result and explain which steps still run locally."
 
-That starts whatever is down, leaves what is up alone, keeps the machine awake, warns if it is on
-battery, and prints every URL.
+Switch within ten seconds. Use the next row's fallback, then continue the pitch. Do not debug credentials in front of a judge.
 
-| What you see | What it is | What to do |
+| Failure | Recovery | What to say |
 |---|---|---|
-| A page will not load at all | Tailscale is off, or macserver is asleep | Turn Tailscale on. If still nothing, ssh in and run `start.sh` |
-| A page returns 500 | The API restarted under it | Wait ten seconds and reload |
-| `macserver:3100` does not resolve | MagicDNS | Use `http://100.95.223.110:3100` |
-| The live run stalls | A live model call is hanging | Press **Run the demo** instead. Replay needs no network |
-| The queue looks wrong after a judge clicked around | State from the last demo | `curl -X POST http://macserver:8000/demo/reset` |
-| Precedent says `[memory]` not `[elastic]` | The cluster is unreachable | Say so out loud. The numbers are the same book, read from a local copy |
-| The phone cannot reach anything | Tailscale off on the phone, or Expo Go lost the bundle | Turn Tailscale on, reopen `exp://100.95.223.110:8081` |
-| A reply to the digest text does nothing | Linq's webhook is pointed at a dead URL | It should be `https://macserver.tailb51682.ts.net/webhooks/linq`. Fix it in the Linq dashboard |
-| Wi-Fi at the venue is dead | The laptop cannot reach macserver | Nothing recovers this. Play the backup video |
-| Home power or internet is out | macserver is gone | Backup video. Say plainly that the live system is at home |
+| Live agent run errors or stalls | Stop it, select **Case run**, then `e` to finish the recording | "This is the recorded run; it makes no new model calls." |
+| Guideline fails to load | Click **retry**. If still unavailable, show the filed rule and recorded diff | "The editable rule API is unavailable." |
+| Queue/case API unavailable | Retry the error page or open `/live` for the labelled bundled recording | "This is a bundled sample, not the current book." |
+| Action says dry/not connected/failed | Show the status; use the captured broker reply if relevant | "The connector did not send a message." |
+| Elastic badge says memory | Continue with local precedent and show implementation evidence | "These are the same book records through the local fallback, not a live cluster query." |
+| Backboard returns no citation | Show provider memory or the typed judgement already captured | "Document upload succeeded, but citation retrieval is still unreliable." |
+| Gemini fails on a new photo/address | Use the exact previously warmed input or the manual quote questions | "New inputs need a working model; we are not fabricating a response." |
+| Map background blank | Use case/receipt numbers and the table | "The risk data is cached; the base-map tiles need the network." |
+| Expo cannot reach API | Check phone Tailscale and EXPO_PUBLIC_API_URL, reopen Expo Go | "The app is connected to the same server as the desk." Only say this once verified. |
+| Laptop cannot reach macserver | Check Tailscale; use `http://100.95.223.110:3100`. Otherwise play the local video | "The server is at home; this is the recording." |
+| Linq reply does nothing | Use the prepared phone thread and recorded send result | "The inbound path depends on the current public webhook URL." |
 
-## The two sentences that save a bad moment
+## On macserver before judging
 
-> "That is the live path and it is not answering right now, so let me show you the recorded run
-> instead. It is the same case and the same numbers."
+```sh
+ssh macserver
+cd ~/Code/hackathons/htn-2026/atlas
+./start.sh
+```
 
-> "I do not know. It is in our own notes as unverified, and I would rather say that than guess."
+`start.sh` starts missing services. It does not restart already-running processes or deploy edited code. It now prefers the working Node 22 installation and adds `~/.local/bin` for uv. Do not use `next dev` for the Tailscale demo.
 
-## What cannot break
+Read health without sending anything:
 
-The recorded runs, the enrichment layers and the precedent fallback are all on disk
-on macserver. With the internet down but the tailnet up, the whole demo still plays. Only the live
-model runs and the sponsor calls need the outside world.
+```sh
+curl -fsS http://localhost:8000/health
+curl -fsS http://localhost:8000/composio/status
+curl -fsS http://localhost:8000/openai/runtime
+```
+
+Logs: `/tmp/pixie-api.log`, `/tmp/pixie-web.log`, `/tmp/pixie-build.log`, `/tmp/pixie-expo.log`. Check listeners with `lsof -nP -iTCP:8000 -iTCP:3100 -iTCP:8081 -sTCP:LISTEN`. Restart only the process you intend to replace, never every Node or Python process on the machine.
+
+After editing web code, rebuild and restart its production server:
+
+```sh
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$HOME/.local/bin:$PATH"
+cd ~/Code/hackathons/htn-2026/atlas/web
+npm run build
+npm run start -- --hostname 0.0.0.0 --port 3100
+```
+
+The last command requires the old listener to have stopped. For the API, use `uv run uvicorn atlas_api.app:app --host 0.0.0.0 --port 8000` from `api/`. API changes also need a restart. `ATLAS_API_URL` can point a web server at a separate backend for isolated testing; browsers keep using the same-origin proxy.
+
+Linq's webhook and receipt media must use the actual `PUBLIC_URL` in the current environment. Do not assume an old Cloudflare or Tailscale URL still works. `scripts/retunnel.py` changes tunnel configuration; use it deliberately during setup, not as the first response to every failure.
+
+## Reset scope
+
+**reset demo** restores the filed rule and clears demo case actions, replies and overrides. **reset this case** affects only the chosen case and preserves the active guideline. Neither resets provider history or cancels an already-running agent task. Resetting also clears local action deduplication, so a subsequent send can produce another real message.
+
+The cache lives on macserver. It reduces dependence on outside providers; it does not make the laptop independent of macserver. Keep a local recording.

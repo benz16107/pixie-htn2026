@@ -14,13 +14,13 @@ const LEGEND = [
 export default async function MapPage({ searchParams }: PageProps<"/map">) {
   const q = (await searchParams).peril;
   const peril: Peril = PERILS.includes(q as Peril) ? (q as Peril) : "all";
-  const [hexes, allPins] = await Promise.all([api.mapBook(peril, 3), api.mapPins()]);
+  const [hexes, allPins] = await Promise.all([api.mapBook(peril, 5), api.mapPins()]);
   const cells = new Set(hexes.map((h) => h.cell));
   const pins = peril === "all" ? allPins : allPins.filter((p) => cells.has(p.cell) || p.decision === "open");
   const total = hexes.reduce((s, h) => s + h.value, 0);
 
   return (
-    <main className="grid h-[calc(100vh-30px)] grid-cols-[1fr_360px]">
+    <main className="map-page grid h-[calc(100vh-30px)] grid-cols-[1fr_360px]">
       <div className="relative overflow-hidden border-r border-rule">
         <LiveMap hexes={hexes} pins={pins} center={[-99, 37]} zoom={3.5} />
         <div aria-hidden className="pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />

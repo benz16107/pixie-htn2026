@@ -295,19 +295,23 @@ export default function GuidelinePage() {
   const [busy, setBusy] = useState(false);
   const [ran, setRan] = useState<string | null>(null);
   const live = useRef(true);
+  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     live.current = true;
+    setLoading(true); setError("");
     api.guideline().then((g) => {
       if (g && live.current) {
         setServer(g);
         setDoc(g);
-      }
+      } else if (live.current) setError("The guideline could not be loaded. Check the API connection and try again.");
+      if (live.current) setLoading(false);
     });
     return () => {
       live.current = false;
     };
-  }, []);
+  }, [attempt]);
 
   const pending = useMemo(() => {
     if (!doc || !server) return { any: false, n: 0, bands: new Set<string>(), thresholds: false };
@@ -378,8 +382,10 @@ export default function GuidelinePage() {
 
   if (!doc || !server)
     return (
-      <main className="grid h-[calc(100vh-30px)] place-items-center text-[11px] text-dim">
-        <p>Reading the guideline from the desk API…</p>
+      <main className="guideline-page grid h-[calc(100vh-30px)] place-items-center text-[11px] text-dim">
+        <section className="max-w-lg px-6" aria-live="polite">
+          {loading ? <><p>Loading the guideline…</p><div className="mt-4 h-40 animate-pulse bg-land motion-reduce:animate-none" /></> : <><p role="alert">{error}</p><button className="mt-4 border border-ochre px-4 py-2 text-ochre" onClick={() => setAttempt((n) => n + 1)}>Try again</button></>}
+        </section>
       </main>
     );
 
@@ -392,7 +398,7 @@ export default function GuidelinePage() {
   ];
 
   return (
-    <main className="grid h-[calc(100vh-30px)] grid-rows-[52px_minmax(0,1fr)_26px] overflow-hidden">
+    <main className="guideline-page grid h-[calc(100vh-30px)] grid-rows-[52px_minmax(0,1fr)_26px] overflow-hidden">
       <header className="flex items-stretch border-b border-edge bg-land">
         <h1 className="sr-only">2025 commercial property underwriting guideline</h1>
         {tiles.map((t) => (
@@ -403,7 +409,7 @@ export default function GuidelinePage() {
           </div>
         ))}
         <p className="cond hidden max-w-[40ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          This document is the desk. Apply an edit and all 158 submissions re-score.
+          Apply an edit to re-score the book. The diff shows which decisions changed.
         </p>
         <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-rule px-3">
           <span
@@ -462,7 +468,7 @@ export default function GuidelinePage() {
         <div className="flex min-h-0 flex-col">
           <section aria-labelledby="sc-h" className="shrink-0 px-3 py-2">
             <h2 id="sc-h" className="kicker mb-1">
-              Try a change <span className="normal-case tracking-normal text-faint">— each effect below is measured against this book, not guessed</span>
+              Try a change <span className="normal-case tracking-normal text-faint">· examples use the filed rules; apply to measure the current result</span>
             </h2>
             <ul>
               {doc.scenarios.map((s) => (
@@ -501,7 +507,7 @@ export default function GuidelinePage() {
                   <b className="text-ochre">
                     {pending.n} pending edit{pending.n === 1 ? "" : "s"}
                   </b>
-                  <span className="text-faint"> · the desk is still scoring the filed guideline</span>
+                  <span className="text-faint"> · the desk is still scoring the active guideline</span>
                 </span>
                 <button onClick={apply} disabled={busy} className={`${BTN} border-ochre text-ochre hover:bg-ochre hover:text-paper`}>
                   {busy ? "re-scoring…" : "apply"}

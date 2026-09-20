@@ -103,7 +103,7 @@ export type BrokerReply = {
 
 // On the server we call the API directly; in the browser we go through the same-origin proxy,
 // so the page works from another machine (the API sends no CORS headers).
-const BASE = typeof window === "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "/api/atlas";
+const BASE = typeof window === "undefined" ? (process.env.ATLAS_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") : "/api/atlas";
 const FIXTURES_ONLY = process.env.NEXT_PUBLIC_FIXTURES === "1";
 export const PERILS = ["all", "flood", "wildfire", "wind", "quake"] as const;
 export type Peril = (typeof PERILS)[number];
@@ -112,13 +112,16 @@ const OPEN = new Set(["cleared", "received", "quoted"]);
 const cases: Record<string, unknown> = { "126": case126, "138": case138, "143": case143, "TQ-7f3a": caseTQ, "TQ-2b91": caseTQ2, "TQ-5c0e": caseTQ3 };
 const events: Record<string, unknown> = { "138": events138 };
 
-// Fixtures stand in when the API is down, so the demo never shows a blank page.
-async function get<T>(path: string, fixture: () => T | undefined): Promise<T | undefined> {
+// Bundled samples are an explicit mode. An unavailable API must not impersonate the current book.
+async function get<T>(path: string, fixture: () => T | undefined, optional = false): Promise<T | undefined> {
   if (!FIXTURES_ONLY) {
     try {
       const res = await fetch(BASE + path, { cache: "no-store", signal: AbortSignal.timeout(1500) });
       if (res.ok) return (await res.json()) as T;
+      if (res.status === 404) return undefined;
     } catch {}
+    if (optional) return undefined;
+    throw new Error("The desk API could not load this page. Check the connection and try again.");
   }
   return fixture();
 }
@@ -139,15 +142,19 @@ async function postJson<T>(path: string, body: unknown): Promise<T | undefined> 
 }
 
 async function post(path: string, body: unknown): Promise<{ ok: boolean; status: string }> {
-  if (FIXTURES_ONLY) return { ok: true, status: "dry run (fixtures)" };
+  if (FIXTURES_ONLY) return { ok: false, status: "Sample mode: nothing was sent or changed." };
   try {
     const res = await fetch(BASE + path, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(60000),
     });
-    return { ok: res.ok, status: res.ok ? "queued" : `API returned ${res.status}` };
+    const result = await res.json().catch(() => ({}));
+    const status = typeof result.status === "string" ? result.status : "";
+    const ok = res.ok && !["failed", "not_connected"].includes(status);
+    const labels: Record<string, string> = { sent: "Sent", dry: "Dry run: composed, not sent", not_connected: "Account not connected; nothing sent", failed: "Send failed" };
+    return { ok, status: res.ok ? `${result.deduped ? "Already processed: " : ""}${(labels[status] ?? status) || "Done"}` : `Request failed (${res.status})` };
   } catch {
     return { ok: false, status: "API unreachable" };
   }
@@ -155,7 +162,7 @@ async function post(path: string, body: unknown): Promise<{ ok: boolean; status:
 
 /** Unlike post(), this keeps the API's `detail`: the override bound is only a bound if you see it. */
 async function send(path: string, init: RequestInit): Promise<{ ok: boolean; detail: string }> {
-  if (FIXTURES_ONLY) return { ok: true, detail: "dry run (fixtures)" };
+  if (FIXTURES_ONLY) return { ok: false, detail: "Sample mode: nothing was changed." };
   try {
     const res = await fetch(BASE + path, { ...init, signal: AbortSignal.timeout(8000) });
     const body = (await res.json().catch(() => ({}))) as { detail?: string };
@@ -167,7 +174,7 @@ async function send(path: string, init: RequestInit): Promise<{ ok: boolean; det
 
 /** Like send(), but keeps the response body: the guideline diff IS the answer. */
 async function sendJson<T>(path: string, init: RequestInit): Promise<{ ok: boolean; detail: string; data?: T }> {
-  if (FIXTURES_ONLY) return { ok: true, detail: "dry run (fixtures)" };
+  if (FIXTURES_ONLY) return { ok: false, detail: "Sample mode: nothing was changed." };
   try {
     const res = await fetch(BASE + path, { ...init, signal: AbortSignal.timeout(15000) });
     const body = (await res.json().catch(() => ({}))) as { detail?: string };
@@ -178,10 +185,10 @@ async function sendJson<T>(path: string, init: RequestInit): Promise<{ ok: boole
 }
 
 export const api = {
-  queue: async (view: "open" | "all") =>
+  queue: async (view: "open" | "all" | "consumer") =>
     (await get<QueueRow[]>(`/queue?view=${view}`, () => {
       const rows = queue as unknown as QueueRow[];
-      return view === "open" ? rows.filter((r) => OPEN.has(r.status)) : rows;
+      return view === "consumer" ? rows.filter((r) => r.line === "tenant") : view === "open" ? rows.filter((r) => OPEN.has(r.status)) : rows;
     })) ?? [],
   case: (id: string) => get<CaseWithReceipt>(`/cases/${id}`, () => cases[id] as CaseWithReceipt | undefined),
   events: async (id: string) =>
@@ -194,18 +201,18 @@ export const api = {
   mapPins: async () => (await get<Pin[]>(`/map/pins`, () => mapPins as unknown as Pin[])) ?? [],
   askCanned: Object.keys(askFixture),
   ask: async (question: string) =>
-    (await postJson<AskResult>(`/ask`, { question })) ??
-    ((askFixture as unknown as Record<string, AskResult>)[question] as AskResult | undefined),
+    (await postJson<AskResult & { path?: string }>(`/ask`, { question })) ??
+    ((askFixture as unknown as Record<string, AskResult>)[question] ? { ...(askFixture as unknown as Record<string, AskResult>)[question], path: "sample" } : undefined),
   backtest: async () => (await get<Backtest>(`/backtest`, () => backtestFixture)) as Backtest,
   requestInfo: (caseId: string) => post(`/actions/${caseId}/request-info`, {}),
   digest: (n: number) => post(`/actions/digest`, { n }),
-  precedent: (id: string) => get<PrecedentResult>(`/cases/${id}/precedent`, () => undefined),
-  declines: () => get<DeclinesInsight>(`/insights/declines`, () => undefined),
-  percentile: (id: string) => get<Percentile>(`/cases/${id}/percentile`, () => undefined),
+  precedent: (id: string) => get<PrecedentResult>(`/cases/${id}/precedent`, () => undefined, true),
+  declines: () => get<DeclinesInsight>(`/insights/declines`, () => undefined, true),
+  percentile: (id: string) => get<Percentile>(`/cases/${id}/percentile`, () => undefined, true),
   override: (caseId: string, points: number, reason: string) =>
     send(`/cases/${caseId}/override`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ points, reason }) }),
   clearOverride: (caseId: string) => send(`/cases/${caseId}/override`, { method: "DELETE" }),
-  memory: (id: string) => get<DeskMemory>(`/cases/${id}/memory`, () => undefined),
+  memory: (id: string) => get<DeskMemory>(`/cases/${id}/memory`, () => undefined, true),
   /** A live Gmail search can take a while; a replay answers at once. Errors keep the API's own sentence. */
   brokerReply: async (caseId: string, replay: boolean): Promise<BrokerReply> => {
     if (FIXTURES_ONLY) return { status: "dry", path: "dry", detail: "Running on fixtures, so nothing was checked." };
@@ -223,7 +230,8 @@ export const api = {
     }
   },
   demoReset: () => post(`/demo/reset`, {}),
-  guideline: () => get<GuidelineDoc>(`/guideline`, () => undefined),
+  resetCase: (id: string) => post(`/cases/${id}/reset`, {}),
+  guideline: () => get<GuidelineDoc>(`/guideline`, () => undefined, true),
   putGuideline: (doc: GuidelineDoc) =>
     sendJson<GuidelineResult>(`/guideline`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(doc) }),
   resetGuideline: () => sendJson<GuidelineResult>(`/guideline/reset`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),

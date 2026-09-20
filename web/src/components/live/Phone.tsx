@@ -59,7 +59,7 @@ export function Phone({
             >
               {sending ? "Sending…" : digest ? "Send it again" : "Send the digest"}
             </button>
-            {digest && <p className="text-center text-[9px] text-moss">{digest.status} to Ben&apos;s phone</p>}
+            {digest && <p role="status" className={`text-center text-[9px] ${digest.status === "sent" ? "text-moss" : "text-ochre"}`}>{digest.status === "sent" ? "Sent to the configured phone" : digest.status === "dry" ? "Dry run: no message sent" : digest.status === "failed" ? "Send failed" : `Status: ${digest.status}`}</p>}
           </div>
         ) : quote ? (
           <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto text-[10px] leading-snug">

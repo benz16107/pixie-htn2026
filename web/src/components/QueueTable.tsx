@@ -55,7 +55,7 @@ export function QueueTable({
   t = THRESHOLDS,
 }: {
   rows: (Row & Extras)[];
-  view: "open" | "all";
+  view: "open" | "all" | "consumer";
   onCursor: (r: Ranked | null) => void;
   filter: string;
   setFilter: (s: string) => void;
@@ -111,7 +111,7 @@ export function QueueTable({
     setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : key === "rank" || key === "insured" ? 1 : -1 }));
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
       <div className="flex h-[26px] shrink-0 items-center gap-2 border-b border-rule px-2 text-[11px]">
         <span aria-hidden className="text-faint">
           /
@@ -135,7 +135,7 @@ export function QueueTable({
         </span>
       </div>
 
-      <div ref={box} className="min-h-0 flex-1 overflow-auto">
+      <div ref={box} className="relative min-h-0 flex-1 overflow-auto">
         <table className="w-full table-fixed border-collapse text-[11px]">
           <caption className="sr-only">
             Submission blotter, ranked by score interval. Column headers sort. Press j and k to move the cursor, Enter to open a case.

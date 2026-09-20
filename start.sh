@@ -4,9 +4,12 @@
 set -u
 cd "$(dirname "$0")"
 ROOT="$PWD"
+# macserver's Homebrew Node currently has a missing shared library. Prefer its verified Node 22.
+[ ! -x "$HOME/.nvm/versions/node/v22.22.3/bin/node" ] || export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 set -a; . ./.env 2>/dev/null; set +a
 
-up() { lsof -ti tcp:"$1" >/dev/null 2>&1; }
+up() { lsof -tiTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
 
 # Everything runs here on macserver; Ben demos from his laptop and phone over Tailscale. The
 # Funnel gives the API one permanent public HTTPS address, so nothing needs rewriting when the
@@ -84,7 +87,7 @@ cat <<EOF
   If the name does not resolve, use http://${TS_IP:-100.95.223.110}:3100 instead.
 
   Phone       Tailscale on, then Expo Go: exp://${TS_IP:-100.95.223.110}:8081
-  API, public https://macserver.tailb51682.ts.net  (Linq webhooks, no VPN needed)
+  API, public ${PUBLIC_URL:-not configured}  (Linq webhooks, no VPN needed)
 
   Reset the demo:  curl -X POST localhost:8000/demo/reset
   Runbook:         $ROOT/docs/RUNBOOK.md

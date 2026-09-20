@@ -10,7 +10,7 @@ const cond = IBM_Plex_Sans_Condensed({ subsets: ["latin"], variable: "--font-ple
 
 export const metadata: Metadata = {
   title: "Pixie underwriting desk",
-  description: "Five agents that find out what the decision depends on.",
+  description: "Six agents investigate the facts that could change an underwriting decision.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

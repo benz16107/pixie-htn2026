@@ -1,19 +1,16 @@
-# Demo day
+# Pixie judging guide
 
-Everything for tomorrow is in this folder. Read them in order; they are short.
+Updated 2026-09-20 after the website audit. This folder is the current demo script. Older pitch notes in `docs/` are implementation history, not the script to read at the booth.
 
-0. **[0-HOW-IT-WORKS.md](0-HOW-IT-WORKS.md)** — how the score is actually computed, where the data
-   comes from, what the agents do, and what each sponsor service contributes. Read this first if
-   anyone might ask you *why* a number is what it is
-1. **[1-START-HERE.md](1-START-HERE.md)** — what Pixie is, where it runs, the checklist, the
-   five-minute demo with the words to say
-2. **[2-SCREENS.md](2-SCREENS.md)** — every screen and how to drive it, including the keys
-3. **[3-QUESTIONS.md](3-QUESTIONS.md)** — what judges will ask and the honest answer
-4. **[4-PER-TRACK.md](4-PER-TRACK.md)** — one page per sponsor: what to open, the number, the limit
-5. **[5-IF-IT-BREAKS.md](5-IF-IT-BREAKS.md)** — recovery, and the two sentences that save a moment
+Start with [the five-minute rehearsal](1-START-HERE.md), then open only the [track card](4-PER-TRACK.md) for your next judge. Each card has the opening line, timed clicks, service internals, proof, limitations and fallback.
 
-6. **[6-FEDERATO-BRIEF.md](6-FEDERATO-BRIEF.md)** — who Federato is, what they sell, the jargon,
-   what is genuinely yours versus table stakes, and the lines to say. Read before the Federato slot
+- [How the system works](0-HOW-IT-WORKS.md) explains the insurance terms and the boundaries between code and models.
+- [Every screen](2-SCREENS.md) tells you what to show and what to skip.
+- [Questions and stronger wording](3-QUESTIONS.md) prepares you for objections without invented claims.
+- [Recovery](5-IF-IT-BREAKS.md) has the startup commands and failure paths.
+- [Federato context](6-FEDERATO-BRIEF.md) explains the underwriting workflow.
+- [Website audit](7-WEBSITE-AUDIT.md) records the fixes, verification and remaining work.
 
-The full write-ups live in `../docs/` and are the source of truth. This folder is the short version
-for standing in front of someone.
+Five minutes means one problem, one sponsor workflow, one result, one honest limitation. Spend roughly three minutes on that sponsor's service. Do not tour all twelve integrations at every table.
+
+Best prepared technical stories: Federato, OpenAI, Elastic and Composio's captured broker reply. Expo and Intact need a phone rehearsal. Sentry needs a real trace open. Linq needs the correct phone thread. Backboard needs a provider-labelled response. Gemini needs warmed inputs or a working model. Huawei is conditional because this code does not use openJiuwen.

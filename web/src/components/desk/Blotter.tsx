@@ -15,11 +15,11 @@ type Extras = { deskVerdict?: string; challengeRisks?: number };
 /** Three numbers, not five: the split between the two books reads better as a sentence. */
 const TILES = (rows: (Row & Extras)[]) => [
   { label: "submissions", value: String(rows.length), note: "rows in view" },
-  { label: "still undecided", value: String(rows.filter((r) => r.decision.kind === "open").length), note: "one more fact would settle each of these" },
+  { label: "still undecided", value: String(rows.filter((r) => r.decision.kind === "open").length), note: "unresolved facts may change the decision" },
   { label: "value at stake", value: money(rows.reduce((n, r) => n + r.valueAtStake, 0)), note: "total insured value in view" },
 ];
 
-export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; declines: DeclinesInsight | null; t?: Thresholds }) {
+export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all" | "consumer"; declines: DeclinesInsight | null; t?: Thresholds }) {
   const router = useRouter();
   const [here, setHere] = useState<Ranked | null>(null);
   const [filter, setFilter] = useState("");
@@ -36,7 +36,7 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
   );
 
   return (
-    <main className="grid h-[calc(100vh-30px)] grid-rows-[46px_minmax(0,1fr)_26px] overflow-hidden">
+    <main className="queue-page grid h-[calc(100vh-30px)] grid-rows-[46px_minmax(0,1fr)_26px] overflow-hidden">
       <header className="flex items-stretch border-b border-edge bg-land">
         <h1 className="sr-only">Submission blotter</h1>
         {TILES(rows).map((t) => (
@@ -46,13 +46,14 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
           </div>
         ))}
         <p className="cond hidden max-w-[52ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          Ranked by score, the undecided first. {desk} on the commercial property book, {rows.length - desk} Toronto renter referrals.
+          Ranked by score, the undecided first. {desk} commercial submissions, {rows.length - desk} Toronto renter referrals.
         </p>
         <div className="ml-auto flex items-stretch border-l border-rule" role="group" aria-label="Which submissions">
           {(
             [
               ["open", "open"],
               ["all", "everything"],
+              ["consumer", "renters"],
             ] as const
           ).map(([v, label]) => (
             <Link
@@ -88,7 +89,7 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
         left={
           <>
             <span className="text-ochre">BLOTTER</span>
-            <span>showing {view === "open" ? "open submissions" : "every submission"}</span>
+            <span>showing {view === "open" ? "open submissions" : view === "consumer" ? "renter quotes" : "every submission"}</span>
             {here && (
               <span className="truncate text-ink">
                 #{here.caseId} {here.insured}
@@ -146,7 +147,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
             <IntervalBar score={r.score} t={t} />
           </div>
           <BandScale t={t} className="mt-1" />
-          {straddle !== null && <p className="mt-1 text-[11px] text-ochre">The range crosses the line at {straddle}, so one more fact settles it.</p>}
+          {straddle !== null && <p className="mt-1 text-[11px] text-ochre">The range crosses the line at {straddle}, so unresolved facts can change the decision.</p>}
         </div>
       ) : (
         <p className="mt-3 border border-dashed border-edge px-2 py-3 text-center text-[11px] text-faint">

@@ -1,7 +1,7 @@
 import type { CaseView, DeskEvent, Interval, QueueRow } from "@/contract";
 import { parseHazard, parseSkip, prettyBands, signed } from "./format";
 
-export const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const API = process.env.ATLAS_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 /** The browser talks to the API through the same-origin proxy in app/api/atlas. */
 export const PROXY = "/api/atlas";
 

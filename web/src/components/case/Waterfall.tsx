@@ -72,7 +72,7 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
   );
 
   return (
-    <div className="group absolute inset-y-0" style={{ left: `${left}%`, width: `${width}%` }}>
+    <div tabIndex={0} className="group absolute inset-y-0" style={{ left: `${left}%`, width: `${width}%` }}>
       {s.kind === "cap" && split ? (
         <span
           className={`absolute left-[22%] w-[56%] rounded-[2px] ${tone}`}
@@ -96,7 +96,7 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
         {s.label}
       </span>
 
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+      <span className="waterfall-tip pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] hidden break-words transition-[opacity,transform] duration-150 ease-out group-hover:block group-focus:block">
         <b className="block font-semibold">{s.label}: {pts} points</b>
         {human && <span className="block text-ink">The underwriter&apos;s number, not the engine&apos;s.</span>}
         {s.kind === "cap" && <span className="block text-ochre">A cap: break this hard rule and the score cannot climb past it.</span>}
@@ -129,7 +129,7 @@ export function PriceWaterfall({ steps, annual, label }: { steps: PriceStep[]; a
           const from = (steps[i - 1]?.runningDollars ?? 0) as number;
           const up = s.dollars >= 0;
           return (
-            <div key={s.key} className="group absolute inset-y-0" style={{ left: `${i * W}%`, width: `${W}%` }}>
+            <div key={s.key} tabIndex={0} className="group absolute inset-y-0" style={{ left: `${i * W}%`, width: `${W}%` }}>
               <span
                 className={`absolute left-[24%] w-[52%] rounded-[2px] ${s.kind === "base" ? "bg-dim" : up ? "bg-moss" : "bg-rust"}`}
                 style={{ bottom: y(Math.min(from, s.runningDollars)), height: `calc(${y(Math.abs(s.dollars))} + 2px)`, minHeight: 2 }}
@@ -141,7 +141,7 @@ export function PriceWaterfall({ steps, annual, label }: { steps: PriceStep[]; a
                 {s.label}
                 {s.capped && <span className="block text-ochre">capped</span>}
               </span>
-              <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[230px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+              <span className="waterfall-tip pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[230px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] hidden break-words transition-[opacity,transform] duration-150 ease-out group-hover:block group-focus:block">
                 <b className="block font-semibold">
                   {s.label}
                   {s.multiplier ? ` ×${s.multiplier.toFixed(2)}` : ""}
