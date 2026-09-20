@@ -1,27 +1,65 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DecisionChip, IntervalBar, IssueTag, money } from "./bits";
+import { useKeys } from "./desk/keys";
 import type { Row } from "@/lib/live";
 
 type Key = "rank" | "insured" | "score" | "value";
 const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
-const group = (r: Row) => GROUP[r.decision.kind] ?? 3;
+/** Consumer referrals sit under the desk's own book, the way they arrive. */
+const group = (r: Row) => (r.region === "toronto" ? 10 : 0) + (GROUP[r.decision.kind] ?? 3);
 const scored = (r: Row) => !!r.score && r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
 const mid = (r: Row) => (scored(r) ? (r.score!.lo + r.score!.hi) / 2 : -1);
 
 type Extras = { deskVerdict?: string; challengeRisks?: number };
-type Ranked = Row & Extras & { rank: number };
+export type Ranked = Row & Extras & { rank: number };
 
-const COLS: { key: Key; label: string; align?: "right"; w?: string }[] = [
-  { key: "rank", label: "#", w: "w-[38px]" },
-  { key: "insured", label: "Insured" },
-  { key: "score", label: "Score interval", w: "w-[250px]" },
-  { key: "value", label: "At stake", align: "right", w: "w-[92px]" },
+const COLS: { key?: Key; label: string; w: string; align?: "right" }[] = [
+  { key: "rank", label: "#", w: "w-[34px]" },
+  { label: "case", w: "w-[58px]" },
+  { key: "insured", label: "insured", w: "w-[216px]" },
+  { label: "line", w: "w-[74px]" },
+  { label: "st", w: "w-[30px]" },
+  { key: "value", label: "at stake", w: "w-[76px]", align: "right" },
+  { key: "score", label: "score interval", w: "w-[186px]" },
+  { label: "call", w: "w-[164px]" },
+  { label: "flags", w: "w-[102px]" },
+  { label: "what it turns on", w: "" },
 ];
 
-/** One row per submission: who, where it landed, and why. Everything else lives on the case page. */
-export function QueueTable({ rows }: { rows: (Row & Extras)[] }) {
+/** The desk's own verdict, short enough to sit beside the rules' call without moving the grid. */
+const VERDICT_SHORT: Record<string, string> = {
+  request_info: "ask broker",
+  refer_with_subjectivity: "refer+subj",
+  decline_with_invitation: "decline+invite",
+  refer: "refer",
+  decline: "decline",
+  accept: "accept",
+  approve: "approve",
+  route: "route",
+  routed: "route",
+};
+
+/**
+ * The blotter. One row per submission, ten columns, a cursor you drive with j and k, and a
+ * preview that follows the cursor so the whole book reads without a single click.
+ */
+export function QueueTable({
+  rows,
+  view,
+  onCursor,
+  filter,
+  setFilter,
+}: {
+  rows: (Row & Extras)[];
+  view: "open" | "all";
+  onCursor: (r: Ranked | null) => void;
+  filter: string;
+  setFilter: (s: string) => void;
+}) {
+  const router = useRouter();
   const ranked = useMemo<Ranked[]>(
     () =>
       [...rows]
@@ -30,136 +68,217 @@ export function QueueTable({ rows }: { rows: (Row & Extras)[] }) {
     [rows],
   );
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: "rank", dir: 1 });
+  const [cursor, setCursor] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+
   const sorted = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    const hit = (r: Ranked) => !q || `${r.insured} ${r.caseId} ${r.line} ${r.state} ${r.decision.kind}`.toLowerCase().includes(q);
     const val = (r: Ranked): string | number => ({ rank: r.rank, insured: r.insured, score: mid(r), value: r.valueAtStake })[sort.key];
-    return [...ranked].sort((a, b) => {
+    return ranked.filter(hit).sort((a, b) => {
       const x = val(a),
         y = val(b);
       return (typeof x === "string" ? x.localeCompare(y as string) : x - (y as number)) * sort.dir;
     });
-  }, [ranked, sort]);
+  }, [ranked, sort, filter]);
 
-  const toggle = (key: Key) => setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : key === "rank" || key === "insured" ? 1 : -1 }));
+  const at = Math.min(cursor, Math.max(sorted.length - 1, 0));
+  const here = sorted[at] ?? null;
+  useEffect(() => onCursor(here), [here, onCursor]);
 
-  if (!rows.length) return <p className="mt-10 text-dim">No submissions match. Switch to All to see decided and bound cases.</p>;
+  // Keep the cursor row in view without hijacking the page: only the blotter scrolls.
+  useEffect(() => {
+    box.current?.querySelector<HTMLElement>('tr[data-on="1"]')?.scrollIntoView({ block: "nearest" });
+  }, [at, sorted.length]);
 
-  const desk = sorted.filter((r) => r.region !== "toronto");
-  const consumer = sorted.filter((r) => r.region === "toronto");
+  useKeys(
+    (e, leader) => {
+      if (e.key === "/") return e.preventDefault(), search.current?.focus(), true;
+      if (e.key === "j" || e.key === "ArrowDown") return setCursor((c) => Math.min(c + 1, sorted.length - 1)), e.preventDefault(), true;
+      if (e.key === "k" || e.key === "ArrowUp") return setCursor((c) => Math.max(c - 1, 0)), e.preventDefault(), true;
+      if (leader === "g" && e.key === "g") return setCursor(0), true;
+      if (e.key === "G") return setCursor(sorted.length - 1), true;
+      if (e.key === "Enter" && here) return router.push(`/cases/${here.caseId}`), true;
+      return false;
+    },
+    [sorted.length, here, router],
+  );
+
+  const toggle = (key: Key) =>
+    setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : key === "rank" || key === "insured" ? 1 : -1 }));
 
   return (
-    <table className="mt-5 w-full border-collapse text-[12.5px]">
-      <caption className="sr-only">Submission queue, ranked by score interval. Column headers sort the table.</caption>
-      <thead>
-        <tr className="border-b border-ink">
-          {COLS.map((c) => (
-            <th
-              key={c.key}
-              scope="col"
-              aria-sort={sort.key === c.key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
-              className={`py-1.5 pr-4 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.w ?? ""}`}
-            >
-              <button onClick={() => toggle(c.key)} className="kicker rounded-sm hover:text-ink">
-                {c.label}
-                <span aria-hidden className="ml-1 inline-block w-2 font-mono">
-                  {sort.key === c.key ? (sort.dir === 1 ? "↑" : "↓") : ""}
-                </span>
-              </button>
-            </th>
-          ))}
-          <th scope="col" className="kicker py-1.5 pr-4 text-left font-normal">
-            Decision
-          </th>
-          <th scope="col" className="kicker py-1.5 text-left font-normal">
-            Why
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {desk.map((r) => (
-          <QueueRowView key={r.caseId} r={r} />
-        ))}
-        {consumer.length > 0 && (
-          <tr>
-            <td colSpan={6} className="pb-1 pt-5">
-              <span className="kicker">Consumer referrals</span>
-              <span className="ml-2 text-[11.5px] text-dim">Toronto renters the same engine priced and sent here.</span>
-            </td>
-          </tr>
-        )}
-        {consumer.map((r) => (
-          <QueueRowView key={r.caseId} r={r} />
-        ))}
-      </tbody>
-    </table>
+    <div className="flex min-h-0 flex-col">
+      <div className="flex h-[26px] shrink-0 items-center gap-2 border-b border-rule px-2 text-[11px]">
+        <span aria-hidden className="text-faint">
+          /
+        </span>
+        <input
+          ref={search}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setFilter("");
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="filter by insured, case, line, state or call"
+          aria-label="Filter the blotter"
+          className="min-w-0 flex-1 bg-transparent text-ink placeholder:text-faint focus:outline-none"
+        />
+        <span className="num shrink-0 text-faint">
+          {sorted.length}/{ranked.length} rows
+        </span>
+      </div>
+
+      <div ref={box} className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full table-fixed border-collapse text-[11px]">
+          <caption className="sr-only">
+            Submission blotter, ranked by score interval. Column headers sort. Press j and k to move the cursor, Enter to open a case.
+          </caption>
+          <thead className="sticky top-0 z-10 bg-paper">
+            <tr className="border-b border-edge">
+              {COLS.map((c) => (
+                <th
+                  key={c.label}
+                  scope="col"
+                  aria-sort={c.key && sort.key === c.key ? (sort.dir === 1 ? "ascending" : "descending") : undefined}
+                  className={`h-[24px] whitespace-nowrap px-2 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.w}`}
+                >
+                  {c.key ? (
+                    <button onClick={() => toggle(c.key!)} className="kicker rounded-sm hover:text-ochre">
+                      {c.label}
+                      <span aria-hidden className="ml-1 inline-block w-2">
+                        {sort.key === c.key ? (sort.dir === 1 ? "↑" : "↓") : ""}
+                      </span>
+                    </button>
+                  ) : (
+                    <span className="kicker">{c.label}</span>
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r, i) => (
+              <BlotterRow key={r.caseId} r={r} on={i === at} onPick={() => setCursor(i)} onOpen={() => router.push(`/cases/${r.caseId}`)} />
+            ))}
+            {!!sorted.length && (
+              <tr>
+                <td colSpan={COLS.length} className="px-2 pt-2 text-[10px] text-faint">
+                  — end of the {view === "open" ? "open" : "full"} book, {sorted.length} rows
+                  {view === "open" && (
+                    <>
+                      {" "}· press <kbd className="key mx-0.5">A</kbd> for every decided and bound submission too
+                    </>
+                  )}
+                </td>
+              </tr>
+            )}
+            {!sorted.length && (
+              <tr>
+                <td colSpan={COLS.length} className="px-2 py-6 text-center text-dim">
+                  Nothing matches “{filter}”. Esc clears it.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
-function QueueRowView({ r }: { r: Ranked }) {
-  const has = scored(r);
-  // "route" and "routed" are the same call; only show the desk's verdict when it really differs.
-  const same = (a: string, b: string) => a.replace(/d$/, "") === b.replace(/d$/, "");
-  const moved = !!r.deskVerdict && !same(r.deskVerdict, r.decision.kind);
+/** "route" and "routed" are the same call; only show the desk's verdict when it really differs. */
+const same = (a: string, b: string) => a.replace(/d$/, "") === b.replace(/d$/, "");
+
+export function whyLine(r: Ranked | (Row & Extras)): string {
   const reasons = "because" in r.decision ? (Array.isArray(r.decision.because) ? r.decision.because : [r.decision.because]) : [];
-  const why = reasons.length
-    ? reasons.slice(0, 2).map((b) => b.replace(/:/g, " ").replaceAll("_", " ")).join("; ")
-    : r.decision.kind === "open"
-      ? `waiting on ${r.decision.flippers.map((f) => f.fact).join(", ") || "the broker"}`
-      : "";
+  if (reasons.length) return reasons.slice(0, 2).map((b) => b.replace(/:/g, " ").replaceAll("_", " ")).join("; ");
+  if (r.decision.kind === "open")
+    return `waiting on ${r.decision.flippers.map((f) => f.fact).join(", ") || "the broker"}`;
+  return "";
+}
+
+function BlotterRow({ r, on, onPick, onOpen }: { r: Ranked; on: boolean; onPick: () => void; onOpen: () => void }) {
+  const has = scored(r);
+  const moved = !!r.deskVerdict && !same(r.deskVerdict, r.decision.kind);
+  // A routed row's reason is the same sentence 16 times over. Its destination is the news.
+  const why = r.decision.kind === "routed" ? `→ ${r.decision.to}` : whyLine(r);
+  const whyTitle = r.decision.kind === "routed" ? r.decision.because : why;
+  const issues = Object.values(
+    r.issues.reduce<Record<string, { kind: string; severity: string; n: number }>>((m, i) => {
+      m[i.kind] = { ...i, n: (m[i.kind]?.n ?? 0) + 1 };
+      return m;
+    }, {}),
+  );
 
   return (
-    <tr className="group border-b border-rule transition-colors duration-150 hover:bg-land">
-      <td className="num py-2 pr-4 text-dim">{String(r.rank).padStart(2, "0")}</td>
-      <td className="py-2 pr-4">
-        <Link href={`/cases/${r.caseId}`} className="font-medium underline-offset-2 hover:underline">
+    <tr
+      data-on={on ? "1" : "0"}
+      tabIndex={on ? 0 : -1}
+      onFocus={onPick}
+      onClick={onPick}
+      onDoubleClick={onOpen}
+      className={`h-[25px] cursor-default border-b border-rule/70 ${on ? "cursor-row" : "hover:bg-land"}`}
+    >
+      <td className="num px-2 text-faint">{String(r.rank).padStart(2, "0")}</td>
+      <td className="num truncate px-2 text-dim">{r.caseId}</td>
+      <td className="truncate px-2">
+        <Link href={`/cases/${r.caseId}`} className="cond text-[13px] font-medium text-ink underline-offset-2 hover:text-ochre hover:underline">
           {r.insured}
         </Link>
-        <span className="num ml-2 whitespace-nowrap text-[11px] text-dim">
-          #{r.caseId} · {r.line} · {r.state}
-        </span>
         {r.deepDived && (
-          <span title="The desk ran a deep dive on this case" className="ml-2 font-mono text-[10px] text-ochre">
-            deep dive
+          <span title="the desk ran a deep dive on this case" className="ml-1.5 text-[9px] uppercase tracking-[0.08em] text-ochre">
+            deep
           </span>
         )}
       </td>
-      <td className="py-2 pr-4">
+      <td className="truncate px-2 text-dim">{r.line}</td>
+      <td className="px-2 text-dim">{r.state}</td>
+      <td className="num px-2 text-right">{money(r.valueAtStake)}</td>
+      <td className="px-2">
         {has ? (
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
+          <span className="flex items-center gap-2">
+            <span className="flex-1">
               <IntervalBar score={r.score} compact />
-            </div>
-            <span className="num w-[42px] text-[11.5px]">
-              {r.score!.lo}-{r.score!.hi}
             </span>
-          </div>
+            <span className="num w-[40px] shrink-0 text-right text-[11px]">
+              {r.score!.lo}–{r.score!.hi}
+            </span>
+          </span>
         ) : (
-          <span className="num text-[11.5px] text-dim">not scored</span>
+          // Held to one line on purpose: a blotter row that grows breaks the reading rhythm.
+          <span className="flex items-center gap-2" title="no 2025 property guideline scores this line, so it has no interval">
+            <span aria-hidden className="h-px flex-1 bg-rule" />
+            <span className="w-[76px] shrink-0 whitespace-nowrap text-right text-[10px] text-faint">not scored</span>
+          </span>
         )}
       </td>
-      <td className="num py-2 pr-4 text-right">{money(r.valueAtStake)}</td>
-      <td className="py-2 pr-4">
+      <td className="truncate px-2">
         <DecisionChip decision={r.decision} />
-        {moved && <span className="ml-1.5 font-mono text-[10px] text-ochre">desk: {r.deskVerdict!.replaceAll("_", " ")}</span>}
-      </td>
-      <td className="min-w-0 py-2">
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-[11.5px] text-dim" title={why}>
-            {why}
+        {moved && (
+          <span title={`the rules said ${r.decision.kind}; the desk went with ${r.deskVerdict!.replaceAll("_", " ")}`} className="ml-1.5 text-[9px] text-ochre">
+            desk {VERDICT_SHORT[r.deskVerdict!] ?? r.deskVerdict!.replaceAll("_", " ")}
           </span>
+        )}
+      </td>
+      <td className="overflow-hidden px-2">
+        <span className="flex gap-1 whitespace-nowrap">
           {!!r.challengeRisks && (
-            <span title={`${r.challengeRisks} risks raised by the Challenger`} className="shrink-0 rounded-sm border border-rust px-1 font-mono text-[9.5px] text-rust">
-              {r.challengeRisks} risks
+            <span title={`${r.challengeRisks} risks raised by the Challenger`} className="rounded-sm border border-rust/60 px-1 text-[9px] leading-[13px] text-rust">
+              {r.challengeRisks}R
             </span>
           )}
-          {Object.values(
-            r.issues.reduce<Record<string, { kind: string; severity: string; n: number }>>((m, i) => {
-              m[i.kind] = { ...i, n: (m[i.kind]?.n ?? 0) + 1 };
-              return m;
-            }, {}),
-          ).map((i) => (
+          {issues.map((i) => (
             <IssueTag key={i.kind} kind={i.kind} severity={i.severity} count={i.n} />
           ))}
         </span>
+      </td>
+      <td className={`truncate px-2 text-[11px] ${r.decision.kind === "routed" ? "text-faint" : "text-dim"}`} title={whyTitle}>
+        {why}
       </td>
     </tr>
   );
