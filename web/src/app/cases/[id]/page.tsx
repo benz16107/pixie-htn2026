@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Band } from "@/contract";
 import { api, type CaseWithReceipt } from "@/lib/api";
@@ -13,29 +12,42 @@ import { PriceWaterfall, Waterfall } from "@/components/case/Waterfall";
 import { Views } from "@/components/case/Views";
 import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
 import { Briefing } from "@/components/case/Briefing";
+import { CaseNav } from "@/components/case/CaseNav";
+import { Deck } from "@/components/case/Deck";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
+import { StatusBar } from "@/components/desk/Kbd";
 
 const BANDS: { band: Band; label: string }[] = [
   { band: "target", label: "target" },
-  { band: "acceptable", label: "accept." },
-  { band: "not_acceptable", label: "not acc." },
+  { band: "acceptable", label: "acceptable" },
+  { band: "not_acceptable", label: "not acceptable" },
 ];
+const BAND_TONE: Record<Band, string> = { target: "bg-moss", acceptable: "bg-ochre", not_acceptable: "bg-rust" };
 
-/** A collapsed summary that opens in place. Native details, so it works without JavaScript. */
-function Fold({ title, count, summary, children, brief }: { title: string; count?: string; summary: string; children?: React.ReactNode; brief?: string }) {
+/** The guideline's own reading of a fact, shown only when it differs from the fact as displayed. */
+function reads(display: string, asRead?: string) {
+  if (!asRead) return "";
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9.]/g, "");
+  return norm(asRead) === norm(display) || norm(display).includes(norm(asRead)) ? "" : ` · the guideline reads this as ${asRead}`;
+}
+
+/** Same rule the band ruler uses: amber while the interval still straddles a threshold. */
+function scoreTone(s: { lo: number; hi: number } | null) {
+  if (!s) return "text-faint";
+  if (s.lo < 45 !== s.hi < 45 || s.lo < 70 !== s.hi < 70) return "text-ochre";
+  return s.hi < 45 ? "text-rust" : s.lo >= 70 ? "text-moss" : "text-ochre";
+}
+
+function Rail({ title, note, children }: { title: string; note?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <details data-brief={brief} className="group min-w-0 border-r border-rule px-5 py-2.5 last:border-r-0 open:col-span-4 open:border-r-0 open:bg-land/40">
-      <summary className="flex cursor-pointer list-none items-baseline gap-2 [&::-webkit-details-marker]:hidden">
-        <span className="kicker">{title}</span>
-        {count && <span className="num text-[11px] text-dim">{count}</span>}
-        <span aria-hidden className="ml-auto font-mono text-[11px] text-dim transition-transform duration-150 group-open:rotate-90">
-          ›
-        </span>
-      </summary>
-      <p className="mt-1 text-[11.5px] leading-snug text-dim group-open:hidden">{summary}</p>
-      <div className="mt-2 hidden max-h-[300px] overflow-auto group-open:block">{children}</div>
-    </details>
+    <section className="border-b border-rule px-3 py-2 last:border-b-0">
+      <h2 className="kicker mb-1 flex items-baseline justify-between gap-2">
+        <span>{title}</span>
+        {note && <span className="normal-case tracking-normal text-faint">{note}</span>}
+      </h2>
+      {children}
+    </section>
   );
 }
 
@@ -62,63 +74,74 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const dollars = (explain?.steps.find((s) => s.key === premium?.fact)?.value ?? "").match(/\$[\d,]+/g)?.map((d) => Number(d.replace(/[$,]/g, ""))) ?? [];
   const startAt = dollars.length ? Math.round(dollars.reduce((a, b) => a + b, 0) / dollars.length) : Math.round(((premium?.low.value ?? 0) + (premium?.high.value ?? 0)) / 2);
   const verdict = view.deskVerdict?.replaceAll("_", " ");
+  const tenant = isTenantExplain(explain);
+  const banded = view.facts.filter((f) => view.factors.some((x) => x.fact === f.id)).length;
+  const counts = {
+    known: view.facts.filter((f) => f.provenance === "known").length,
+    estimated: view.facts.filter((f) => f.provenance === "estimated").length,
+    missing: view.facts.filter((f) => f.provenance === "missing").length,
+  };
 
   return (
-    <main className="grid h-[calc(100vh-48px)] grid-rows-[62px_minmax(0,1fr)_auto] overflow-hidden">
-      {/* ------------------------------- header ------------------------------- */}
-      <header className="relative flex items-center gap-4 border-b border-ink bg-land px-6">
-        <div className="min-w-0">
-          <p className="font-mono text-[11px] text-dim">
-            <Link href="/queue" className="hover:text-ink hover:underline">
-              QUEUE
-            </Link>{" "}
-            / CASE #{view.caseId} · {view.kind.toUpperCase()}
-            {place ? ` · ${place}` : ""}
-          </p>
-          <h1 className="truncate font-serif text-[26px] font-semibold leading-tight">{view.title}</h1>
-        </div>
+    <main className="grid h-[calc(100vh-30px)] grid-rows-[36px_minmax(0,1fr)_206px_26px] overflow-hidden">
+      {/* ------------------------------- identity ------------------------------- */}
+      <header className="flex items-center gap-3 overflow-hidden border-b border-edge bg-land px-3">
+        <span className="shrink-0">
+          <CaseNav caseId={view.caseId} kind={view.kind} place={place} />
+        </span>
+        <h1 className="cond min-w-0 truncate text-[17px] font-semibold leading-tight">{view.title}</h1>
         <span className="shrink-0">
           <DecisionChip decision={view.decision} large />
         </span>
         {verdict && verdict !== view.decision.kind && (
-          <span className="shrink-0 rounded-sm border border-ochre bg-ochre-soft px-2 py-0.5 text-[11.5px]">
-            desk said <b className="font-semibold">{verdict}</b>
+          <span className="shrink-0 whitespace-nowrap rounded-sm border border-ochre/60 bg-ochre-soft px-2 text-[10px] leading-[17px] text-ochre">
+            desk went with {verdict}
           </span>
         )}
         <Briefing caseId={view.caseId} />
         <span className="ml-auto" />
         {view.kind === "commercial" && (
-          <span data-brief="action" className="shrink-0">
+          <span data-brief="action" className="shrink-0 pr-1">
             <Actions caseId={view.caseId} facts={flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
           </span>
         )}
       </header>
 
-      {/* --------------------------- hero and sidebar -------------------------- */}
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_356px]">
-        <section className="flex min-h-0 flex-col border-r border-rule px-6 pb-4 pt-3" aria-label="How the score was built">
-          <div className="flex items-baseline gap-3">
-            <h2 className="font-serif text-[19px] font-semibold">{isTenantExplain(explain) ? "How the price was built" : "How the score was built"}</h2>
-            <p className="min-w-0 flex-1 truncate text-[11.5px] text-dim">
-              {isTenantExplain(explain)
-                ? `Every line of the price, ending at $${explain.annual.toFixed(2)} a year. Hover a bar for its source.`
-                : explain?.score
-                  ? `Every step under ${explain.rulesId}, ending at ${explain.score.lo}-${explain.score.hi}. Hover a bar for its rule and source.`
-                  : "This line has no guideline, so there is no interval to build."}
-            </p>
-            {explain?.reconciles && <span className="shrink-0 font-mono text-[10px] text-moss">✓ steps reconcile with the score</span>}
+      {/* ------------------- score, the book, the case against ------------------ */}
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_312px_324px]">
+        <section className="flex min-h-0 flex-col border-r border-edge px-4 pb-3 pt-2.5" aria-label="How the score was built">
+          <div className="flex items-start gap-5">
+            <div className="shrink-0">
+              <p className="kicker">{tenant ? "Annual price" : "Score interval"}</p>
+              <p className={`num text-[32px] font-medium leading-[36px] ${scoreTone(view.score)}`}>
+                {tenant ? `$${explain.annual.toFixed(2)}` : view.score ? `${view.score.lo}–${view.score.hi}` : "—"}
+              </p>
+            </div>
+            {!tenant && (
+              <div className="min-w-0 flex-1 pt-1">
+                <IntervalBar score={view.score} />
+                <p className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-faint">
+                  <span>decline &lt;45</span>
+                  <span>refer 45–70</span>
+                  <span>accept ≥70</span>
+                </p>
+              </div>
+            )}
+            {tenant && <p className="cond min-w-0 flex-1 pt-2 text-[12px] leading-snug text-dim">{explain.label}</p>}
           </div>
-          <div className="mt-0.5 text-[11.5px] text-dim">
+          <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-dim">
+            {explain?.rulesId && <span className="text-faint">{explain.rulesId}</span>}
+            {explain?.reconciles && <span className="text-moss">✓ the steps reconcile with the score</span>}
             {percentile && <PercentileLine p={percentile} />}
-          </div>
+          </p>
 
-          {isTenantExplain(explain) ? (
+          {tenant ? (
             <>
-              <div data-brief="score" className="flex min-h-0 flex-1 flex-col">
+              <div data-brief="score" className="mt-2 flex min-h-0 flex-1 flex-col">
                 <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
               </div>
               {view.receipt && (
-                <div data-brief="facts" className="border-t border-rule pt-3">
+                <div data-brief="facts" className="mt-2 max-h-[190px] overflow-auto border-t border-rule pt-2">
                   <Receipt r={view.receipt} />
                 </div>
               )}
@@ -133,152 +156,207 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               waterfall={<Waterfall x={explain} />}
             />
           ) : (
-            <div className="flex flex-1 items-center justify-center text-[12.5px] text-dim">
+            <div className="flex flex-1 items-center justify-center text-center text-[12px] text-dim">
               {view.decision.kind === "routed" ? view.decision.because : "No scored steps for this case."}
             </div>
           )}
         </section>
 
+        {/* THE BOOK. One row per fact: its value, where it came from, and which bands it still allows. */}
+        <aside className="min-h-0 overflow-y-auto border-r border-edge" aria-label="The book: facts, provenance and factor bands">
+          <Rail
+            title="The book"
+            note={
+              <>
+                <span className="text-moss">{counts.known} known</span> · <span className="text-ochre">{counts.estimated} est</span> ·{" "}
+                <span className="text-rust">{counts.missing} missing</span>
+              </>
+            }
+          >
+            {banded > 0 && (
+            <p className="mb-1 flex items-center gap-x-2 gap-y-0.5 text-[9px] leading-[13px] text-faint">
+              <span>bands still open</span>
+              {BANDS.map((b) => (
+                <span key={b.band} className="flex items-center gap-1">
+                  <span aria-hidden className={`inline-block h-1.5 w-3 rounded-[1px] ${BAND_TONE[b.band]}`} />
+                  {b.label}
+                </span>
+              ))}
+            </p>
+            )}
+            <table data-brief="facts" className="w-full border-collapse">
+              <caption className="sr-only">Every fact on this case, its provenance, its source, and the guideline bands it still allows.</caption>
+              <tbody>
+                {view.facts.map((f) => {
+                  const factor = view.factors.find((x) => x.fact === f.id);
+                  return (
+                    <tr key={f.id} className="border-t border-rule align-top first:border-t-0">
+                      <th scope="row" className="w-[86px] py-1 pr-2 text-left text-[10px] font-normal leading-snug text-dim">
+                        {f.label}
+                      </th>
+                      <td className="py-1">
+                        <span className="flex items-baseline gap-1.5">
+                          <span className={`num min-w-0 flex-1 text-[11px] leading-snug ${f.provenance === "missing" ? "text-rust" : "text-ink"}`}>
+                            {f.display}
+                          </span>
+                          <ProvenanceBadge p={f.provenance} short />
+                          <span className="flex w-[29px] shrink-0 gap-px">
+                            {factor && BANDS.map((b) => {
+                              const on = factor.possible.includes(b.band);
+                              return (
+                                <span
+                                  key={b.band}
+                                  title={`${b.label}: ${on ? "still possible" : "ruled out"}`}
+                                  aria-label={`${b.label}: ${on ? "still possible" : "ruled out"}`}
+                                  className={`inline-block h-[11px] w-[9px] rounded-[1px] ${on ? BAND_TONE[b.band] : "bg-rule"}`}
+                                />
+                              );
+                            })}
+                          </span>
+                        </span>
+                        <span className="mt-px block text-[9px] leading-[12px] text-faint">
+                          {f.resolver ? `${f.resolver} resolves · ` : ""}
+                          {f.source}
+                          {reads(f.display, factor && factorValue(f.id, factor.valueText))}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {banded > 0 && (
+              <p className="mt-1.5 border-t border-rule pt-1 text-[9px] leading-snug text-faint">
+                A missing fact keeps all three bands open, which is what widens the interval above.
+              </p>
+            )}
+          </Rail>
+        </aside>
+
         <aside data-brief="challenge" className="min-h-0 overflow-y-auto" aria-label="Challenge and precedent">
           {view.challenge ? (
             <Challenger c={view.challenge} deskVerdict={view.deskVerdict} rulesDecision={view.decision.kind} />
           ) : (
-            <section className="border-b border-rule px-4 py-3">
-              <h2 className="font-serif text-[18px] font-semibold">The case against</h2>
-              <p className="mt-1 text-[12px] text-dim">The Challenger has not run on this case. It runs on every deep dive.</p>
-            </section>
+            <Rail title="The case against">
+              <p className="text-[11px] leading-snug text-dim">The Challenger has not run on this case. It runs on every deep dive.</p>
+            </Rail>
           )}
           {precedent && <PrecedentPanel p={precedent} />}
         </aside>
       </div>
 
-      {/* --------------------------------- folds -------------------------------- */}
-      <div className="grid auto-rows-min grid-cols-[repeat(4,minmax(0,1fr))] border-t border-ink">
-        <Fold
-          brief="facts"
-          title="Facts"
-          count={`${view.facts.length}`}
-          summary={`${view.facts.filter((f) => f.provenance === "known").length} known, ${view.facts.filter((f) => f.provenance === "estimated").length} estimated, ${view.facts.filter((f) => f.provenance === "missing").length} missing. Every one carries where it came from.`}
-        >
-          <table className="w-full border-collapse">
-            <tbody>
-              {view.facts.map((f) => (
-                <tr key={f.id} className="border-t border-rule align-top" title={f.source}>
-                  <th scope="row" className="w-[120px] py-1 text-left text-[11.5px] font-normal text-dim">
-                    {f.label}
-                  </th>
-                  <td className={`w-[150px] py-1 font-mono text-[11.5px] ${f.provenance === "missing" ? "text-rust" : ""}`}>{f.display}</td>
-                  <td className="py-1 text-[11px] text-dim">
-                    <span className="flex gap-1.5">
-                      <ProvenanceBadge p={f.provenance} />
-                      <span className="min-w-0">
-                        {f.resolver ? `resolver: ${f.resolver} · ` : ""}
-                        {f.source}
-                      </span>
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Fold>
-
-        <Fold title="Factor bands" count={`${view.factors.length}`} summary="Which bands each fact can still land in. A missing fact keeps all three open.">
-          <table className="w-full border-collapse text-[11.5px]">
-            <tbody>
-              {view.factors.map((f) => (
-                <tr key={f.fact} className="border-t border-rule">
-                  <th scope="row" className="py-1 text-left font-normal">
-                    {f.fact.replaceAll("_", " ")} <span className="font-mono text-[10.5px] text-dim">{factorValue(f.fact, f.valueText)}</span>
-                  </th>
-                  {BANDS.map((b) => {
-                    const on = f.possible.includes(b.band);
-                    return (
-                      <td key={b.band} className="w-[52px] text-center">
-                        <span
-                          aria-label={`${b.label}: ${on ? "possible" : "ruled out"}`}
-                          className={`inline-block h-2.5 w-7 rounded-sm border ${
-                            on ? (b.band === "not_acceptable" ? "border-rust bg-rust" : b.band === "target" ? "border-moss bg-moss" : "border-ochre bg-ochre") : "border-rule"
-                          }`}
-                        />
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Fold>
-
-        <Fold
-          title="Agent lanes"
-          count={`${events.length} events`}
-          summary={
-            view.contradictions.length
-              ? `${view.contradictions.length} contradiction${view.contradictions.length > 1 ? "s" : ""} the desk had to resolve. ${view.issues.length} data issues.`
-              : "What each agent did, in order, with the tool calls they made."
-          }
-        >
-          <div className="h-[220px]">
-            {events.length ? (
-              <Swimlanes events={events} initialScore={view.scoreWithoutEnrichment ?? view.score} laneH={28} controls={false} pad="px-0 pb-0 pt-0" heading="" />
-            ) : (
-              <p className="text-[12px] text-dim">
-                {view.kind === "tenant" ? "Tenant quotes are priced in code in under a second; the desk only reviews referrals." : "The desk has not run on this case."}
-              </p>
-            )}
-          </div>
-        </Fold>
-
-        <Fold
-          title="Site and portfolio"
-          count={place ?? ""}
-          summary={view.portfolio ? portfolioSentence(view.portfolio) : "No portfolio check ran for this case."}
-        >
-          <div className="relative h-[220px] overflow-hidden rounded-sm border border-rule">
-            <CaseMap site={view.site} zoom={view.kind === "tenant" ? 13.5 : 8.2} hexes={hexes} home={pin?.ring} />
-            <div aria-hidden className="contours pointer-events-none absolute inset-0 opacity-40 mix-blend-multiply" />
-            {view.portfolio && <PortfolioCallout p={view.portfolio} />}
-            <HazardCard risk={view.risk} />
-          </div>
-          {view.issues.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {view.issues.map((i) => (
-                <li key={i.kind} className="flex items-baseline gap-2 text-[11.5px]">
-                  <IssueTag {...i} /> {i.text}
-                </li>
-              ))}
-            </ul>
-          )}
-          {view.actions.length > 0 && (
-            <p className="mt-2 text-[11.5px] text-dim">
-              {view.actions.map((a) => `${a.key.replaceAll("_", " ")} by ${a.channel}: ${a.status} ${whenLabel(a.at)}`).join(" · ")}
-            </p>
-          )}
-        </Fold>
-      </div>
-
-      {/* the explanation and the interval stay visible under the fold row */}
-      <div className="border-t border-rule bg-land px-6 py-2.5">
-        <div className="flex items-baseline gap-4">
-          <span className="kicker shrink-0">
-            Interval <span className="num text-ink">{view.score ? `${view.score.lo}-${view.score.hi}` : "—"}</span>
-          </span>
-          <div className="w-[220px] shrink-0">
-            <IntervalBar score={view.score} compact />
-          </div>
-          <p className="min-w-0 flex-1 font-serif text-[13.5px] leading-snug">
+      {/* ------------------------- the call, and the deck ----------------------- */}
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_780px] border-t border-edge">
+        <section className="flex min-h-0 flex-col overflow-auto px-4 py-2" aria-labelledby="call-h">
+          <h2 id="call-h" className="kicker flex items-baseline gap-2">
+            <span>The call</span>
+            {view.explanationVerified && <span className="normal-case tracking-normal text-moss">✓ every number checked against the facts</span>}
+          </h2>
+          <p className="cond mt-1 max-w-[72ch] text-[13px] leading-[1.5]" style={{ textWrap: "pretty" }}>
             {view.explanation}
-            {view.explanationVerified && <span className="ml-1.5 font-sans text-[11px] text-moss">✓ every number checked against the facts</span>}
           </p>
           {view.contradictions[0] && (
-            <p className="w-[280px] shrink-0 text-[11px] leading-snug text-dim">
-              <b className="font-semibold text-ink">Contradiction.</b> {view.contradictions[0].good.map(bandPhrase).slice(0, 2).join("; ")} against{" "}
+            <p className="mt-2 border-l-2 border-ochre bg-ochre-soft/50 py-1 pl-2.5 text-[11px] leading-snug text-dim">
+              <b className="text-ochre">Contradiction the desk had to resolve.</b> {view.contradictions[0].good.map(bandPhrase).slice(0, 2).join("; ")} against{" "}
               {view.contradictions[0].bad.map(bandPhrase).join("; ")}.
             </p>
           )}
+        </section>
+
+        <div className="min-h-0 border-l border-edge">
+          <Deck
+            panels={[
+              {
+                id: "lanes",
+                label: "agent lanes",
+                count: `${events.length}`,
+                node: (
+                  <div className="h-[176px]">
+                    {events.length ? (
+                      <Swimlanes events={events} initialScore={view.scoreWithoutEnrichment ?? view.score} laneH={21} controls={false} pad="px-3 pb-0 pt-1" heading="" />
+                    ) : (
+                      <p className="px-3 py-3 text-[11px] text-dim">
+                        {view.kind === "tenant"
+                          ? "Tenant quotes are priced in code in under a second; the desk only reviews referrals."
+                          : "The desk has not run on this case."}
+                      </p>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                id: "site",
+                label: "site & hazard",
+                count: place ?? "",
+                node: (
+                  <div className="relative h-[176px] overflow-hidden">
+                    <CaseMap site={view.site} zoom={view.kind === "tenant" ? 13.5 : 8.2} hexes={hexes} home={pin?.ring} />
+                    {view.portfolio && <PortfolioCallout p={view.portfolio} />}
+                    <HazardCard risk={view.risk} />
+                  </div>
+                ),
+              },
+              {
+                id: "trail",
+                label: "issues & actions",
+                count: `${view.issues.length + view.actions.length}`,
+                node: (
+                  <div className="px-3 py-2 text-[11px]">
+                    {view.portfolio && <p className="mb-2 leading-snug text-dim">{portfolioSentence(view.portfolio)}</p>}
+                    {view.issues.length > 0 ? (
+                      <ul className="space-y-1">
+                        {view.issues.map((i, n) => (
+                          <li key={`${i.kind}${n}`} className="flex items-baseline gap-2 leading-snug">
+                            <IssueTag {...i} />
+                            <span className="text-dim">{i.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-dim">No data issues on this submission.</p>
+                    )}
+                    {view.actions.length > 0 ? (
+                      <ul className="mt-2 space-y-0.5 border-t border-rule pt-2 text-[11px] text-dim">
+                        {view.actions.map((a) => (
+                          <li key={a.key}>
+                            <span className="text-ink">{a.key.replaceAll("_", " ")}</span> by {a.channel}: {a.status} · {whenLabel(a.at)}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 border-t border-rule pt-2 text-faint">Nothing has left the desk on this case yet.</p>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       </div>
+
+      <StatusBar
+        left={
+          <>
+            <span className="text-ochre">CASE #{view.caseId}</span>
+            <span>
+              {counts.known} known · {counts.estimated} estimated · {counts.missing} missing
+            </span>
+            {view.explanationVerified && <span className="text-moss">✓ every number checked</span>}
+            {precedent && (
+              <span>
+                precedent <span className={precedent.backend === "elastic" ? "text-moss" : "text-dim"}>[{precedent.backend}]</span> · {precedent.hits.length} hits
+              </span>
+            )}
+          </>
+        }
+        keys={[
+          ["w s", "views"],
+          ["f", "what-if"],
+          ["1 2 3", "deck"],
+          ["u", "blotter"],
+          ["?", "keys"],
+        ]}
+      />
     </main>
   );
 }

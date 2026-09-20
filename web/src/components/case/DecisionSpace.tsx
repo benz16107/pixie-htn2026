@@ -193,7 +193,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
         </div>
 
         {/* legend: what the three colours mean, and how much of this slice each one covers */}
-        <dl className="absolute left-2 top-2 flex gap-3 rounded-sm border border-rule bg-paper/90 px-2.5 py-1.5 text-[10.5px]">
+        <dl className="absolute left-2 top-2 flex gap-3 rounded-sm border border-rule bg-paper/90 px-2.5 py-1.5 text-[10px]">
           {(["accept", "open", "decline"] as const).map((t) => (
             <span key={t} className="flex items-baseline gap-1.5">
               <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-[1px]" style={{ background: `rgb(${TIER_RGB[t].join(",")})` }} />
@@ -205,14 +205,14 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
         </dl>
       </div>
 
-      <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11.5px]">
+      <figcaption className="mt-2 flex shrink-0 items-center gap-x-4 overflow-hidden text-[11px]">
         {az && (
-          <label className="flex items-center gap-1.5">
+          <label className="flex shrink-0 items-center gap-1.5">
             <span className="kicker">{az.label} held at</span>
             <select
               value={slice}
               onChange={(e) => setSlice(+e.target.value)}
-              className="num rounded-sm border border-rule bg-paper px-1.5 py-0.5 text-[11px] transition-colors duration-150 hover:border-ink"
+              className="num rounded-sm border border-rule bg-paper px-1.5 py-0.5 text-[11px] transition-colors duration-150 hover:border-ochre"
             >
               {az.values.map((v, i) => (
                 <option key={v} value={i}>
@@ -223,7 +223,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
             </select>
           </label>
         )}
-        <p className="min-w-0 flex-1 text-dim">
+        <p className="min-w-0 flex-1 truncate text-dim">
           {flat ? (
             <>
               Flat on purpose. Nothing on these axes moves this case: a fact the desk already knows is a hard fail, so every square in the space stays under the decline line at {s.thresholds.decline}.
@@ -234,7 +234,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
             <>Every square is the engine re-run on that pair of facts. Drag to orbit, scroll to zoom.</>
           )}
         </p>
-        <span className="num shrink-0 text-[10.5px] text-dim">
+        <span className="num shrink-0 text-[10px] text-dim">
           {s.points.toLocaleString()} assessments · {s.ms} ms
         </span>
       </figcaption>
