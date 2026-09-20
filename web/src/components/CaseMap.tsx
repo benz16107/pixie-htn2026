@@ -35,8 +35,10 @@ export default function CaseMap({
   useEffect(() => {
     if (!box.current) return;
     const el = box.current;
-    setSize({ w: el.clientWidth, h: el.clientHeight });
     let map: MapLibre | null = null;
+    const resize = new ResizeObserver(() => { setSize({ w: el.clientWidth, h: el.clientHeight }); map?.resize(); });
+    resize.observe(el);
+    setSize({ w: el.clientWidth, h: el.clientHeight });
     try {
       map = new MapLibre({
         container: el,
@@ -51,7 +53,7 @@ export default function CaseMap({
     } catch {
       // No WebGL: the SVG layer below still shows the site.
     }
-    return () => map?.remove();
+    return () => { resize.disconnect(); map?.remove(); };
   }, [site.lat, site.lng, zoom]);
 
   const [cx, cy] = project(site.lat, site.lng, zoom);

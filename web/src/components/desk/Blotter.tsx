@@ -16,7 +16,7 @@ const TILES = (rows: (Row & Extras)[]) => [
   { label: "value at stake", value: money(rows.reduce((n, r) => n + r.valueAtStake, 0)), note: "total insured value in view" },
 ];
 
-export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; t?: Thresholds }) {
+export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all" | "scored"; t?: Thresholds }) {
   const router = useRouter();
   const [here, setHere] = useState<Ranked | null>(null);
   const [filter, setFilter] = useState("");
@@ -36,8 +36,8 @@ export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]
       <header className="flex items-center gap-6 border-b border-edge bg-land px-6">
         <div className="min-w-[260px] flex-1">
           <p className="kicker text-ochre">Commercial submissions</p>
-          <h1 className="cond mt-1 text-[28px] font-semibold leading-none tracking-[-0.02em] text-ink">Decide what needs attention</h1>
-          <p className="cond mt-2 text-[13px] leading-snug text-dim">Open cases come first. Select one row to see why it is waiting.</p>
+          <h1 className="cond mt-1 text-[28px] font-semibold leading-none tracking-[-0.02em] text-ink">Submissions</h1>
+
         </div>
         <div className="hidden items-center border-l border-rule lg:flex">
           {TILES(rows).map((tile) => (
@@ -50,6 +50,7 @@ export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]
         <div className="flex h-10 items-stretch border border-edge" role="group" aria-label="Which submissions">
           {(
             [
+              ["scored", "scored"],
               ["open", "needs review"],
               ["all", "all cases"],
             ] as const
@@ -67,7 +68,7 @@ export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]
           ))}
         </div>
         <Link href="/cases/138" className="flex h-10 shrink-0 items-center bg-ochre px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-paper hover:bg-[#d9912e]">
-          Review case 138 →
+          Review #138
         </Link>
       </header>
 
@@ -97,7 +98,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
   if (!r)
     return (
-      <div className="px-6 py-10 text-center text-[12px] text-faint">Select a submission to see its decision, open facts, and data issues.</div>
+      <div className="px-6 py-10 text-center text-[12px] text-faint">Select a submission.</div>
     );
   const moved = !!r.deskVerdict && r.deskVerdict.replace(/d$/, "") !== r.decision.kind.replace(/d$/, "");
   const straddle = "straddles" in r.decision ? r.decision.straddles : null;
@@ -147,7 +148,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
               {r.enrichmentDelta > 0 ? "+" : r.enrichmentDelta < 0 ? "−" : "±"}
               {Math.abs(r.enrichmentDelta)}
             </span>{" "}
-            <span className="text-dim">points from the flood, wildfire and weather lookups</span>
+            <span className="text-dim">points</span>
           </Field>
         )}
         <Field label="desk">
@@ -156,7 +157,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
               went with {r.deskVerdict!.replaceAll("_", " ")}, against the rules&rsquo; {r.decision.kind}
             </span>
           ) : (
-            <span className="text-dim">agreed with the rules</span>
+            <span className="text-dim">{r.deskVerdict ? "agreed with the rules" : "not reviewed"}</span>
           )}
         </Field>
         {r.override && (
@@ -181,7 +182,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
           )}
         </Field>
         <Field label="deep dive">
-          <span className={r.deepDived ? "text-moss" : "text-dim"}>{r.deepDived ? "yes, specialists were spent here" : "no, decided at triage"}</span>
+          <span className={r.deepDived ? "text-moss" : "text-dim"}>{r.deepDived ? "completed" : r.deskVerdict ? "triage only" : "not run"}</span>
         </Field>
       </div>
 

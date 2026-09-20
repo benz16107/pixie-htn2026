@@ -36,6 +36,23 @@ export type Step = {
   evidence?: string;
   citation?: string;
   cells?: string[];
+  rawPointsLo?: number;
+  rawPointsHi?: number;
+  maxPoints?: number;
+  multiplierRule?: string;
+};
+
+export type Calculation = {
+  points: Record<string, number>;
+  denominator: number;
+  raw: Interval;
+  base: Interval;
+  afterCaps: Interval;
+  hardFailCap: number | null;
+  hazard: { applied: boolean; product: number | null; total: number | null; bounds: number[]; maxPoints: number; points: number };
+  portfolio: { applied: boolean; points: number; nearTiv: number | null; maxPenalty: number; radiusKm: number; tivPerPoint: number };
+  exact: Interval;
+  premiumEstimate: { tiv: number; lo: number; hi: number; median: number | null; rateLo: number; rateHi: number; method: string; policies: string[] } | null;
 };
 
 export type Explain = {
@@ -47,6 +64,7 @@ export type Explain = {
   rulesId: string;
   reconciles: boolean;
   steps: Step[];
+  calculation?: Calculation | null;
   /** tenant only */
   annual?: number;
   label?: string;

@@ -1,30 +1,36 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
-import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
+import { GeoJsonLayer, PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { Map as MapLibre, LngLatBounds, NavigationControl, setWorkerUrl, type StyleSpecification } from "maplibre-gl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Hex } from "@/contract";
+import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
+import { METRICS, metricColor, sites, siteValue, isClimate, geoValue, type MapLayer, type CountyGeoJSON } from '@/lib/geography';
+import statesData from "@/fixtures/us-states.json";
+const states = statesData as FeatureCollection<Polygon | MultiPolygon>;
 
-export type Pin = { caseId: string; insured: string; decision: string; site: { lat: number; lng: number }; cell: string; ring?: [number, number][] };
+const OFFLINE_STYLE: StyleSpecification = {
+          version: 8,
+          sources: { states: { type: "geojson", data: states, attribution: '<a href="https://www.census.gov/geographies/mapping-files/2024/geo/carto-boundary-file.html">US Census 2024</a>' } },
+          layers: [
+            { id: "water", type: "background", paint: { "background-color": "#0d181d" } },
+            { id: "land", type: "fill", source: "states", paint: { "fill-color": "#19242b" } },
+            { id: "borders", type: "line", source: "states", paint: { "line-color": "#53636c", "line-width": 1 } },
+          ],
+        };
+
+export type Pin = { caseId: string; insured: string; decision: string; site: { lat: number; lng: number }; cell: string; perils?: string[]; ring?: [number, number][] };
 
 // The bundler hides the worker file MapLibre looks for next to its module; postinstall copies it to public/.
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
+const pinsInPaintOrder = (pins: Pin[]) => [...pins].sort((a, b) => Number(a.decision === "open") - Number(b.decision === "open"));
+
 type RGBA = [number, number, number, number];
 const INK: RGBA = [207, 215, 221, 255];
 const PAPER: RGBA = [10, 13, 16, 255];
-const US_OUTLINE: [number, number][] = [
-  [49, -124.7], [46, -124], [42, -124.4], [38.5, -123], [34.5, -120.5], [32.5, -117.1],
-  [31.3, -111], [31.3, -108.2], [31.8, -106.5], [29.5, -103], [26, -97], [25.2, -81],
-  [30.7, -80.1], [35, -75.3], [40.5, -73.7], [44.8, -67], [47.4, -69], [45, -74],
-  [44.8, -82.4], [46, -84.8], [49, -95], [49, -124.7],
-];
-const STATE_LABELS: [string, number, number][] = [
-  ["WA", 47.4, -120.6], ["CA", 37.1, -119.8], ["CO", 39, -105.6], ["TX", 31, -99.2],
-  ["IL", 40, -89.2], ["FL", 27.9, -81.7], ["PA", 41, -77.7], ["NY", 43, -75.2],
-];
 export const PIN_FILL: Record<string, RGBA> = {
   open: PAPER, // hollow, ringed in ink: still undecided
   decline: [226, 89, 74, 255],
@@ -47,7 +53,7 @@ export function earthTone(map: MapLibre) {
     else if (l.type === "line")
       map.setPaintProperty(id, "line-color", id.includes("water") ? "#17303a" : id.startsWith("boundary") ? "#33414b" : "#1d262e");
     else if (l.type === "symbol") {
-      map.setPaintProperty(id, "text-color", id.startsWith("water") ? "#4e6a72" : "#74838e");
+      map.setPaintProperty(id, "text-color", id.startsWith("water") ? "#4e6a72" : "#95a3af");
       map.setPaintProperty(id, "text-halo-color", "#080b0e");
     }
   }
@@ -61,6 +67,13 @@ export default function BookMap({
   highlight,
   compact = false,
   perspective = false,
+  contextLayer = 'exposure',
+  countyData,
+  selectedCounty,
+  selectedSite,
+  showExposure = true,
+  onCountySelect,
+  onSiteSelect,
 }: {
   hexes: Hex[];
   pins: Pin[];
@@ -69,11 +82,20 @@ export default function BookMap({
   highlight?: string;
   compact?: boolean;
   perspective?: boolean;
+  contextLayer?: MapLayer;
+  countyData?: CountyGeoJSON;
+  selectedCounty?: string;
+  selectedSite?: string;
+  showExposure?: boolean;
+  onCountySelect?: (id: string) => void;
+  onSiteSelect?: (id: string) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const overlay = useRef<MapboxOverlay | null>(null);
   const mapRef = useRef<MapLibre | null>(null);
   const [trouble, setTrouble] = useState("");
+  const [offline, setOffline] = useState(false);
+  const [ready, setReady] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -81,14 +103,21 @@ export default function BookMap({
     let map: MapLibre;
     let styleReady = false;
     let styleTimer = 0;
+    let offlineStyle = false;
+    const loadOfflineStyle = () => {
+      if (offlineStyle) return;
+      offlineStyle = true;
+      setOffline(true);
+      map.setStyle(OFFLINE_STYLE);
+    };
     try {
       map = new MapLibre({
         container: box.current,
         style: "https://tiles.openfreemap.org/styles/positron",
         center,
         zoom,
-        pitch: perspective ? 55 : 0,
-        bearing: perspective ? -18 : 0,
+        pitch: perspective ? 40 : 0,
+        bearing: perspective ? -8 : 0,
         attributionControl: { compact: true },
         interactive: !compact,
         canvasContextAttributes: { preserveDrawingBuffer: true },
@@ -100,23 +129,29 @@ export default function BookMap({
     }
     if (!compact) map.addControl(new NavigationControl({ showCompass: false }), "top-right");
     styleTimer = window.setTimeout(() => {
-      if (!styleReady) setTrouble("The external basemap did not load in time");
+      if (!styleReady) loadOfflineStyle();
     }, 5000);
-    map.on("style.load", () => {
+    map.on("style.load", () => { if (!offlineStyle) earthTone(map); });
+    map.on("load", () => {
       styleReady = true;
       window.clearTimeout(styleTimer);
-      earthTone(map);
+      setTrouble("");
+      setReady(true);
     });
     map.on("error", (e) => {
-      const message = e.error?.message ?? "The external basemap is unavailable";
+      const message = e.error?.message ?? "The map renderer is unavailable";
       console.error("maplibre", message);
-      if (!styleReady) setTrouble(message);
+      if (!styleReady) loadOfflineStyle();
     });
     overlay.current = new MapboxOverlay({ interleaved: false, layers: [] });
     map.addControl(overlay.current);
     mapRef.current = map;
+    if (!compact) map.fitBounds([[-125, 24], [-66, 50]], { padding: { top: 60, bottom: 65, left: 35, right: 35 }, duration: 0 });
+    const resize = new ResizeObserver(() => map.resize());
+    resize.observe(box.current);
     return () => {
       window.clearTimeout(styleTimer);
+      resize.disconnect();
       mapRef.current = null;
       map.remove();
     };
@@ -127,32 +162,50 @@ export default function BookMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    map.easeTo({ pitch: perspective ? 55 : 0, bearing: perspective ? -18 : 0, duration: reduced ? 0 : 550 });
-  }, [perspective]);
+    if (compact) { map.jumpTo({ pitch: perspective ? 40 : 0, bearing: perspective ? -8 : 0 }); return; }
+    const selected = hexes.find((hex) => hex.cell === highlight);
+    const bounds = new LngLatBounds();
+    if (selected) selected.ring.forEach(([lat, lng]) => bounds.extend([lng, lat]));
+    else { bounds.extend([-125, 24]); bounds.extend([-66, 50]); }
+    map.fitBounds(bounds, { padding: { top: 60, bottom: 65, left: 35, right: 35 }, maxZoom: 6, pitch: perspective ? 40 : 0, bearing: perspective ? -8 : 0, duration: 0 });
+  }, [highlight, hexes, compact, perspective]);
 
   useEffect(() => {
     const maxValue = Math.max(1, ...hexes.map((hex) => hex.value));
     overlay.current?.setProps({
       getTooltip: ({ object }) =>
-        object && "insured" in object
-          ? `#${object.caseId} ${object.insured} · ${object.decision}`
+        object?.properties?.name && contextLayer !== 'exposure' && !isClimate(contextLayer)
+          ? `${object.properties.name}, ${object.properties.state}\n${METRICS[contextLayer].label}: ${geoValue(object.properties[contextLayer])} ${METRICS[contextLayer].unit}`
+          : object && "insured" in object
+          ? `#${object.caseId} ${object.insured} · ${object.decision}${contextLayer !== "exposure" ? `\n${METRICS[contextLayer].label}: ${geoValue(siteValue(sites.get(object.caseId), contextLayer))} ${METRICS[contextLayer].unit}` : ""}`
           : object && "value" in object
             ? `${perspective ? "Tower height" : "Cell shade"}: $${(object.value / 1e6).toFixed(1)}M active TIV`
             : null,
       layers: [
+        new GeoJsonLayer({
+          id: 'county-context', data: countyData ?? { type: 'FeatureCollection', features: [] },
+          visible: contextLayer !== 'exposure' && !isClimate(contextLayer),
+          filled: true, stroked: true, pickable: !compact,
+          getFillColor: feature => contextLayer !== 'exposure' ? metricColor(contextLayer, feature.properties?.[contextLayer]) : [0,0,0,0],
+          getLineColor: feature => feature.properties?.id === selectedCounty ? [255,245,211,255] : [110,129,140,100],
+          getLineWidth: feature => feature.properties?.id === selectedCounty ? 2.5 : 0.4,
+          lineWidthUnits: 'pixels',
+          onClick: ({ object }) => { if (object?.properties?.id) onCountySelect?.(object.properties.id); },
+          updateTriggers: { getFillColor: contextLayer, getLineColor: selectedCounty, getLineWidth: selectedCounty },
+        }),
         new PolygonLayer<Hex>({
           id: "hexes",
+          visible: showExposure,
           data: hexes,
           getPolygon: (h) => h.ring.map(([lat, lng]) => [lng, lat]),
           extruded: perspective,
           elevationScale: perspective ? 1 : 0,
-          getElevation: (h) => 35_000 + (h.value / maxValue) * 420_000,
+          getElevation: (h) => (h.value / maxValue) * 350_000,
           getFillColor: (h) => [183, 129, 58, perspective ? 105 + h.level * 24 : 40 + h.level * 45],
           getLineColor: (h) => (h.cell === highlight ? INK : [143, 99, 39, 160]),
           getLineWidth: (h) => (h.cell === highlight ? 3 : 1),
           lineWidthUnits: "pixels",
-          wireframe: perspective,
+          wireframe: false,
           material: {
             ambient: 0.38,
             diffuse: 0.62,
@@ -170,85 +223,59 @@ export default function BookMap({
         }),
         new ScatterplotLayer<Pin>({
           id: "pins",
-          data: pins,
+          data: pinsInPaintOrder(pins),
           getPosition: (p) => [p.site.lng, p.site.lat],
-          getFillColor: (p) => PIN_FILL[p.decision] ?? PIN_FILL.routed,
-          getLineColor: (p) => (p.decision === "open" ? INK : PAPER),
-          getRadius: (p) => (p.decision === "open" ? 8 : 6),
+          getFillColor: (p) => isClimate(contextLayer) ? metricColor(contextLayer, siteValue(sites.get(p.caseId), contextLayer)) : PIN_FILL[p.decision] ?? PIN_FILL.routed,
+          getLineColor: (p) => (p.caseId === selectedSite || p.decision === "open" ? INK : PAPER),
+          getRadius: (p) => (p.caseId === selectedSite ? 11 : isClimate(contextLayer) ? 8 : p.decision === "open" ? 8 : 6),
           radiusUnits: "pixels",
           lineWidthUnits: "pixels",
           getLineWidth: 2,
           stroked: true,
           pickable: !compact,
-          onClick: ({ object }) => object && router.push(`/cases/${object.caseId}`),
+          onClick: ({ object }) => { if (object) { if (onSiteSelect) onSiteSelect(object.caseId); else router.push(`/cases/${object.caseId}`); } },
+          updateTriggers: { getFillColor: contextLayer, getLineColor: selectedSite, getRadius: [contextLayer, selectedSite] },
         }),
       ],
     });
-  }, [hexes, pins, highlight, compact, perspective, router]);
+  }, [hexes, pins, highlight, compact, perspective, router, countyData, contextLayer, selectedCounty, selectedSite, showExposure, onCountySelect, onSiteSelect]);
 
   // maplibre-gl.css sets .maplibregl-map to position: relative, outranking layered utilities, so size the parent.
   return (
-    <div className="absolute inset-0">
-      {trouble && <MapFallback hexes={hexes} pins={pins} perspective={perspective} reason={trouble} />}
+    <div className="absolute inset-0" data-map-ready={ready || !!trouble}>
+      {!ready && !trouble && <div role="status" aria-label="Loading portfolio map" className="absolute inset-0 z-10 animate-pulse bg-land motion-reduce:animate-none" />}
+      {offline && !trouble && <span className="absolute bottom-2 right-3 z-10 text-[10px] text-dim">Offline basemap · US Census 2024</span>}
+      {trouble && <MapFallback hexes={hexes} pins={pins} perspective={perspective} reason={trouble} contextLayer={contextLayer} countyData={countyData} onCountySelect={onCountySelect} onSiteSelect={onSiteSelect} showExposure={showExposure} />}
       <div ref={box} className={`h-full w-full ${trouble ? "hidden" : ""}`} />
     </div>
   );
 }
 
-function MapFallback({ hexes, pins, perspective, reason }: { hexes: Hex[]; pins: Pin[]; perspective: boolean; reason: string }) {
-  const maxValue = Math.max(1, ...hexes.map((hex) => hex.value));
-  const point = ([lat, lng]: [number, number]) => ({
-    x: ((lng + 125) / 59) * 1000,
-    y: ((50 - lat) / 26) * 600,
-  });
-  const polygon = (ring: [number, number][], lift = 0) => ring.map((coord) => {
-    const p = point(coord);
-    return `${p.x.toFixed(1)},${(p.y - lift).toFixed(1)}`;
-  }).join(" ");
-
+function MapFallback({ hexes, pins, perspective, reason, contextLayer, countyData, onCountySelect, onSiteSelect, showExposure }: { hexes: Hex[]; pins: Pin[]; perspective: boolean; reason: string; contextLayer: MapLayer; countyData?: CountyGeoJSON; onCountySelect?: (id:string)=>void; onSiteSelect?: (id:string)=>void; showExposure: boolean }) {
+  const mercatorY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+  const top = mercatorY(50), bottom = mercatorY(24);
+  const point = ([lng, lat]: number[]) => [40 + ((lng + 125) / 59) * 920, 100 + ((top - mercatorY(lat)) / (top - bottom)) * 420];
+  const path = (rings: number[][][]) => rings.map((ring) => ring.map((p, i) => `${i ? "L" : "M"}${point(p).join(",")}`).join(" ") + "Z").join(" ");
   return (
-    <div className="absolute inset-0 overflow-hidden bg-water" title={reason}>
-      <svg viewBox="0 0 1000 600" className="h-full w-full" role="img" aria-label="Fallback view of portfolio exposure across the United States">
-        <defs>
-          <linearGradient id="fallback-land" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="#182128" />
-            <stop offset="1" stopColor="#0d1419" />
-          </linearGradient>
-          <pattern id="fallback-grid" width="100" height="100" patternUnits="userSpaceOnUse">
-            <path d="M100 0H0V100" fill="none" stroke="#27343d" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect width="1000" height="600" fill="url(#fallback-land)" />
-        <rect width="1000" height="600" fill="url(#fallback-grid)" opacity="0.55" />
-        <polygon points={polygon(US_OUTLINE)} fill="#111b21" stroke="#52626d" strokeWidth="2" />
-        {STATE_LABELS.map(([label, lat, lng]) => {
-          const p = point([lat, lng]);
-          return <text key={label} x={p.x} y={p.y} fill="#74838e" fontSize="12" textAnchor="middle">{label}</text>;
+    <div className="absolute inset-0 overflow-hidden bg-water">
+      <svg viewBox="0 0 1000 600" className="h-full w-full" role="img" aria-label="Portfolio exposure on US Census state boundaries">
+        {states.features.map((state, index) => {
+          const polygons = state.geometry.type === "Polygon" ? [state.geometry.coordinates] : state.geometry.coordinates;
+          return <path key={index} d={polygons.map(path).join(" ")} fill="#19242b" fillRule="evenodd" stroke="#53636c" strokeWidth="1"><title>{state.properties?.name}</title></path>;
         })}
-        {hexes.map((hex) => {
-          const lift = perspective ? 10 + (hex.value / maxValue) * 68 : 0;
-          return (
-            <g key={hex.cell}>
-              {lift > 0 && <polygon points={polygon(hex.ring)} fill="#6e4b20" opacity="0.5" />}
-              <polygon
-                points={polygon(hex.ring, lift)}
-                fill="#b7813a"
-                fillOpacity={0.2 + hex.level * 0.15}
-                stroke="#d19a4e"
-                strokeWidth={hex.level >= 4 ? 2.2 : 1}
-              />
-            </g>
-          );
+        {contextLayer !== 'exposure' && !isClimate(contextLayer) && countyData?.features.map(feature => {
+          const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+          const color = metricColor(contextLayer, feature.properties[contextLayer]);
+          return <path key={feature.properties.id} d={polygons.map(path).join(' ')} fill={`rgb(${color.slice(0,3).join(',')})`} stroke="#596974" strokeWidth=".3" onClick={()=>onCountySelect?.(feature.properties.id)}><title>{`${feature.properties.name}: ${geoValue(feature.properties[contextLayer])}`}</title></path>;
         })}
-        {pins.map((pin) => {
-          const p = point([pin.site.lat, pin.site.lng]);
-          const color = pin.decision === "decline" ? "#e2594a" : pin.decision === "open" ? "#0a0d10" : "#8a97a3";
-          return <circle key={pin.caseId} cx={p.x} cy={p.y} r={pin.decision === "open" ? 7 : 5} fill={color} stroke="#cfd7dd" strokeWidth="2" />;
+        {showExposure && hexes.map((hex) => <path key={hex.cell} d={path([hex.ring.map(([lat, lng]) => [lng, lat])])} fill="#b7813a" fillOpacity={0.2 + hex.level * 0.15} stroke="#d19a4e" strokeWidth="1"><title>{`$${hex.value.toLocaleString()} active TIV`}</title></path>)}
+        {pinsInPaintOrder(pins).map((pin) => {
+          const [x, y] = point([pin.site.lng, pin.site.lat]);
+          const color = isClimate(contextLayer) ? metricColor(contextLayer,siteValue(sites.get(pin.caseId),contextLayer)) : PIN_FILL[pin.decision] ?? PIN_FILL.routed;
+          return <a key={pin.caseId} href={`/cases/${pin.caseId}`} onClick={e=>{if(onSiteSelect){e.preventDefault();onSiteSelect(pin.caseId);}}} aria-label={`Open case ${pin.caseId}, ${pin.insured}`}><circle cx={x} cy={y} r={pin.decision === "open" ? 7 : 5} fill={`rgb(${color.slice(0, 3).join(",")})`} stroke="#cfd7dd" strokeWidth="2"><title>{`#${pin.caseId} ${pin.insured}`}</title></circle></a>;
         })}
       </svg>
-      <p className="absolute bottom-14 right-5 max-w-[260px] border border-edge bg-paper/95 px-3 py-2 text-[10px] leading-snug text-dim">
-        Offline portfolio view. The external basemap is unavailable, so Pixie is using its bundled geographic outline with the same exposure cells and submissions.
-      </p>
+      <p className="absolute bottom-2 right-3 text-[10px] text-dim" title={reason}>{perspective ? "3D unavailable · " : ""}Static map · US Census 2024</p>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { money } from "@/components/bits";
 import { StatusBar } from "@/components/desk/Kbd";
+import { MethodEquation } from "@/components/case/MethodEquation";
 import { useKeys } from "@/components/desk/keys";
 import { api, type GuidelineDiff, type GuidelineDoc, type GuidelineEdit, type Pred } from "@/lib/api";
 
@@ -145,7 +147,7 @@ function Thresholds({ doc, onEdit }: { doc: GuidelineDoc; onEdit: (e: GuidelineE
         {(
           [
             ["Decline", 0, decline, "bg-rust/12", "text-rust"],
-            ["Open · needs an underwriter", decline, accept, "bg-ochre/12", "text-ochre"],
+            ["Review", decline, accept, "bg-ochre/12", "text-ochre"],
             ["Accept", accept, 100, "bg-moss/12", "text-moss"],
           ] as const
         ).map(([label, from, to, fill, tone]) => (
@@ -165,7 +167,7 @@ function Thresholds({ doc, onEdit }: { doc: GuidelineDoc; onEdit: (e: GuidelineE
         ))}
         <div aria-hidden className="absolute inset-y-0 border-l border-dashed border-rust" style={{ left: `${cap}%` }}>
           {/* right-anchored, so the sentence stays inside the decline zone instead of crossing a divider */}
-          <span className="num absolute bottom-0 right-1 whitespace-nowrap text-[9px] text-rust">break a hard rule and the score stops at {cap} →</span>
+          <span className="num absolute bottom-0 right-1 hidden whitespace-nowrap text-[9px] text-rust sm:block">cap {cap}</span>
         </div>
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -407,7 +409,7 @@ export default function GuidelinePage() {
           <div key={t.label} className="flex min-w-[112px] shrink-0 flex-col justify-center border-r border-rule px-3.5">
             <span className="kicker">{t.label}</span>
             <span className={`num text-[18px] font-medium leading-[21px] ${t.label === "pending" && pending.n ? "text-ochre" : "text-ink"}`}>{t.value}</span>
-            <span className="text-[10px] leading-[12px] text-faint">{t.sub}</span>
+
           </div>
         ))}
         <span className="flex-1" />
@@ -425,24 +427,27 @@ export default function GuidelinePage() {
         </div>
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_460px]">
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_340px]">
         {/* ------------------------------ the document ------------------------------ */}
         <div className="min-h-0 overflow-y-auto border-r border-edge">
-          <section aria-labelledby="th-h" className="border-b border-rule px-4 py-2.5">
+          <section aria-labelledby="th-h" className="border-b border-rule px-6 py-5">
             <h2 id="th-h" className="kicker mb-1.5 flex items-baseline gap-2">
               <span>Decision thresholds</span>
               {pending.thresholds && <Pendant />}
-              <span className="ml-auto normal-case tracking-normal text-faint">the cap must sit below the accept line</span>
+              <Link href="/method" className="ml-auto normal-case tracking-normal text-ochre hover:underline">Scoring method</Link>
             </h2>
             <Thresholds doc={doc} onEdit={edit} />
           </section>
 
-          <section aria-labelledby="fa-h" className="px-4 py-2.5">
+          <section aria-labelledby="equation-h" className="border-b border-rule px-6 py-5">
+            <h2 id="equation-h" className="kicker">Scoring equation · active rules</h2>
+            <MethodEquation rules={server} />
+          </section>
+
+          <section aria-labelledby="fa-h" className="px-6 py-5">
             <h2 id="fa-h" className="kicker mb-1 flex items-baseline gap-2">
               <span>Factors</span>
-              <span className="ml-auto normal-case tracking-normal text-faint">
-                first band that matches wins · a missing value keeps every band possible
-              </span>
+
             </h2>
             <table className="w-full border-collapse">
               <caption className="sr-only">Every factor in the guideline, its bands and the test each band applies.</caption>
@@ -457,10 +462,7 @@ export default function GuidelinePage() {
                 ))}
               </tbody>
             </table>
-            <p className="mt-2 border-t border-rule pt-1.5 text-[10px] leading-snug text-faint">
-              Points per band: {["target", "acceptable", "not_acceptable"].map((b) => `${b.replace("_", " ")} ${doc.points[b]}`).join(", ")}. A factor
-              is scored against its own best reachable band, so a factor with no target band is not penalised for lacking one.
-            </p>
+
           </section>
         </div>
 
@@ -468,7 +470,7 @@ export default function GuidelinePage() {
         <div className="flex min-h-0 flex-col">
           <section aria-labelledby="sc-h" className="shrink-0 px-3 py-2">
             <h2 id="sc-h" className="kicker mb-1">
-              Try a change <span className="normal-case tracking-normal text-faint">· examples use the filed rules; apply to measure the current result</span>
+              Scenarios
             </h2>
             <ul>
               {doc.scenarios.map((s) => (
@@ -479,13 +481,13 @@ export default function GuidelinePage() {
                       setRan(s.id);
                     }}
                     title={s.note}
-                    className={`flex w-full items-baseline gap-2 border-b border-rule py-1 pl-1.5 text-left transition-colors duration-150 hover:bg-land ${
+                    className={`flex w-full items-baseline gap-2 border-b border-rule py-3 pl-1.5 text-left transition-colors duration-150 hover:bg-land ${
                       ran === s.id ? "bg-raise" : ""
                     }`}
                   >
                     <span className="min-w-0">
                       <span className={`cond block text-[13px] font-semibold ${ran === s.id ? "text-ochre" : "text-ink"}`}>{s.label}</span>
-                      <span className="mt-0.5 block text-[11px] leading-snug text-faint">{s.effect}</span>
+
                     </span>
                   </button>
                 </li>
@@ -507,7 +509,7 @@ export default function GuidelinePage() {
                   <b className="text-ochre">
                     {pending.n} pending edit{pending.n === 1 ? "" : "s"}
                   </b>
-                  <span className="text-faint"> · the desk is still scoring the active guideline</span>
+
                 </span>
                 <button onClick={apply} disabled={busy} className={`${BTN} border-ochre text-ochre hover:bg-ochre hover:text-paper`}>
                   {busy ? "re-scoring…" : "apply"}
@@ -517,7 +519,7 @@ export default function GuidelinePage() {
                 </button>
               </>
             ) : (
-              <span className="text-[11px] text-faint">Every number on the left is editable. Nothing reaches the desk until you apply.</span>
+              <span className="text-[11px] text-faint">No pending changes</span>
             )}
           </div>
 
@@ -525,8 +527,7 @@ export default function GuidelinePage() {
             <Diff diff={diff} />
           ) : (
             <p className="flex-1 px-3 py-2 text-[11px] leading-snug text-faint">
-              Apply an edit and the re-score lands here: which cases changed decision, how far they moved in the queue, and
-              how much value at stake crossed the line.
+              No changes applied.
             </p>
           )}
         </div>
@@ -560,9 +561,9 @@ function FactorRows({
   return (
     <>
       <tr className="border-t border-edge">
-        <th scope="rowgroup" colSpan={2} className="pb-0.5 pt-2 text-left">
+        <th scope="rowgroup" colSpan={2} className="pb-2 pt-5 text-left">
           <span className="flex items-baseline gap-2">
-            <span className="cond text-[14px] font-semibold text-ink">{f.label}</span>
+            <span title={f.source} className="cond text-[17px] font-semibold text-ink">{f.label}</span>
             {f.hardFail && (
               <span title="a not-acceptable value here caps the whole score" className="border border-rust/60 px-1 text-[9px] uppercase leading-[13px] tracking-[0.06em] text-rust">
                 hard fail
@@ -574,14 +575,14 @@ function FactorRows({
               </span>
             )}
             {f.bands.some((b) => pending.has(`${f.fact}.${b.band}`)) && <Pendant />}
-            <span className="num ml-auto text-[11px] font-normal text-faint">{f.source}</span>
+            <span className="num ml-auto hidden text-[10px] font-normal text-faint xl:inline">{f.source}</span>
           </span>
         </th>
       </tr>
       {f.bands.map((b) => (
         <tr key={b.band} className="border-t border-rule">
           <td colSpan={2} className={pending.has(`${f.fact}.${b.band}`) ? "border-l-2 border-ochre pl-1.5" : "pl-[8px]"}>
-            <span className="flex items-baseline gap-2 py-1">
+            <span className="flex flex-wrap items-baseline gap-3 py-2">
               <Band fact={f.fact} band={b.band} pred={b.pred} onPred={(p) => onEdit(b.band, p)} />
             </span>
           </td>

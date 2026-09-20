@@ -109,6 +109,10 @@ class Step:
     evidence: str = ""
     citation: str = ""
     cells: list[str] | None = None
+    raw_points_lo: float | None = None
+    raw_points_hi: float | None = None
+    max_points: float | None = None
+    multiplier_rule: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         out = {"key": self.key, "label": self.label, "band": self.band, "kind": self.kind,
@@ -117,7 +121,9 @@ class Step:
                "capped": self.capped, "rule": self.rule, "value": self.value,
                "provenance": self.provenance, "source": self.source}
         for name, value in (("layer", self.layer), ("multiplier", self.multiplier),
-                            ("evidence", self.evidence), ("citation", self.citation), ("cells", self.cells)):
+                            ("evidence", self.evidence), ("citation", self.citation), ("cells", self.cells),
+                            ("rawPointsLo", self.raw_points_lo), ("rawPointsHi", self.raw_points_hi),
+                            ("maxPoints", self.max_points), ("multiplierRule", self.multiplier_rule)):
             if value not in (None, "", []):
                 out[name] = value
         return out
@@ -155,7 +161,10 @@ def waterfall(case: Case, a: Assessment, rules: RulesFile,
         display, provenance, source = _value_display(rule.fact, case.fact(rule.fact))
         steps.append(Step(key=rule.fact, label=FACT_LABELS.get(rule.fact, rule.fact), band=_band_of(fr.possible),
                           kind="factor", points_lo=lo_pts, points_hi=hi_pts, running_lo=lo, running_hi=hi,
-                          rule=rule_text(rule), value=display, provenance=provenance, source=source))
+                          rule=rule_text(rule), value=display, provenance=provenance, source=source,
+                          raw_points_lo=min(rules.points[b] for b in fr.possible),
+                          raw_points_hi=max(rules.points[b] for b in fr.possible),
+                          max_points=max(rules.points[b] for b in rule.bands)))
 
     cap = rules.hard_fail_cap
     if cap is not None:
@@ -190,7 +199,8 @@ def waterfall(case: Case, a: Assessment, rules: RulesFile,
                           rule=f"external layer, capped multiplier; points = -{max_risk:g} x ln(multiplier) / ln(1.25)",
                           value=str(finding.value), provenance="external", source=finding.source,
                           layer=finding.layer, multiplier=finding.multiplier, evidence=finding.text,
-                          citation=finding.source))
+                          citation=finding.source,
+                          multiplier_rule=layers.MULTIPLIER_RULES.get(finding.layer or "", "No mapping recorded for this layer.")))
     if hazard and a.risk is not None:
         engine_total = risk_points(a.risk, max_risk)
         drift = engine_total - applied_total
@@ -252,6 +262,53 @@ def explain_payload(case: Case, a: Assessment, rules: RulesFile, events: Iterabl
         "reconciles": reconciles(steps, a),
         "thresholds": rules.thresholds,
         "rulesId": rules.id,
+        "calculation": calculation(case, a, rules, steps),
+    }
+
+
+def calculation(case: Case, a: Assessment, rules: RulesFile, steps: list[Step]) -> dict[str, Any] | None:
+    from .portfolio import PENALTY_PER_TIV, RADIUS_KM
+
+    if isinstance(a.decision, Routed):
+        return None
+    factors = [s for s in steps if s.kind == "factor"]
+    caps = [s for s in steps if s.key.startswith("cap.")]
+    denominator = sum(s.max_points for s in factors)
+    raw_lo = sum(s.raw_points_lo for s in factors)
+    raw_hi = sum(s.raw_points_hi for s in factors)
+    capped = (caps or factors)[-1]
+    hazard = [s for s in steps if s.kind == "hazard"]
+    premium = case.fact("premium")
+    premium_estimate = None
+    if (isinstance(premium, Estimated) and isinstance(case.tiv, Known) and case.tiv.v > 0
+            and "technical_premium/TIV" in premium.method):
+        premium_estimate = {
+            "tiv": case.tiv.v, "lo": premium.lo, "hi": premium.hi, "median": premium.point,
+            "rateLo": premium.lo / case.tiv.v, "rateHi": premium.hi / case.tiv.v,
+            "method": premium.method, "policies": list(premium.evidence),
+        }
+    return {
+        "points": rules.points, "denominator": denominator,
+        "raw": {"lo": raw_lo, "hi": raw_hi},
+        "base": {"lo": raw_lo / denominator * 100, "hi": raw_hi / denominator * 100},
+        "afterCaps": {"lo": capped.running_lo, "hi": capped.running_hi},
+        "hardFailCap": rules.hard_fail_cap,
+        "hazard": {
+            "applied": a.risk is not None,
+            "product": math.prod(s.multiplier for s in hazard) if hazard else None,
+            "total": getattr(a.risk, "total", None), "bounds": list(layers.TOTAL_CAP),
+            "maxPoints": (rules.risk_points or {}).get("max", 15),
+            "points": risk_points(a.risk, (rules.risk_points or {}).get("max", 15)) if a.risk else 0,
+        },
+        "portfolio": {
+            "applied": a.portfolio is not None,
+            "points": getattr(a.portfolio, "points", 0),
+            "nearTiv": getattr(a.portfolio, "near_tiv", None),
+            "maxPenalty": (rules.portfolio_points or {}).get("max_penalty", 10),
+            "radiusKm": RADIUS_KM, "tivPerPoint": 1 / PENALTY_PER_TIV,
+        },
+        "exact": {"lo": a.score.lo, "hi": a.score.hi},
+        "premiumEstimate": premium_estimate,
     }
 
 

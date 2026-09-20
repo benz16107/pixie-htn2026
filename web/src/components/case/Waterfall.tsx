@@ -19,7 +19,7 @@ export function Waterfall({ x }: { x: Explain }) {
           </div>
         ))}
         {[
-          { at: x.thresholds.decline, label: `refer at ${x.thresholds.decline}`, tone: "border-rust text-rust" },
+          { at: x.thresholds.decline, label: `review at ${x.thresholds.decline}`, tone: "border-rust text-rust" },
           { at: x.thresholds.accept, label: `accept at ${x.thresholds.accept}`, tone: "border-moss text-moss" },
         ].map((t) => (
           <div key={t.at} className={`absolute inset-x-0 border-t border-dashed ${t.tone}`} style={{ bottom: y(t.at) }}>
@@ -96,7 +96,7 @@ function Bar({ s, prev, left, width, y }: { s: Step; prev?: Step; left: number; 
         {s.label}
       </span>
 
-      <span className="waterfall-tip pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 w-[240px] -translate-x-1/2 translate-y-1 rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] hidden break-words transition-[opacity,transform] duration-150 ease-out group-hover:block group-focus:block">
+      <span style={{ top: 12, ...(left > 60 ? { right: 0 } : { left: 0 }) }} className="waterfall-tip pointer-events-none absolute z-20 w-[240px] rounded-sm border border-ochre/60 bg-land px-2.5 py-2 text-[11px] leading-snug text-ink shadow-[0_8px_24px_rgba(0,0,0,0.6)] hidden break-words transition-[opacity,transform] duration-150 ease-out group-hover:block group-focus:block">
         <b className="block font-semibold">{s.label}: {pts} points</b>
         {human && <span className="block text-ink">The underwriter&apos;s number, not the engine&apos;s.</span>}
         {s.kind === "cap" && <span className="block text-ochre">A cap: break this hard rule and the score cannot climb past it.</span>}

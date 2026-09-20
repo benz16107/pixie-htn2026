@@ -10,7 +10,7 @@ type Key = "rank" | "insured" | "score" | "value";
 const GROUP: Record<string, number> = { open: 0, refer: 1, accept: 1, approve: 1, decline: 2, routed: 3 };
 /** Consumer referrals sit under the desk's own book, the way they arrive. */
 const group = (r: Row) => (r.region === "toronto" ? 10 : 0) + (GROUP[r.decision.kind] ?? 3);
-const scored = (r: Row) => !!r.score && r.decision.kind !== "routed" && (r.score.lo !== 0 || r.score.hi !== 0);
+const scored = (r: Row) => !!r.score && r.decision.kind !== "routed";
 const mid = (r: Row) => (scored(r) ? (r.score!.lo + r.score!.hi) / 2 : -1);
 
 type Extras = { deskVerdict?: string; challengeRisks?: number };
@@ -19,7 +19,7 @@ export type Ranked = Row & Extras & { rank: number };
 const COLS: { key?: Key; label: string; w: string; align?: "right"; small?: "hide" }[] = [
   { key: "insured", label: "submission", w: "w-[44%] sm:w-[31%]" },
   { key: "value", label: "exposure", w: "w-[14%]", align: "right", small: "hide" },
-  { key: "score", label: "risk range", w: "w-[32%] sm:w-[23%]" },
+  { key: "score", label: "appetite range", w: "w-[32%] sm:w-[23%]" },
   { label: "decision", w: "w-[24%] sm:w-[14%]" },
   { label: "needs attention", w: "w-[18%]", small: "hide" },
 ];
@@ -37,7 +37,7 @@ export function QueueTable({
   t = THRESHOLDS,
 }: {
   rows: (Row & Extras)[];
-  view: "open" | "all" | "consumer";
+  view: "open" | "all" | "consumer" | "scored";
   onCursor: (r: Ranked | null) => void;
   filter: string;
   setFilter: (s: string) => void;

@@ -27,6 +27,15 @@ SOURCES = {
 }
 TOTAL_CAP = (0.85, 1.25)
 
+# Explanations of the step functions implemented in factor(), not vendor-supplied rates.
+MULTIPLIER_RULES = {
+    "fema_flood": "Unmapped or empty FEMA result: 0.97; mapped outside SFHA: 1.05; SFHA: 1.15; SFHA floodway: 1.20. An unmapped result does not establish zero flood risk.",
+    "usgs_earthquakes": "M4+ events within 50 km, 1994–2023: 0 → 1.00; 1–4 → 1.03; 5–9 → 1.06; 10+ → 1.10.",
+    "usfs_wildfire": "Wildfire hazard potential: below 100 or no value → 1.00; 100 to below 400 → 1.04; 400+ → 1.08. No value is not proof of no hazard.",
+    "open_meteo": "Start at 1.00. Add 0.05 for at least 3 days with gusts over 80 km/h; add 0.02 for at least 15 days with precipitation over 25 mm.",
+    "nominatim": "Geocode verification has multiplier 1.00 and no score adjustment, including when it flags a mismatch.",
+}
+
 
 def layers_dir() -> Path:
     return Path(os.environ.get("ATLAS_LAYERS_DIR") or REPO / "cache" / "layers")

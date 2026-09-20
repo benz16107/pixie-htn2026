@@ -3,7 +3,6 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { Interval } from "@/contract";
 import type { Sensitivity, Surface } from "@/lib/explain";
-import { usd } from "@/lib/explain";
 import { useKeys } from "../desk/keys";
 import { WhatIf } from "./WhatIf";
 import type { Pin } from "./DecisionSpace";
@@ -16,6 +15,7 @@ const DecisionSpace = dynamic(() => import("./DecisionSpace"), {
 
 const TABS = [
   { id: "2d" as const, label: "score breakdown" },
+  { id: "calculation" as const, label: "calculation" },
   { id: "3d" as const, label: "decision space" },
 ];
 
@@ -31,6 +31,7 @@ export function Views({
   before,
   whatIf,
   waterfall,
+  calculation,
 }: {
   caseId: string;
   surface: Surface | null;
@@ -38,8 +39,9 @@ export function Views({
   before: { score: Interval | null; decision: string };
   whatIf: { fact: string; label: string; start: number } | null;
   waterfall: React.ReactNode;
+  calculation: React.ReactNode;
 }) {
-  const [tab, setTab] = useState<"2d" | "3d">("2d");
+  const [tab, setTab] = useState<"2d" | "3d" | "calculation">("2d");
   const [pin, setPin] = useState<Pin>(null);
 
   useKeys(
@@ -51,11 +53,10 @@ export function Views({
     [surface],
   );
 
-  const flip = sensitivity?.facts.find((f) => f.fact === whatIf?.fact)?.flip ?? null;
 
   return (
     <>
-      <div className="mt-2 flex items-center gap-3 border-b border-rule">
+      <div className="mt-2 flex flex-wrap items-center gap-3 border-b border-rule">
         <div role="tablist" aria-label="How to read this decision" className="flex">
           {TABS.map((t) => (
             <button
@@ -74,29 +75,17 @@ export function Views({
             </button>
           ))}
         </div>
-        <p className="min-w-0 flex-1 truncate text-[10px] text-faint">
-          {tab === "2d"
-            ? "Each bar is one guideline rule, a hazard lookup, or a cap: break a hard rule and the score cannot climb past it."
-            : surface
-              ? `${surface.axes[0].label} across, ${surface.axes[1].label} into the page, score as height. ${surface.points.toLocaleString()} real re-runs in ${surface.ms}ms.`
-              : "No decision space for this case."}
-        </p>
+
       </div>
 
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="flex min-h-0 flex-1 flex-col pt-2">
-        {tab === "2d" ? waterfall : surface ? <DecisionSpace s={surface} pin={pin} /> : null}
+      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className={tab === "calculation" ? "min-w-0" : "score-chart-scroll"}>
+        {tab === "calculation" ? calculation : <div className="score-chart flex flex-col">{tab === "2d" ? waterfall : surface ? <DecisionSpace s={surface} pin={pin} /> : null}</div>}
       </div>
 
-      {whatIf && (
+      {whatIf && tab !== "calculation" && (
         <>
           <WhatIf key={`${caseId}-${whatIf.fact}-${whatIf.start}`} caseId={caseId} fact={whatIf.fact} label={whatIf.label} start={whatIf.start} sensitivity={sensitivity} before={before} onState={setPin} />
-          {tab === "3d" && flip && (
-            <p className="mt-1 text-[10px] text-dim">
-              The boundary on the floor is {flip.display}: below it the case declines, at or above it the desk{" "}
-              {flip.to === "accept" ? "can write it" : `moves to ${flip.to}`}.
-              {pin && <span className="ml-1 text-ochre">Now at {usd(pin.value)}.</span>}
-            </p>
-          )}
+
         </>
       )}
     </>

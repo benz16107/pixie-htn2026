@@ -15,16 +15,16 @@ import type { Surface, SurfaceAxis, Tier } from "@/lib/explain";
 const SPAN = 100; // the floor is 100 x 100 world units, centred on the origin
 const HALF = SPAN / 2;
 const ZS = 0.62; // score points -> world units, so a 100-point column is shorter than the floor is wide
-const INK = [47, 42, 34] as const;
-const DIM = [111, 100, 83] as const;
-const RULE = [212, 202, 180] as const;
+const INK = [207, 215, 221] as const;
+const DIM = [149, 163, 175] as const;
+const RULE = [49, 61, 71] as const;
 
 const TIER_RGB: Record<Tier, [number, number, number]> = {
-  accept: [94, 111, 74], // moss
-  open: [143, 99, 39], // ochre
-  refer: [143, 99, 39],
-  decline: [162, 73, 47], // rust
-  routed: [111, 100, 83], // dim
+  accept: [53, 184, 138], // moss
+  open: [240, 164, 55], // ochre
+  refer: [240, 164, 55],
+  decline: [226, 89, 74], // rust
+  routed: [149, 163, 175], // dim
 };
 const TIER_WORD: Record<Tier, string> = {
   accept: "accept",
@@ -45,6 +45,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const deck = useRef<Deck<OrbitView> | null>(null);
   const [slice, setSlice] = useState(() => (s.axes[2] ? nearest(s.axes[2].t, s.axes[2].tAt ?? 0.5) : 0));
+  const [renderError, setRenderError] = useState(false);
   const [home, setHome] = useState(HOME);
   const [view, setView] = useState(HOME);
 
@@ -85,7 +86,12 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
 
   useEffect(() => {
     if (!canvas.current) return;
+    if (!canvas.current.getContext("webgl2")) {
+      const timer = window.setTimeout(() => setRenderError(true), 0);
+      return () => window.clearTimeout(timer);
+    }
     deck.current = new Deck<OrbitView>({
+      onError: () => setRenderError(true),
       canvas: canvas.current,
       views: new OrbitView({ orbitAxis: "Z", fovy: 44, near: 0.05, far: 6000 }),
       controller: { dragRotate: true, scrollZoom: { speed: 0.012, smooth: true }, dragPan: false },
@@ -157,6 +163,10 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
     <figure className="flex min-h-0 flex-1 flex-col">
       {/* A terrain squashed to 200px reads as a smear. Below that the pane scrolls instead. */}
       <div className="relative min-h-[300px] flex-1 overflow-hidden rounded-sm border border-rule bg-paper">
+        {renderError && <div className="absolute inset-0 z-10 overflow-auto bg-paper p-5">
+          <p className="mb-3 text-sm text-dim">3D is unavailable in this browser. Computed scenarios:</p>
+          <table className="w-full text-left text-xs"><thead><tr><th>{ax.label}</th><th>{ay.label}</th><th>Score</th><th>Decision</th></tr></thead><tbody>{cells.map((cell) => <tr key={`${cell.i}-${cell.j}`} className="border-t border-rule"><td className="py-2">{ax.ticks[cell.i]}</td><td>{ay.ticks[cell.j]}</td><td>{cell.lo === cell.hi ? cell.lo : `${cell.lo}–${cell.hi}`}</td><td>{cell.tier}</td></tr>)}</tbody></table>
+        </div>}
         <canvas
           ref={canvas}
           tabIndex={0}
@@ -205,7 +215,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
         </dl>
       </div>
 
-      <figcaption className="mt-2 flex shrink-0 items-center gap-x-4 overflow-hidden text-[11px]">
+      <figcaption className="mt-2 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 text-[11px]">
         {az && (
           <label className="flex shrink-0 items-center gap-1.5">
             <span className="kicker">{az.label} held at</span>
@@ -226,10 +236,10 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
         <p className="min-w-0 flex-1 truncate text-dim">
           {flat ? (
             <>
-              Flat on purpose. Nothing on these axes moves this case: a fact the desk already knows is a hard fail, so every square in the space stays under the decline line at {s.thresholds.decline}.
+              A known hard failure keeps every scenario below {s.thresholds.decline}.
             </>
           ) : unknown.length ? (
-            <>{unknown[0].uncertainty!.text} The dark line is every score it could still have.</>
+            <>{unknown[0].uncertainty!.text} The vertical line marks its score range.</>
           ) : (
             <>Every square is the engine re-run on that pair of facts. Drag to orbit, scroll to zoom.</>
           )}
@@ -472,7 +482,7 @@ function buildLayers({
       fontWeight: 500,
       characterSet: "auto",
       background: true,
-      getBackgroundColor: [243, 239, 228, 205],
+      getBackgroundColor: [10, 13, 16, 235],
       backgroundPadding: [3, 1, 3, 1],
       // A label on the rim can end up behind a near column; this keeps the text on top at any angle.
       parameters: { depthCompare: "always", depthWriteEnabled: false },

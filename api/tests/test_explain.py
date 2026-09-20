@@ -49,6 +49,52 @@ def test_cap_step_is_explicit_and_labelled(world):
     assert "hard-fail" in caps[0].rule and reconciles(steps, a)
 
 
+@pytest.mark.parametrize("case_id", ["138", "126", "143"])
+def test_calculation_equation_reproduces_engine_with_capped_hazards(world, case_id):
+    import math
+    from atlas_api.portfolio import InMemoryIndex
+
+    case = world.case(f"SUB-{case_id}")
+    multipliers = {"1:fema_flood": 1.20, "1:usgs_earthquakes": 1.10}
+    index = InMemoryIndex(world)
+    a = assess(case, RULES, LayersPack(multipliers), index)
+    payload = explain_payload(case, a, RULES, _hazard_events(case_id, multipliers))
+    c = payload["calculation"]
+    assert payload["reconciles"]
+    assert c["denominator"] == 12
+    assert c["hazard"]["product"] == pytest.approx(1.32)
+    assert c["hazard"]["total"] == 1.25
+    assert c["hazard"]["points"] == -15
+    for end in ("lo", "hi"):
+        assert c["base"][end] == pytest.approx(100 * c["raw"][end] / c["denominator"])
+        final = max(0, min(100, c["afterCaps"][end] + c["hazard"]["points"] + c["portfolio"]["points"]))
+        assert final == pytest.approx(c["exact"][end])
+        assert math.isfinite(final)
+    factors = [s for s in payload["steps"] if s["kind"] == "factor"]
+    assert all("rawPointsLo" in s and "rawPointsHi" in s and "maxPoints" in s for s in factors)
+    assert all(s["multiplierRule"] != "No mapping recorded for this layer."
+               for s in payload["steps"] if s["kind"] == "hazard")
+
+
+def test_calculation_explains_comparable_premium_without_claiming_confirmed_value(world):
+    case = world.case("SUB-138")
+    comparables = [(f"P{i}", 1000 * i, 1_000_000) for i in range(1, 8)]
+    estimate = estimate_premium(case, comparables)
+    case = case.with_fact("premium", estimate, by="intake")
+    payload = explain_payload(case, assess(case, RULES), RULES)
+    premium = payload["calculation"]["premiumEstimate"]
+    assert premium["rateLo"] * premium["tiv"] == pytest.approx(estimate.lo)
+    assert premium["rateHi"] * premium["tiv"] == pytest.approx(estimate.hi)
+    assert premium["policies"] == [f"P{i}" for i in range(1, 8)]
+    assert next(s for s in payload["steps"] if s["key"] == "premium")["provenance"] == "estimated"
+
+
+def test_routed_submission_has_no_calculation(world):
+    case = world.case("SUB-138").with_fact("line", Known("auto", source="test"), by="test")
+    payload = explain_payload(case, assess(case, RULES), RULES)
+    assert payload["score"] is None and payload["calculation"] is None
+
+
 def test_whatif_is_pure_and_fast(world):
     case = world.case("SUB-138")
     before = assess(case, RULES).decision

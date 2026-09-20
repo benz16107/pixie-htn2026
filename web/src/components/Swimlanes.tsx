@@ -169,7 +169,7 @@ function Arrows({ cards, pos, height, width }: { cards: Card[]; pos: Map<string,
     <svg aria-hidden className="pointer-events-none absolute left-0 top-0 overflow-visible" width={width} height={height}>
       <defs>
         <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8z" fill="#2F2A22" />
+          <path d="M0,0 L8,4 L0,8z" fill="#95a3af" />
         </marker>
       </defs>
       {edges.map(({ from, to, dashed }) => {
@@ -180,7 +180,7 @@ function Arrows({ cards, pos, height, width }: { cards: Card[]; pos: Map<string,
         const y2 = b.y + CARD_H / 2;
         const mid = b.x > x1 ? x1 + (b.x - x1) / 2 : x1 + 6;
         const d = b.x > x1 ? `M${x1},${y1} H${mid} V${y2} H${b.x - 2}` : `M${a.x + CARD_W / 2},${y1 + (y2 > y1 ? CARD_H / 2 : -CARD_H / 2)} V${y2 + (y2 > y1 ? -CARD_H / 2 : CARD_H / 2) - (y2 > y1 ? 2 : -2)}`;
-        return <path key={`${from}-${to}`} d={d} fill="none" stroke="#2F2A22" strokeWidth={1.25} strokeDasharray={dashed ? "4 3" : undefined} markerEnd="url(#arr)" />;
+        return <path key={`${from}-${to}`} d={d} fill="none" stroke="#95a3af" strokeWidth={1.25} strokeDasharray={dashed ? "4 3" : undefined} markerEnd="url(#arr)" />;
       })}
     </svg>
   );
@@ -205,7 +205,7 @@ export function Swimlanes({
   follow?: boolean;
   pad?: string;
 }) {
-  const LANE_H = laneH;
+  const LANE_H = Math.max(laneH, CARD_H + 14);
   const LANES = lanes;
   const sorted = useMemo(() => [...events].sort((a, b) => a.seq - b.seq), [events]);
   const { cards, cols, colTimes } = useMemo(() => layout(sorted, lanes), [sorted, lanes]);
@@ -240,8 +240,8 @@ export function Swimlanes({
 
   return (
     <section aria-labelledby="lanes-h" className={`flex min-h-0 flex-col ${pad}`}>
-      <div className="mb-2 flex shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap">
-        <h2 id="lanes-h" className="kicker shrink-0 truncate">{heading}</h2>
+      <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3">
+        <h2 id="lanes-h" className={heading ? "kicker shrink-0 truncate" : "sr-only"}>{heading || "Agent activity"}</h2>
         {controls && (
         <div className="flex items-center gap-2" role="group" aria-label="Replay">
           <button className={btn} onClick={() => { setSpeed(1); setClock(0); }}>Replay 1×</button>
@@ -252,7 +252,7 @@ export function Swimlanes({
         <span className="hidden shrink-0 truncate text-[11px] text-dim xl:inline">
           <span className="num">{cards.length}</span> steps, <span className="num">{sorted.length}</span> events. Columns are moments, not seconds.
         </span>
-        <div className="ml-auto flex w-[360px] items-center gap-3">
+        <div className="ml-auto flex min-w-[180px] max-w-[360px] flex-1 items-center gap-3">
           <span className="kicker whitespace-nowrap">Interval</span>
           <div className="flex-1"><IntervalBar score={score} compact /></div>
           <span className="num w-[44px] text-[11px]" aria-live="polite">{score ? `${score.lo}–${score.hi}` : "—"}</span>

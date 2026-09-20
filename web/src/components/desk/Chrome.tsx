@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ResetDemo } from "./ResetDemo";
+import { Presentation, rememberDemoPage } from "@/app/present/Presentation";
 
 const FEDERATO_DESTS = [
   { href: "/queue", label: "submissions", title: "Cases that need an underwriting decision" },
@@ -20,22 +21,35 @@ const INTACT_DESTS = [
 /** The desk frame and the product switch shared by both product modes. */
 export function Chrome() {
   const path = usePathname();
+  const [presenting, setPresenting] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
   const intact = path.startsWith("/intact");
-  const [api, setApi] = useState<"…" | "up" | "down">("…");
 
   useEffect(() => {
-    let live = true;
-    const ping = () =>
-      fetch("/api/atlas/health", { cache: "no-store" })
-        .then((r) => live && setApi(r.ok ? "up" : "down"))
-        .catch(() => live && setApi("down"));
-    ping();
-    const id = setInterval(ping, 20_000);
-    return () => {
-      live = false;
-      clearInterval(id);
+    if (path !== "/present") rememberDemoPage();
+  }, [path]);
+
+  useEffect(() => {
+    const element = dialog.current;
+    if (presenting) element?.showModal();
+    return () => element?.close();
+  }, [presenting]);
+
+  useEffect(() => {
+    const present = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (path === "/present" || event.defaultPrevented || event.repeat || event.metaKey || event.ctrlKey || event.altKey ||
+          target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox']") ||
+          document.querySelector("dialog[open]")) return;
+      if (event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        rememberDemoPage();
+        setPresenting(true);
+      }
     };
-  }, []);
+    window.addEventListener("keydown", present, true);
+    return () => window.removeEventListener("keydown", present, true);
+  }, [path]);
 
   useEffect(() => {
     document.documentElement.dataset.product = intact ? "intact" : "federato";
@@ -44,9 +58,16 @@ export function Chrome() {
     };
   }, [intact]);
 
-  if (path.startsWith("/live")) return null; // the live desk owns its whole screen
+  const presentation = presenting && <dialog ref={dialog} aria-label="Pixie presentation"
+    className="m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-0"
+    onCancel={() => setPresenting(false)}>
+    <Presentation onDismiss={() => setPresenting(false)} />
+  </dialog>;
 
-  return (
+  if (path === "/present") return null;
+  if (path.startsWith("/live")) return presentation;
+
+  return (<>
       <header className={`desk-chrome product-chrome flex h-[40px] items-stretch border-b border-edge bg-land text-[11px] ${intact ? "intact-chrome" : ""}`}>
         <span className="flex items-center border-r border-edge px-3 font-semibold tracking-[0.18em] text-ink">PIXIE</span>
         <div className="product-switch flex items-center gap-0.5 border-r border-edge px-1" role="group" aria-label="Product mode">
@@ -78,22 +99,11 @@ export function Chrome() {
           })}
         </nav>
         <span className="chrome-status ml-auto flex shrink-0 items-center gap-3 pr-3 text-[10px] text-dim">
+          {!intact && <button onClick={() => { rememberDemoPage(); setPresenting(true); }} title="Toggle presentation (P)">Present <kbd>P</kbd></button>}
           {!intact && <ResetDemo />}
           {process.env.NEXT_PUBLIC_FIXTURES === "1" && <span className="text-ochre">BUNDLED SAMPLES</span>}
-          <span className="flex items-center gap-1.5" title={`API at localhost:8000 is ${api}`}>
-            <span
-              aria-hidden
-              className={`size-[6px] rounded-full ${api === "up" ? "bg-moss" : api === "down" ? "bg-rust" : "bg-faint"}`}
-            />
-            API {api}
-          </span>
-          <Link href="/privacy" className="chrome-legal hover:text-ink">
-            privacy
-          </Link>
-          <Link href="/terms" className="chrome-legal hover:text-ink">
-            terms
-          </Link>
         </span>
       </header>
-  );
+      {presentation}
+  </>);
 }
