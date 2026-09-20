@@ -1,447 +1,216 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useState } from "react";
 import styles from "./LifecycleStory.module.css";
 
-export type LifecycleProduct = "home" | "auto";
 export type LifecycleStage = "quote" | "decide" | "protect" | "recover";
 
-type StageCopy = {
-  title: string;
-  summary: string;
-  detail: string;
-  action: string;
-  actionHint: string;
-};
+type SystemKey = "expo" | "api" | "mcp" | "handoff";
+type GraphNode = { label: string; note: string; href: string; newTab?: boolean };
 
-const STAGES: { key: LifecycleStage; label: string; promise: string }[] = [
-  { key: "quote", label: "Quote", promise: "Know the starting price" },
-  { key: "decide", label: "Decide", promise: "Test the choices" },
-  { key: "protect", label: "Protect", promise: "Reduce preventable loss" },
-  { key: "recover", label: "Recover", promise: "Bring evidence forward" },
+const SYSTEMS: { key: SystemKey; code: string; title: string; detail: string }[] = [
+  { key: "expo", code: "S1", title: "Expo consumer app", detail: "Home + Auto routes" },
+  { key: "api", code: "S2", title: "Deterministic API + risk data", detail: "Pricing, context, recovery" },
+  { key: "mcp", code: "S3", title: "MCP agent interface", detail: "9 consent-limited tools" },
+  { key: "handoff", code: "S4", title: "Advisor + recovery", detail: "Review before contact" },
 ];
 
-const COPY: Record<LifecycleProduct, Record<LifecycleStage, StageCopy>> = {
-  home: {
-    quote: {
-      title: "Start with a price you can inspect.",
-      summary: "The working tenant flow turns an address and a short coverage review into a sourced, itemised estimate.",
-      detail: "No name or email is required in the demo. Location factors and coverage choices stay visible instead of disappearing inside one total.",
-      action: "Open the consumer quote",
-      actionHint: "Working Expo tenant demo",
-    },
-    decide: {
-      title: "See which choice changes the answer.",
-      summary: "A renter can compare coverage choices. If a fact needs review, the same receipt reaches an advisor.",
-      detail: "Confirmed facts stay separate from hypothetical changes. The live desk shows the quote, decision reason, and referral handoff.",
-      action: "Open quote decisions",
-      actionHint: "Working web desk",
-    },
-    protect: {
-      title: "Turn known home risks into a short plan.",
-      summary: "After a tenant estimate, the relationship continues with practical protection tasks tied to the home and season.",
-      detail: "This prevention preview demonstrates the interaction. It does not claim that completing a task changes a premium or guarantees coverage.",
-      action: "Try the prevention preview",
-      actionHint: "Interactive on this page",
-    },
-    recover: {
-      title: "Prepare the home evidence before you need it.",
-      summary: "A tenant can review a room inventory, save a protection record, and choose what to share after property damage.",
-      detail: "The working Expo demo uses bundled living-room items and requires review before save. It does not change contents coverage.",
-      action: "Open home inventory",
-      actionHint: "Working Expo demo",
-    },
+const STAGES: {
+  key: LifecycleStage;
+  number: string;
+  label: string;
+  promise: string;
+  summary: string;
+  systems: SystemKey[];
+  home: GraphNode[];
+  auto: GraphNode[];
+  shared?: GraphNode[];
+}[] = [
+  {
+    key: "quote",
+    number: "01",
+    label: "Quote",
+    promise: "Collect once",
+    summary: "Sourced estimates with visible receipt lines.",
+    systems: ["expo", "api", "mcp"],
+    home: [{ label: "Tenant quote", note: "Illustrative tenant pricing", href: "/home-quote" }],
+    auto: [{ label: "Vehicle comparison", note: "Corolla, CX-5, IONIQ 5", href: "/auto-compare" }],
   },
-  auto: {
-    quote: {
-      title: "Compare the car and the coverage together.",
-      summary: "The working Auto estimator compares vehicle, garaging, use, and driver facts before a customer commits to a car.",
-      detail: "Try a Corolla, CX-5, or IONIQ 5 in the Expo app. Its deterministic results use synthetic inputs and remain illustrative.",
-      action: "Open the Auto estimator",
-      actionHint: "Working Expo demo",
-    },
-    decide: {
-      title: "Make the trade-offs visible before purchase.",
-      summary: "A customer can test one change at a time, such as deductible, annual use, or selected vehicle.",
-      detail: "The inline comparison holds the driver and current vehicle steady while one hypothetical input changes.",
-      action: "Open Auto what-if flow",
-      actionHint: "Working Expo demo",
-    },
-    protect: {
-      title: "Keep the relationship useful between renewals.",
-      summary: "An opt-in driving context score combines driving events with coarse route zones for coaching during the trip.",
-      detail: "A Live Activity and iOS widget can flag school-zone or dense-intersection context. This prototype does not change a real premium.",
-      action: "View sourced route context",
-      actionHint: "Bundled synthetic fixture",
-    },
-    recover: {
-      title: "Collect better evidence when a crash happens.",
-      summary: "Drivers can report an incident while nearby witnesses contribute independent, time-and-place verified footage.",
-      detail: "Pixie Recover is powered by the live CrashClip prototype. It packages corroborated evidence for the insurer without deciding fault.",
-      action: "Open Pixie Recover",
-      actionHint: "Live CrashClip prototype",
-    },
+  {
+    key: "decide",
+    number: "02",
+    label: "Decide",
+    promise: "Change one fact",
+    summary: "What-if inputs stay separate from confirmed facts.",
+    systems: ["expo", "api", "mcp", "handoff"],
+    home: [{ label: "Coverage what-if", note: "Contents coverage trade-off", href: "/decide?product=home" }],
+    auto: [{ label: "Auto what-if", note: "Use, parking, deductible", href: "/auto-compare" }],
+    shared: [{ label: "Advisor desk", note: "Human review of the same facts", href: "/intact/quotes", newTab: false }],
   },
-};
+  {
+    key: "protect",
+    number: "03",
+    label: "Protect",
+    promise: "Act before loss",
+    summary: "Practical prevention continues after purchase.",
+    systems: ["expo", "api", "mcp"],
+    home: [{ label: "Home inventory", note: "Reviewed room and item record", href: "/home-inventory" }],
+    auto: [{ label: "Driving context", note: "Coaching only, no pricing effect", href: "/driving-context" }],
+  },
+  {
+    key: "recover",
+    number: "04",
+    label: "Recover",
+    promise: "Make a local plan",
+    summary: "Safety steps and evidence stay under customer control.",
+    systems: ["expo", "api", "mcp", "handoff"],
+    home: [
+      { label: "Property evidence", note: "Damage details + room context", href: "/recovery-plan?product=home" },
+      { label: "Home recovery plan", note: "Local checklist + PDF", href: "/recovery-plan?product=home" },
+    ],
+    auto: [
+      { label: "Collision evidence", note: "Scene, damage, witness facts", href: "/recovery-plan?product=auto" },
+      { label: "Auto recovery plan", note: "Safety-first checklist + PDF", href: "/recovery-plan?product=auto" },
+    ],
+    shared: [{ label: "Advisor desk", note: "Consent-gated human handoff", href: "/intact/quotes", newTab: false }],
+  },
+];
 
-const PREVENTION: Record<LifecycleProduct, string[]> = {
-  home: ["Test the leak sensor", "Review sewer backup coverage", "Photograph the electrical panel"],
-  auto: [],
-};
+const CONNECTIONS = STAGES.flatMap((stage, stageIndex) =>
+  stage.systems.map((system) => ({
+    system,
+    stage: stage.key,
+    sourceX: 125 + SYSTEMS.findIndex((item) => item.key === system) * 250,
+    targetX: 125 + stageIndex * 250,
+  })),
+);
 
-const ROUTE_CONTEXTS = [
-  { label: "School approach", score: 72, tone: "school" },
-  { label: "Dense intersection + building corridor", score: 68, tone: "dense" },
-  { label: "Lower-complexity corridor", score: 90, tone: "lower" },
-] as const;
+function expoPath(base: string, path: string) {
+  return `${base.replace(/\/$/, "")}${path}`;
+}
 
-const WHAT_IF: Record<LifecycleProduct, { label: string; result: string }[]> = {
-  home: [
-    { label: "Current details", result: "The confirmed facts stay attached to the estimate." },
-    { label: "Add sewer backup", result: "Only this coverage choice changes in the comparison." },
-    { label: "Change deductible", result: "The customer sees the trade-off before continuing." },
-  ],
-  auto: [
-    { label: "Current setup", result: "Everyday city driving, driveway parking, and the current vehicle stay as the baseline." },
-    { label: "Lower annual use", result: "Annual use changes to under 10,000 km while the vehicle and driver stay fixed." },
-    { label: "Higher deductible", result: "Only the deductible changes in this illustrative comparison." },
-  ],
-};
-
-function updateLocation(product: LifecycleProduct, stage: LifecycleStage) {
+function updateLocation(stage: LifecycleStage) {
   const url = new URL(window.location.href);
-  url.searchParams.set("product", product);
   url.searchParams.set("stage", stage);
+  url.searchParams.delete("product");
   window.history.replaceState({}, "", url);
 }
 
-function QuoteProof({ product }: { product: LifecycleProduct }) {
-  if (product === "auto") {
-    return (
-      <div className={styles.autoQuoteProof} aria-label="Auto estimator preview">
-        <div className={styles.autoQuoteHead}>
-          <span>Working Auto estimator</span>
-          <strong>Compare before you choose</strong>
-          <p>Hold the driver profile steady, then see how the vehicle changes the estimate.</p>
-        </div>
-        <div className={styles.vehicleList}>
-          {["Toyota Corolla", "Mazda CX-5", "Hyundai IONIQ 5"].map((vehicle, index) => (
-            <div key={vehicle}>
-              <span>0{index + 1}</span>
-              <strong>{vehicle}</strong>
-              <small>{index === 0 ? "Sedan" : index === 1 ? "SUV" : "Electric"}</small>
-            </div>
-          ))}
-        </div>
-        <p className={styles.autoDisclosure}>Synthetic vehicles and deterministic illustrative estimates. No quote or offer of insurance.</p>
-      </div>
-    );
-  }
-  return (
-    <div className={styles.phoneProof} aria-label="Consumer quote app preview">
-      <div className={styles.phoneCrop}>
-        <Image
-          src="/intact/quote-address.png"
-          alt="Pixie tenant quote asking for a Toronto address"
-          fill
-          sizes="(max-width: 760px) 82vw, 360px"
-          priority
-        />
-      </div>
-    </div>
+function ProofNode({ node, expoUrl }: { node: GraphNode; expoUrl: string }) {
+  const href = node.href.startsWith("/intact") ? node.href : expoPath(expoUrl, node.href);
+  const content = (
+    <>
+      <strong>{node.label}</strong>
+      <small>{node.note}</small>
+      <b aria-hidden>↗</b>
+    </>
   );
+
+  if (node.newTab === false) return <Link href={href}>{content}</Link>;
+  return <a href={href} target="_blank" rel="noreferrer">{content}</a>;
 }
 
-function DecisionProof({ product }: { product: LifecycleProduct }) {
-  const options = WHAT_IF[product];
-  const [selected, setSelected] = useState(0);
-  return (
-    <div className={styles.decisionProof}>
-      <div className={styles.proofHeading}>
-        <span>Illustrative what-if</span>
-        <strong>Change one fact</strong>
-      </div>
-      <div className={styles.decisionBody}>
-        <div className={styles.choiceRail} role="group" aria-label={`${product} what-if example`}>
-          {options.map((option, index) => (
-            <button
-              type="button"
-              key={option.label}
-              className={selected === index ? styles.choiceActive : undefined}
-              aria-pressed={selected === index}
-              onClick={() => setSelected(index)}
-            >
-              <span>{option.label}</span>
-              <small>{selected === index ? "Selected" : "Test this"}</small>
-            </button>
-          ))}
-        </div>
-        <div className={styles.decisionResult} aria-live="polite">
-          <span>What changes</span>
-          <p>{options[selected].result}</p>
-          <small>No hypothetical value overwrites a confirmed fact.</small>
-        </div>
-      </div>
-    </div>
-  );
-}
+export function LifecycleStory({ initialStage, expoUrl }: { initialStage: LifecycleStage; expoUrl: string }) {
+  const [activeStage, setActiveStage] = useState(initialStage);
 
-function HomeProtectProof() {
-  const tasks = PREVENTION.home;
-  const [done, setDone] = useState<number[]>([]);
-  const toggle = (index: number) => setDone((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index]);
-  return (
-    <div className={styles.protectProof} id="stage-workbench">
-      <div className={styles.protectScore} aria-live="polite">
-        <span>Prevention preview</span>
-        <strong>{done.length} of {tasks.length}</strong>
-        <small>tasks recorded</small>
-      </div>
-      <div className={styles.taskList}>
-        {tasks.map((task, index) => {
-          const complete = done.includes(index);
-          return (
-            <button type="button" key={task} aria-pressed={complete} onClick={() => toggle(index)}>
-              <span className={styles.taskMark} aria-hidden>{complete ? "✓" : index + 1}</span>
-              <span><strong>{task}</strong><small>{complete ? "Recorded for this preview" : "Mark as reviewed"}</small></span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ProtectProof({ product }: { product: LifecycleProduct }) {
-  return product === "auto" ? <AutoContextProof /> : <HomeProtectProof />;
-}
-
-function AutoContextProof() {
-  return (
-    <div className={styles.contextProof} id="stage-workbench">
-      <div className={styles.contextHead}>
-        <div>
-          <span>Opt-in coaching context</span>
-          <strong>Behavior 75% + route context 25%</strong>
-        </div>
-        <small>iOS widget + Live Activity</small>
-      </div>
-      <div className={styles.routeMap} aria-label="Synthetic route context visualization">
-        <span className={styles.routeLine} aria-hidden />
-        {ROUTE_CONTEXTS.map((context, index) => (
-          <div className={styles.routeStop} key={context.label}>
-            <i className={styles[context.tone]} aria-hidden>{index + 1}</i>
-            <strong>{context.label}</strong>
-            <small>Context {context.score}</small>
-          </div>
-        ))}
-      </div>
-      <div className={styles.contextDisclosure}>
-        <strong>Coaching only</strong>
-        <p>Scores and weights come from <code>api/fixtures/driving_context_demo.json</code>. The synthetic route is discarded after classification and cannot change a quote or premium.</p>
-      </div>
-    </div>
-  );
-}
-
-function HomeRecoverProof() {
-  return (
-    <div className={styles.homeRecoverProof} id="stage-workbench">
-      <div className={styles.inventoryHead}>
-        <span>Home evidence handoff</span>
-        <strong>Living room inventory</strong>
-        <small>Bundled demo items · review required</small>
-      </div>
-      <ol className={styles.inventoryFlow}>
-        <li><b>1</b><span><strong>Capture</strong><small>Start with the room and common items.</small></span></li>
-        <li><b>2</b><span><strong>Review</strong><small>Confirm every item before it is saved.</small></span></li>
-        <li><b>3</b><span><strong>Share</strong><small>Choose the evidence that reaches an advisor.</small></span></li>
-      </ol>
-      <p>No camera permission is used in the bundled demo. Saving the inventory does not change tenant coverage.</p>
-    </div>
-  );
-}
-
-function AutoRecoverProof({ priority }: { priority: boolean }) {
-  return (
-    <div className={styles.recoverProof}>
-      <Image
-        src="/intact/crashclip-case.png"
-        alt="CrashClip insurer view with a corroborated incident file and three independent perspectives"
-        fill
-        sizes="(max-width: 760px) 100vw, 720px"
-        priority={priority}
-      />
-      <span>Real prototype capture</span>
-    </div>
-  );
-}
-
-function StageProof({ stage, product, recoverPriority }: { stage: LifecycleStage; product: LifecycleProduct; recoverPriority: boolean }) {
-  if (stage === "quote") return <QuoteProof product={product} />;
-  if (stage === "decide") return <DecisionProof product={product} />;
-  if (stage === "protect") return <ProtectProof product={product} />;
-  return product === "home" ? <HomeRecoverProof /> : <AutoRecoverProof priority={recoverPriority} />;
-}
-
-export function LifecycleStory({
-  initialProduct,
-  initialStage,
-  expoUrl,
-  autoCompareUrl,
-  homeInventoryUrl,
-  crashClipUrl,
-}: {
-  initialProduct: LifecycleProduct;
-  initialStage: LifecycleStage;
-  expoUrl: string;
-  autoCompareUrl: string;
-  homeInventoryUrl: string;
-  crashClipUrl: string;
-}) {
-  const [product, setProduct] = useState(initialProduct);
-  const [stage, setStage] = useState(initialStage);
-  const stageIndex = STAGES.findIndex((item) => item.key === stage);
-  const copy = COPY[product][stage];
-  const actionHref = stage === "quote"
-    ? product === "auto" ? autoCompareUrl : expoUrl
-    : stage === "decide"
-      ? product === "auto" ? autoCompareUrl : "/intact/quotes"
-      : stage === "protect"
-        ? "#stage-workbench"
-        : product === "auto" ? crashClipUrl : homeInventoryUrl;
-  const external = stage === "quote" || (stage === "decide" && product === "auto") || stage === "recover";
-  const panelKey = useMemo(() => `${product}-${stage}`, [product, stage]);
-
-  const selectProduct = (next: LifecycleProduct) => {
-    setProduct(next);
-    updateLocation(next, stage);
-  };
-
-  const selectStage = (next: LifecycleStage) => {
-    setStage(next);
-    updateLocation(product, next);
-  };
-
-  const moveStage = (direction: number) => {
-    const nextIndex = (stageIndex + direction + STAGES.length) % STAGES.length;
-    selectStage(STAGES[nextIndex].key);
-  };
-
-  const handleStageKeys = (event: KeyboardEvent<HTMLButtonElement>) => {
-    let nextIndex: number | null = null;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      event.preventDefault();
-      nextIndex = (stageIndex + 1) % STAGES.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      event.preventDefault();
-      nextIndex = (stageIndex - 1 + STAGES.length) % STAGES.length;
-    } else if (event.key === "Home" || event.key === "End") {
-      event.preventDefault();
-      nextIndex = event.key === "Home" ? 0 : STAGES.length - 1;
-    }
-    if (nextIndex !== null) {
-      selectStage(STAGES[nextIndex].key);
-      event.currentTarget.parentElement
-        ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-        [nextIndex]?.focus();
-    }
+  const selectStage = (stage: LifecycleStage) => {
+    setActiveStage(stage);
+    updateLocation(stage);
   };
 
   return (
     <div className={styles.shell}>
       <header className={styles.intro}>
-        <div className={styles.introCopy}>
-          <p className={styles.kicker}>Pixie for Intact</p>
-          <h1>Insurance that stays useful after the quote.</h1>
-          <p>One guided path helps people price a tenant policy or car, understand the decision, protect a home or drive, and recover with better evidence.</p>
+        <div>
+          <p className={styles.kicker}>Pixie for Intact · connected consumer insurance</p>
+          <h1>One set of facts, connected through the full insurance lifecycle.</h1>
         </div>
-        <div className={styles.productChooser} aria-label="Choose an insurance route">
-          <span>Choose a route</span>
-          <div role="group" aria-label="Insurance product">
-            <button type="button" aria-pressed={product === "home"} onClick={() => selectProduct("home")}>
-              <span>Home</span><small>Tenant + protection</small>
-            </button>
-            <button type="button" aria-pressed={product === "auto"} onClick={() => selectProduct("auto")}>
-              <span>Auto</span><small>Car + driver</small>
-            </button>
-          </div>
-        </div>
+        <p>Every node is visible. Follow a system into Quote, Decide, Protect, or Recover, then open the working Home and Auto proof.</p>
       </header>
 
-      <nav className={styles.stageRail} role="tablist" aria-label="Insurance lifecycle">
-        {STAGES.map((item, index) => {
-          const active = stage === item.key;
-          return (
-            <button
-              type="button"
-              role="tab"
-              id={`stage-tab-${item.key}`}
-              aria-selected={active}
-              aria-controls="lifecycle-panel"
-              tabIndex={active ? 0 : -1}
-              key={item.key}
-              onClick={() => selectStage(item.key)}
-              onKeyDown={handleStageKeys}
-            >
-              <span className={styles.stageNumber}>0{index + 1}</span>
-              <span className={styles.stageLabel}>{item.label}</span>
-              <small>{item.promise}</small>
-            </button>
-          );
-        })}
-      </nav>
-
-      <section
-        key={panelKey}
-        id="lifecycle-panel"
-        role="tabpanel"
-        aria-labelledby={`stage-tab-${stage}`}
-        className={styles.stagePanel}
-      >
-        <div className={styles.stageCopy}>
-          <div>
-            <p className={styles.routeLabel}>{product === "home" ? "Tenant + home protection" : "Auto"} · {STAGES[stageIndex].label}</p>
-            <h2>{copy.title}</h2>
-            <p className={styles.summary}>{copy.summary}</p>
-            <p className={styles.detail}>{copy.detail}</p>
-          </div>
-
-          <div className={styles.actionBlock}>
-            {stage === "protect" ? (
-              <a className={styles.primaryAction} href={actionHref}>{copy.action}<span aria-hidden>↓</span></a>
-            ) : external ? (
-              <a className={styles.primaryAction} href={actionHref} target="_blank" rel="noreferrer">
-                {copy.action}<span aria-hidden>↗</span>
-              </a>
-            ) : (
-              <Link className={styles.primaryAction} href={actionHref}>{copy.action}<span aria-hidden>→</span></Link>
-            )}
-            <small>{copy.actionHint}</small>
-            {stage === "quote" ? <p>Prices in the linked demo are illustrative Pixie estimates, not Intact prices or offers of insurance.</p> : null}
-          </div>
-
-          <div className={styles.slideControls} aria-label="Lifecycle slide controls">
-            <button type="button" onClick={() => moveStage(-1)} aria-label="Previous lifecycle stage">←</button>
-            <span aria-live="polite">{stageIndex + 1} / {STAGES.length}</span>
-            <button type="button" onClick={() => moveStage(1)} aria-label="Next lifecycle stage">→</button>
-          </div>
+      <section className={styles.graph} aria-label="Pixie connected insurance system graph">
+        <div className={styles.systemGrid} aria-label="Connected systems">
+          {SYSTEMS.map((system) => (
+            <div className={styles.systemNode} data-active={STAGES.find((stage) => stage.key === activeStage)?.systems.includes(system.key)} key={system.key}>
+              <span>{system.code}</span>
+              <strong>{system.title}</strong>
+              <small>{system.detail}</small>
+            </div>
+          ))}
         </div>
 
-        <div className={styles.proofStage}>
-          <StageProof
-            stage={stage}
-            product={product}
-            recoverPriority={initialStage === "recover" && initialProduct === "auto"}
-          />
+        <div className={styles.connectionField} aria-hidden>
+          <svg viewBox="0 0 1000 96" preserveAspectRatio="none">
+            {CONNECTIONS.map((connection) => (
+              <path
+                d={`M ${connection.sourceX} 0 C ${connection.sourceX} 34, ${connection.targetX} 62, ${connection.targetX} 96`}
+                data-active={connection.stage === activeStage}
+                data-system={connection.system}
+                key={`${connection.system}-${connection.stage}`}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </svg>
+          <span>consented facts + deterministic results</span>
+        </div>
+
+        <div className={styles.stageGrid} aria-label="Lifecycle stages">
+          {STAGES.map((stage) => (
+            <button
+              aria-controls={`stage-${stage.key}`}
+              aria-pressed={activeStage === stage.key}
+              key={stage.key}
+              onClick={() => selectStage(stage.key)}
+              type="button"
+            >
+              <span>{stage.number}</span>
+              <strong>{stage.label}</strong>
+              <small>{stage.promise}</small>
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.capabilityGrid}>
+          {STAGES.map((stage) => (
+            <article className={styles.stageColumn} data-active={activeStage === stage.key} id={`stage-${stage.key}`} key={stage.key}>
+              <button className={styles.mobileStageButton} aria-pressed={activeStage === stage.key} onClick={() => selectStage(stage.key)} type="button">
+                <span>{stage.number}</span>
+                <strong>{stage.label}</strong>
+                <small>{stage.promise}</small>
+              </button>
+
+              <div className={styles.stageSummary}>
+                <p>{stage.summary}</p>
+                <div aria-label={`${stage.label} connected systems`}>
+                  {stage.systems.map((key) => <span key={key}>{SYSTEMS.find((system) => system.key === key)?.code}</span>)}
+                </div>
+              </div>
+
+              <div className={styles.productBranches}>
+                <section className={styles.branch} aria-label={`${stage.label} Home capabilities`}>
+                  <p>Home</p>
+                  {stage.home.map((node) => <ProofNode expoUrl={expoUrl} key={`${stage.key}-home-${node.label}`} node={node} />)}
+                </section>
+                <section className={styles.branch} aria-label={`${stage.label} Auto capabilities`}>
+                  <p>Auto</p>
+                  {stage.auto.map((node) => <ProofNode expoUrl={expoUrl} key={`${stage.key}-auto-${node.label}`} node={node} />)}
+                </section>
+                {stage.shared ? (
+                  <section className={`${styles.branch} ${styles.sharedBranch}`} aria-label={`${stage.label} shared capabilities`}>
+                    <p>Human support</p>
+                    {stage.shared.map((node) => <ProofNode expoUrl={expoUrl} key={`${stage.key}-shared-${node.label}`} node={node} />)}
+                  </section>
+                ) : null}
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
       <footer className={styles.disclosure}>
-        <span>Working proof</span>
-        <p>Tenant and Auto estimators, home inventory, and advisor review run on this project. Auto recovery uses a real capture from the separate CrashClip prototype. All prices and coaching outcomes remain illustrative.</p>
+        <strong>Demo boundaries</strong>
+        <p>Home pricing means tenant insurance. Auto listings, route context, policies, and prices are synthetic. Recovery plans stay local, and MCP drafts or advisor requests remain unsent until the customer gives the required consent.</p>
       </footer>
     </div>
   );

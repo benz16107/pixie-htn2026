@@ -43,6 +43,15 @@ else
   (cd app && nohup npx expo start --lan --port 8081 > /tmp/pixie-expo.log 2>&1 &)
 fi
 
+if up 8010; then
+  echo "mcp   already up"
+else
+  echo "mcp   starting..."
+  (cd mcp && nohup uv run pixie-mcp --transport streamable-http --host 0.0.0.0 --port 8010 > /tmp/pixie-mcp.log 2>&1 &)
+  for _ in $(seq 1 20); do sleep 1; up 8010 && break; done
+fi
+up 8010 || { echo "mcp FAILED, see /tmp/pixie-mcp.log"; tail -5 /tmp/pixie-mcp.log; exit 1; }
+
 # macserver sleeps on battery, which takes the whole demo down. Keep it awake and plugged in.
 if ! pgrep -qf "caffeinate -disu"; then
   nohup caffeinate -disu > /dev/null 2>&1 &
@@ -66,7 +75,8 @@ cat <<EOF
 
   Phone       Tailscale on, then Expo Go: exp://${TS_IP:-100.95.223.110}:8081
   API         http://macserver:8000
-  MCP         cd $ROOT/mcp && uv run pixie-mcp
+  MCP HTTP    http://macserver:8010/mcp
+  MCP stdio   project clients can load $ROOT/.mcp.json
 
   Reset the demo:  curl -X POST localhost:8000/demo/reset
   Runbook:         $ROOT/docs/RUNBOOK.md

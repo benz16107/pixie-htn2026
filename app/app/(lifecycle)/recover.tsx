@@ -8,20 +8,24 @@ export default function RecoverScreen() {
   return (
     <Screen>
       <ProductSwitch product={product} onChange={setProduct} />
-      <PhaseIntro number={4} phase="Recover" title="Capture what happened once.">
-        Build a clear evidence bundle for an advisor or insurer. Safety comes first, and you review every item before sharing it.
+      <PhaseIntro number={4} phase="Recover" title={product === 'auto' ? 'Make the next hour easier.' : 'Take control after damage.'}>
+        Pixie turns a stressful incident into a short safety check, a record of what you have, and a recovery plan you can save locally.
       </PhaseIntro>
       <Panel tone="ink">
-        <Kicker style={{ color: '#AFC1C4' }}>Pixie + CrashClip</Kicker>
-        <Body style={{ marginTop: 8, color: '#F7F3E9' }}>CrashClip records post-incident evidence. The app does not use witness footage as an underwriting or driving-score input.</Body>
+        <Kicker style={{ color: '#AFC1C4' }}>Pixie recovery</Kicker>
+        <Body style={{ marginTop: 8, color: '#F7F3E9' }}>
+          Your checklist and notes stay in this flow until you choose to export them. Recovery details never change the estimate shown elsewhere in Pixie.
+        </Body>
       </Panel>
       <ActionCard
-        title={product === 'auto' ? 'I was in a collision' : 'I have water or property damage'}
-        detail="Open the safety checklist and prepare an evidence bundle."
-        meta="START RECOVERY"
-        onPress={() => router.push({ pathname: '/recovery-handoff', params: { product } })}
+        title={product === 'auto' ? 'Start an auto recovery plan' : 'Start a home recovery plan'}
+        detail={product === 'auto' ? 'Check safety, record the scene, and prepare one clear summary.' : 'Limit further damage, record affected rooms, and prepare one clear summary.'}
+        meta="WORKS WITHOUT A NETWORK"
+        onPress={() => router.push({ pathname: '/recovery-plan', params: { product } })}
       />
-      <ActionCard title="I witnessed an incident" detail="Record what you observed without making a claim on your own policy." meta="THIRD-PARTY REPORT" onPress={() => router.push({ pathname: '/recovery-handoff', params: { product: 'witness' } })} />
+      <Body style={{ marginTop: 14, marginBottom: 24, fontSize: 13, lineHeight: 19 }}>
+        If anyone is hurt or the area is unsafe, call emergency services before using this checklist. Pixie organizes recovery information; it does not submit a claim.
+      </Body>
     </Screen>
   );
 }

@@ -10,7 +10,7 @@ flowchart LR
   E --> I[Intact lifecycle web]
   E --> X[Expo consumer app]
   E --> M[Privacy-limited MCP tools]
-  X --> R[Pixie Recover and CrashClip]
+  X --> R[Pixie first-party recovery]
   E --> A[Agent desk]
   A --> O[Agent runtime]
   E --> ES[Elastic precedent and concentration]
@@ -53,7 +53,7 @@ The Intact web product is a presentation surface for Quote, Decide, Protect, and
 - Code owns commercial scores, intervals, thresholds, receipt arithmetic, scenario totals, and driving-context formulas.
 - Models choose investigations, return typed judgments, and write explanations.
 - Known, Estimated, and Missing values preserve provenance. A missing input evaluates across every applicable band instead of silently becoming zero.
-- CrashClip evidence supports recovery and does not decide fault.
+- Recovery evidence does not decide fault and never enters pricing.
 
 ## Runtime
 

@@ -15,7 +15,7 @@ Expected services:
 | API | 8000 | `curl -fsS http://localhost:8000/health` |
 | Web production build | 3100 | `curl -fsS http://localhost:3100/queue` |
 | Expo | 8081 | Open the printed Expo Go URL |
-| MCP, optional | stdio or 8010 | `cd mcp && uv run pixie-mcp --help` |
+| MCP | stdio or 8010 | `curl -i http://localhost:8010/mcp` returns an MCP session error, which confirms the transport is listening |
 
 Serve the production Next.js build during judging. A development server can introduce cross-origin asset failures when the laptop opens the server-hosted app.
 
@@ -40,8 +40,10 @@ cd app && npx expo config --type public
 
 A physical phone cannot reach `localhost` on the server. Set `EXPO_PUBLIC_API_URL` to the server's reachable HTTP or HTTPS address before starting Expo. The native widget and Live Activity require a development build. Expo Go and web use the labelled fallback.
 
+For that native build, use the NVM Node path, complete `npx expo login --browser`, then run `npx eas-cli build --platform ios --profile development` from `app/`. The project already includes `expo-dev-client` and `app/eas.json`.
+
 ## Recovery
 
-If the commercial model run is slow, stop it and use replay. If Elastic is unavailable, point out the `[memory]` backend label and explain that the same query contract has a local implementation. If the phone loses the API, use the bundled Auto and drive-context fallbacks and point to their source labels. If CrashClip is unavailable, use the embedded insurer screenshot. If a guideline rehearsal changed the queue, use the reset control before the next judge.
+If the commercial model run is slow, stop it and use replay. If Elastic is unavailable, point out the `[memory]` backend label and explain that the same query contract has a local implementation. If the phone loses the API, use the bundled Auto and drive-context fallbacks and point to their source labels. If PDF sharing is unavailable, stop on the ready recovery plan and state that the reviewed record remains on screen. If a guideline rehearsal changed the queue, use the reset control before the next judge.
 
 Do not claim a live provider call when the screen shows replay, cache, fixture, or memory.

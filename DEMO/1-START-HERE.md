@@ -23,6 +23,6 @@
 | 4:35 | Show the limitation | State the exact fallback or unverified boundary from the card. |
 | 4:50 | Close | "Pixie gives the underwriter the decision range, the source trail, and the fact that would settle it." |
 
-For Intact or Expo, start on `/intact` and use its four stages as the pitch. Move to the phone only for the working proof. Quote shows tenant and Auto estimates. Decide changes one input. Protect shows inventory or driving context. Recover prepares evidence and opens Pixie Recover for Auto. Do not mix the commercial and consumer scripts until an advisor handoff.
+For Intact or Expo, start on `/intact` and use its four stages as the pitch. Move to the phone only for the working proof. Quote shows tenant and Auto estimates. Decide changes one input. Protect shows inventory or driving context. Recover walks through Safety, Record, and Plan, then creates a local PDF the customer can save or share. Do not mix the commercial and consumer scripts until the tenant quote reaches its advisor referral.
 
 Use replay for a predictable five-minute demonstration. If you run the live model path, tell the judge before pressing it.

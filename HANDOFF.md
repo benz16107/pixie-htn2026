@@ -20,7 +20,7 @@ The Expo app has four persistent tabs:
 - Quote runs the Toronto tenant path or compares a Corolla, CX-5, and IONIQ 5 under one Auto scenario.
 - Decide changes one confirmed input at a time.
 - Protect records a room inventory or opens driving context.
-- Recover prepares a reviewed evidence bundle. Auto can launch Pixie Recover, powered by CrashClip.
+- Recover prepares a reviewed recovery plan that the customer can save or share locally.
 
 Driving context calls `POST /driving/context`. It separates behavior, synthetic route context, and a documented coaching composite. It accepts coarse points, stores no coordinates, returns none, and cannot change a quote or premium.
 
@@ -80,7 +80,7 @@ Use [docs/RUNBOOK.md](docs/RUNBOOK.md) for recovery steps and [DEMO/README.md](D
 - Home pricing supports tenant insurance only.
 - Every consumer price remains labelled as illustrative and not an Intact quote or offer.
 - Driving context remains coaching-only, stores no route, and cannot affect pricing.
-- CrashClip evidence does not determine fault.
+- Recovery evidence does not determine fault or enter pricing.
 - Demo reset must undo stored human changes and guideline edits.
 - `cache/layers`, `var`, and `data/federato` are machine-local or gitignored.
 

@@ -97,7 +97,7 @@ components:
 
 Pixie presents insurance as a sequence a customer can inspect: Quote, Decide, Protect, and Recover. The design is calm and factual. Deep teal carries structure, Intact red marks the next action, green confirms recorded or sourced information, and mono type identifies numbers and provenance.
 
-The web experience is an editorial presentation built for a five-minute demo. It uses square panels, strong rules, and one large proof area. The Expo app is the working consumer product. It keeps the same hierarchy and palette, then follows native expectations with rounded controls, safe-area spacing, tab navigation, SwiftUI on iOS, and Jetpack Compose on Android.
+The web experience is an editorial system diagram built for asynchronous review. It uses square panels, strong rules, visible connections, and linked proof for each stage. The Expo app is the working consumer product. It keeps the same hierarchy and palette, then follows native expectations with rounded controls, safe-area spacing, tab navigation, SwiftUI on iOS, and Jetpack Compose on Android.
 
 Key characteristics:
 
@@ -177,7 +177,7 @@ Radio choices expose checked state. Checklists expose checkbox state. A selected
 
 ### Proof artifacts and data
 
-The web proof stage contains one artifact: a quote preview, what-if comparison, prevention checklist, route context view, inventory handoff, or CrashClip capture. Each artifact has a heading, a compact body, and a disclosure close to the result.
+The web proof stage contains one artifact: a quote preview, what-if comparison, prevention checklist, route context view, inventory handoff, or reviewed recovery bundle. Each artifact has a heading, a compact body, and a disclosure close to the result.
 
 Currency, ownership totals, context scores, and progress counts use mono type and tabular numerals. A source mark says `SHARED SERVICE` or `BUNDLED DEMO`. It never implies that an estimate is an Intact price.
 
@@ -203,4 +203,4 @@ The iOS drive widget uses 14px padding, a red 12px label, a 19px zone title, 13p
 - **Don't** use green to suggest approval, red to imply fault, or a score to judge a neighbourhood or identity.
 - **Don't** hide disclosures in an About screen when they qualify a visible result.
 - **Don't** add decorative gradients, glow effects, glass panels, or shadows to routine controls.
-- **Don't** use witness footage, CrashClip evidence, or raw route coordinates as underwriting or pricing inputs.
+- **Don't** use witness footage, incident evidence, or raw route coordinates as underwriting or pricing inputs.

@@ -12,7 +12,7 @@ Pixie has two connected products. Commercial underwriters use the Federato desk 
 
 ## Product Purpose
 
-Pixie keeps insurance useful through four stages: Quote, Decide, Protect, and Recover. It shows which facts are known, estimated, or missing; computes scores and prices in code; and keeps the source of every value visible. A judge should be able to follow one commercial decision or one consumer lifecycle in five minutes.
+Pixie keeps insurance useful through four stages: Quote, Decide, Protect, and Recover. It shows which facts are known, estimated, or missing; computes scores and prices in code; and keeps the source of every value visible. An asynchronous judge should understand the consumer lifecycle from the first diagram, then verify each stage through the linked working proof.
 
 ## Positioning
 
@@ -20,7 +20,7 @@ The commercial desk and consumer app call the same region-agnostic assessment en
 
 ## Operating Context
 
-The Federato experience is a desktop workspace for commercial underwriting. The Intact experience has a lifecycle presentation on the web and a native Expo consumer app. The app supports a working Toronto tenant estimate, deterministic synthetic Auto comparisons, what-if choices, prevention records, driving-context coaching, and a recovery handoff. External enrichment has cached or bundled fallbacks for unreliable hackathon Wi-Fi.
+The Federato experience is a desktop workspace for commercial underwriting. The Intact experience has a lifecycle presentation on the web and a native Expo consumer app. The app supports a working Toronto tenant estimate, deterministic synthetic Auto comparisons, what-if choices, prevention records, driving-context coaching, and a locally exportable recovery plan. External enrichment has cached or bundled fallbacks for unreliable hackathon Wi-Fi.
 
 ## Capabilities and Constraints
 
@@ -30,14 +30,14 @@ The Federato experience is a desktop workspace for commercial underwriting. The 
 - Home pricing supports renter or tenant insurance. It does not implement a homeowner tariff.
 - Auto pricing compares three bundled synthetic vehicles through a deterministic, itemized demo model.
 - The driving-context prototype combines behavior with synthetic route context for coaching. It does not change a quote or premium.
-- Pixie Recover uses the separate CrashClip prototype for post-incident evidence and insurer handoff.
+- Pixie Recover is a first-party safety, incident-record, and local plan flow. It uploads and submits nothing automatically.
 - The MCP server exposes narrow estimate, comparison, application-draft, policy-summary, driving-context, and recovery tools. It does not expose a full customer profile.
 - Missing data never counts as a pass. Every value keeps its provenance.
 - All consumer prices remain labelled as Pixie's illustrative model, not an Intact price or offer.
 
 ## Brand Commitments
 
-The user-facing product name is Pixie. Federato and Intact are distinct product modes. Federato reads as an underwriting workspace. Intact reads as a consumer insurance service. CrashClip appears as "Pixie Recover, powered by the CrashClip prototype" because its source lives outside this repository.
+The user-facing product name is Pixie. Federato and Intact are distinct product modes. Federato reads as an underwriting workspace. Intact reads as a consumer insurance service. Recovery remains inside Pixie so the customer can review the record before saving or sharing a local plan.
 
 ## Evidence on Hand
 
@@ -48,7 +48,7 @@ The repository contains recorded commercial runs, bundled cases, Toronto risk da
 1. Show the source beside the number.
 2. Separate consumer clarity from underwriter density.
 3. Let the customer test a choice without overwriting a confirmed fact.
-4. Ask for consent before preparing an application or recovery handoff.
+4. Ask for consent before preparing an application, exporting a recovery plan, or sharing it.
 5. Keep raw route coordinates out of stored demo records.
 6. Keep every pitch claim tied to working code or visible evidence.
 

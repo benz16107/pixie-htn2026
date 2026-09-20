@@ -79,7 +79,7 @@ function RootLayout() {
         <Stack.Screen name="auto-compare" options={{ title: 'Compare vehicles' }} />
         <Stack.Screen name="home-inventory" options={{ title: 'Room inventory' }} />
         <Stack.Screen name="driving-context" options={{ title: 'Drive context' }} />
-        <Stack.Screen name="recovery-handoff" options={{ title: 'Recovery' }} />
+        <Stack.Screen name="recovery-plan" options={{ title: 'Recovery plan' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />
         <Stack.Screen name="quote" options={{ title: 'Your quote' }} />

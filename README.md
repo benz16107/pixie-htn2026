@@ -2,7 +2,7 @@
 
 Pixie is one inspectable risk engine presented as two products.
 
-The Federato desk scores commercial property submissions as intervals, records the source of every fact, and lets specialist agents investigate the cases that need judgment. The Intact experience follows the consumer through Quote, Decide, Protect, and Recover. Its Expo app contains a working Toronto tenant estimate, deterministic synthetic Auto comparisons, prevention records, driving-context coaching, and a recovery handoff.
+The Federato desk scores commercial property submissions as intervals, records the source of every fact, and lets specialist agents investigate the cases that need judgment. The Intact experience follows the consumer through Quote, Decide, Protect, and Recover. Its Expo app contains a working Toronto tenant estimate, deterministic synthetic Auto comparisons, prevention records, driving-context coaching, and a locally exportable recovery plan.
 
 Pixie was built for Hack the North 2026. The repository retains the internal package name `atlas`.
 
@@ -20,7 +20,7 @@ The Expo app has four persistent stages:
 - Quote collects tenant or Auto inputs and produces a sourced estimate.
 - Decide tests one change without overwriting confirmed facts.
 - Protect records prevention work and can run a coaching-only driving-context demo.
-- Recover prepares a reviewed evidence bundle and opens Pixie Recover, powered by CrashClip.
+- Recover guides the customer through safety, incident records, and a recovery plan they can save or share.
 
 The iOS development build adds a home-screen widget and Live Activity for drive context. Expo Go and the web build show the same foreground flow with a labelled fallback.
 

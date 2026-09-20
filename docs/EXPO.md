@@ -6,7 +6,7 @@ The consumer app uses Expo Router for Quote, Decide, Protect, and Recover. Home 
 
 Home starts with the existing Toronto tenant quote. A customer can enter an address, inspect the optional risk map, review five prefilled choices, request an itemized estimate, save or share a PDF, and open an advisor referral. The Home protection route adds a reviewed room-inventory demo. No homeowner tariff exists.
 
-Auto compares three bundled synthetic vehicles against one driver scenario. The customer can change annual distance, parking, deductible, or claims, then keep the selected scenario. Protect records prevention work and opens Drive context. Recover prepares an evidence bundle and launches Pixie Recover, powered by the separate CrashClip prototype.
+Auto compares three bundled synthetic vehicles against one driver scenario. The customer can change annual distance, parking, deductible, or claims, then keep the selected scenario. Protect records prevention work and opens Drive context. Recover asks what happened, requires a safety confirmation, records what the customer has, and creates a local PDF plan that they can save or share.
 
 ## Native Expo features
 
@@ -27,3 +27,22 @@ The location action is foreground-only and requires a tap. The app has no backgr
 ## Running it
 
 Set `EXPO_PUBLIC_API_URL` to a reachable API URL for a physical phone. Run Expo Go for the JavaScript and React Native flow. Build a native development client to demonstrate Expo UI and expo-widgets.
+
+On macserver, use the installed NVM Node because the Homebrew Node binary currently has a broken shared-library reference:
+
+```bash
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+cd app
+npx expo login --browser
+npx eas-cli build --platform ios --profile development
+```
+
+Install the resulting internal build on the registered iPhone, then start its Metro session:
+
+```bash
+export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
+cd app
+npx expo start --dev-client --lan
+```
+
+`expo-dev-client` and the `development` and `development-simulator` profiles already exist in the project. EAS still requires the Expo account confirmation, Apple signing access, and device registration for a physical iPhone build.

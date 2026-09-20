@@ -164,10 +164,3 @@ export const AUTO_PROTECT_ACTIONS = [
   { id: 'tires', title: 'Log winter tires', detail: 'Keep the seasonal installation receipt.' },
   { id: 'baseline', title: 'Photograph the VIN and mileage', detail: 'Create a clean pre-loss reference.' },
 ] as const;
-
-export const RECOVERY_STEPS = [
-  'Move to a safe place and call emergency services when needed.',
-  'Capture the whole scene before close-up damage photos.',
-  'Keep the original time, location, and file details with every clip.',
-  'Review the evidence bundle before sharing it with an advisor or insurer.',
-] as const;

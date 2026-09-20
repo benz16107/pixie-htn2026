@@ -14,7 +14,7 @@
 | Expo Quote | Tenant estimate or synthetic Auto vehicle comparison | Working quote proof |
 | Expo Decide | One-input what-if comparison | Explain customer control |
 | Expo Protect | Room inventory or driving-context coaching | Prevention, Expo UI, widget, and Live Activity |
-| Expo Recover | Reviewed evidence bundle and Pixie Recover handoff | Post-incident story |
+| Expo Recover | Safety confirmation, incident record, and local recovery plan | Post-incident story |
 | /privacy, /terms | Product trust pages | Open only if asked |
 
 The case page contains depth for questions. In a five-minute pitch, keep the score breakdown selected and open only one supporting section.

@@ -16,6 +16,8 @@ uv sync
 uv run pixie-mcp
 ```
 
+The repository-level `.mcp.json` already registers this command as `pixie-insurance` for project clients that support MCP configuration files. Open the repository as the client workspace, approve the local server if the client asks, then inspect its tool list. No API key is required because the server uses bundled demonstration data and the local Pixie API package.
+
 For local Streamable HTTP, use a separate port from the FastAPI service:
 
 ```bash
@@ -23,7 +25,15 @@ cd mcp
 uv run pixie-mcp --transport streamable-http --host 127.0.0.1 --port 8010
 ```
 
-The MCP endpoint is `http://127.0.0.1:8010/mcp`.
+The local endpoint is `http://127.0.0.1:8010/mcp`. From another device on the same Tailscale network, use `http://macserver:8010/mcp`. `start.sh` starts this HTTP transport automatically.
+
+An MCP client connects in this order:
+
+1. Send `initialize` and keep the returned `mcp-session-id` header.
+2. Send the `notifications/initialized` notification with that session header.
+3. Call `tools/list`, then call a tool such as `compare_vehicles` or `estimate_home_quote`.
+
+The server currently exposes nine tools. Draft and recovery tools require explicit consent and a second `confirm_demo_only` flag. They create local, unsent records.
 
 Run the protocol-level tests:
 
