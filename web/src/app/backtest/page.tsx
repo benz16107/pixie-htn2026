@@ -165,6 +165,17 @@ export default async function BacktestPage() {
           <p className="mt-1.5 text-[11.5px] text-dim">
             Status mix: {Object.entries(b.b1.statuses).map(([s, n]) => `${s} ${n}`).join(", ")}. Incurred is paid plus reserved, indemnity and expense.
           </p>
+          {/* The single accept is the desk's worst call in this book. Name it rather than leaving it
+              as an unattributed row: an aggregate hides a miss, a policy number does not. */}
+          {b.knownMisses?.map((m) => (
+            <p key={m.policy} className="mt-2 border-t border-rust pt-1.5 text-[12.5px]">
+              <b className="font-semibold text-rust">The miss we would have made.</b> Policy{" "}
+              <span className="num">{m.policy}</span> was fully in appetite on the day it arrived, so the
+              desk would have said <b className="font-semibold">{m.tier}</b>. It went on to incur{" "}
+              <span className="num">{money(m.incurred)}</span> on <span className="num">{money(m.premium)}</span>{" "}
+              of premium.
+            </p>
+          ))}
         </Block>
       </div>
     </main>
