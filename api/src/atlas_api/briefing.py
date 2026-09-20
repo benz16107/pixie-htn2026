@@ -107,7 +107,9 @@ def build(case_id: str, case: dict[str, Any], sensitivity: dict[str, Any] | None
     """Synthesise (or reuse) the briefing. Raises RuntimeError when no key is configured."""
     segments = script_for(case, sensitivity)
     text = " ".join(s.text for s in segments)
-    digest = hashlib.sha256(f"{MODEL}|{text}".encode()).hexdigest()[:16]
+    voice = os.environ.get("ELEVENLABS_VOICE_ID", DEFAULT_VOICE)
+    # The voice is part of the identity of the audio: changing it must miss the cache.
+    digest = hashlib.sha256(f"{MODEL}|{voice}|{text}".encode()).hexdigest()[:16]
     AUDIO_DIR.mkdir(parents=True, exist_ok=True)
     meta_path, audio_path = AUDIO_DIR / f"{digest}.json", AUDIO_DIR / f"{digest}.mp3"
     if meta_path.is_file() and audio_path.is_file():
@@ -116,7 +118,6 @@ def build(case_id: str, case: dict[str, Any], sensitivity: dict[str, Any] | None
     key = os.environ.get("ELEVENLABS_API_KEY")
     if not key:
         raise RuntimeError("ELEVENLABS_API_KEY is not set")
-    voice = os.environ.get("ELEVENLABS_VOICE_ID", DEFAULT_VOICE)
     resp = httpx.post(f"{API}/{voice}/with-timestamps", timeout=90,
                        headers={"xi-api-key": key},
                        json={"text": text, "model_id": MODEL,
