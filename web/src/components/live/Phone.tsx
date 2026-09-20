@@ -55,7 +55,7 @@ export function Phone({
             <button
               onClick={onSend}
               disabled={sending}
-              className="mt-auto rounded-sm border border-ink px-2 py-1 text-[10px] transition-colors duration-150 hover:bg-land disabled:opacity-60"
+              className="mt-auto truncate rounded-sm border border-ink px-1.5 py-1 text-[10px] transition-colors duration-150 hover:bg-land disabled:opacity-60"
             >
               {sending ? "Sending…" : digest ? "Send it again" : "Send the digest"}
             </button>

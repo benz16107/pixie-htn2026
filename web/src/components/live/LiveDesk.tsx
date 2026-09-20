@@ -276,7 +276,7 @@ export function LiveDesk(props: LiveProps) {
       {/* ------------------------------ top strip ------------------------------ */}
       <header className="contours flex items-center gap-3 overflow-hidden border-b border-ink bg-land px-4 text-[11.5px]">
         <span className="shrink-0 text-[12px] font-semibold tracking-[0.16em]">PIXIE LIVE</span>
-        <span className="num shrink-0">
+        <span className="num hidden shrink-0 2xl:inline">
           <b className="font-semibold">158</b> subs · <b className="font-semibold">{allRows.length}</b> open ·{" "}
           <b className="font-semibold">{deskRows.length}</b> desk · <b className="font-semibold">{decidedNow}</b> decided
         </span>
@@ -317,10 +317,12 @@ export function LiveDesk(props: LiveProps) {
           </button>
           <div className="flex rounded-sm border border-ink" role="group" aria-label="Region">
             <button onClick={() => setRegion("desk")} aria-pressed={region === "desk"} className={`px-2 py-0.5 ${region === "desk" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
-              Commercial desk
+              <span className="hidden 2xl:inline">Commercial desk</span>
+              <span className="2xl:hidden">Desk</span>
             </button>
             <button onClick={loadQuote} aria-pressed={region === "toronto"} className={`px-2 py-0.5 ${region === "toronto" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
-              Toronto renter
+              <span className="hidden 2xl:inline">Toronto renter</span>
+              <span className="2xl:hidden">Renter</span>
             </button>
           </div>
         </div>
