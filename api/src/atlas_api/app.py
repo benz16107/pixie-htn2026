@@ -40,6 +40,7 @@ from .consumer import (
 from .driving import assess_drive_context
 from . import insights_routes
 from . import memory_routes
+from . import evidence_routes
 from .engine import (
     DEFAULT_RULES_DIR,
     Assessment,
@@ -144,6 +145,7 @@ app.add_middleware(
 )
 app.include_router(insights_routes.router)
 app.include_router(memory_routes.router)
+app.include_router(evidence_routes.router)
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------

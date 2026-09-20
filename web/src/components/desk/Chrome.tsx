@@ -12,6 +12,7 @@ const FEDERATO_DESTS = [
 ];
 
 const INTACT_DESTS = [
+  { href: "/intact/insurer", label: "insurer", title: "Driver and witness evidence, review, and exports" },
   { href: "/intact", label: "overview", title: "Renter quote volume and advisor handoff" },
   { href: "/intact/quotes", label: "advisor desk", title: "Ready estimates and quotes that need advisor review" },
 ];

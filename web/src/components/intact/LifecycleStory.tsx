@@ -62,7 +62,7 @@ const STAGES: {
     key: "recover",
     number: "04",
     label: "Recover",
-    promise: "Make a local plan",
+    promise: "Connect the evidence",
     summary: "Safety steps and evidence stay under customer control.",
     systems: ["expo", "api", "mcp", "handoff"],
     home: [
@@ -70,10 +70,11 @@ const STAGES: {
       { label: "Home recovery plan", note: "Local checklist + PDF", href: "/recovery-plan?product=home" },
     ],
     auto: [
-      { label: "Collision evidence", note: "Scene, damage, witness facts", href: "/recovery-plan?product=auto" },
+      { label: "Driver evidence", note: "Incident + photos + footage", href: "/road-help?role=driver" },
+      { label: "Witness perspectives", note: "Nearby requests + contributions", href: "/road-help?role=bystander" },
       { label: "Auto recovery plan", note: "Safety-first checklist + PDF", href: "/recovery-plan?product=auto" },
     ],
-    shared: [{ label: "Advisor desk", note: "Consent-gated human handoff", href: "/intact/quotes", newTab: false }],
+    shared: [{ label: "Insurer evidence desk", note: "Review perspectives + export files", href: "/intact/insurer", newTab: false }],
   },
 ];
 

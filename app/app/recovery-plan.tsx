@@ -1,7 +1,8 @@
 import * as Print from 'expo-print';
 import { useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { roadAPI } from '@/lib/evidence';
 import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChecklistItem, Panel } from '@/components/consumer';
 import { Body, Button, Choice, Dim, Kicker, Screen, Title } from '@/components/ui';
@@ -96,7 +97,7 @@ function planHtml({
 }
 
 export default function RecoveryPlanScreen() {
-  const params = useLocalSearchParams<{ product?: string }>();
+  const params = useLocalSearchParams<{ product?: string; roadIncident?: string }>();
   const { product: selectedProduct } = useQuote();
   const product: ConsumerProduct = params.product === 'auto' || params.product === 'home' ? params.product : selectedProduct;
   const config = CONFIG[product];
@@ -107,6 +108,18 @@ export default function RecoveryPlanScreen() {
   const [notes, setNotes] = useState('');
   const [reference, setReference] = useState('');
   const [exportStatus, setExportStatus] = useState('');
+  const [linkedRecord, setLinkedRecord] = useState('');
+  useEffect(() => {
+    if (!params.roadIncident) return;
+    let active = true;
+    roadAPI.get(params.roadIncident).then(record => {
+      if (!active) return;
+      setLinkedRecord(record.id);
+      setNotes(`Evidence record ${record.id}\n${record.kind} at ${record.address}\n${new Date(record.happenedAt).toLocaleString()}\n${record.description}\n${record.counts.submitted} submitted perspectives; ${record.counts.accepted} accepted for case review.\nThis summary is a snapshot. Review the shared evidence record for current status.`);
+      setIncidentId('collision');
+    }).catch(() => { if (active) setExportStatus('Could not load the linked incident. You can still prepare a plan manually.'); });
+    return () => { active = false; };
+  }, [params.roadIncident]);
 
   const toggle = (items: string[], setItems: (next: string[]) => void, id: string) =>
     setItems(items.includes(id) ? items.filter((item) => item !== id) : [...items, id]);
@@ -157,6 +170,7 @@ export default function RecoveryPlanScreen() {
 
   return (
     <Screen>
+      {linkedRecord ? <Body style={{ marginBottom: 16 }}>Linked evidence record: {linkedRecord}. Review the imported notes before sharing.</Body> : null}
       <View style={st.progress} accessible accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 3, now: stage }}>
         {['Safety', 'Record', 'Plan'].map((label, index) => (
           <View key={label} style={st.progressItem}>

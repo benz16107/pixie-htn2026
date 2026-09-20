@@ -50,6 +50,7 @@ function RootLayout() {
         <Stack.Screen name="coverage-lab" options={{ title: 'Explore your price' }} />
         <Stack.Screen name="home-inventory" options={{ title: 'Room inventory' }} />
         <Stack.Screen name="driving-context" options={{ title: 'Drive score' }} />
+        <Stack.Screen name="road-help" options={{ title: 'Road help' }} />
         <Stack.Screen name="recovery-plan" options={{ title: 'Recovery plan' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />

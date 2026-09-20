@@ -11,6 +11,7 @@ export default function HelpScreen() {
   return <Screen topSafe>
     <ConsumerHeader title="Help" detail="One clear next step, when you need it." />
     <ProductSwitch product={product} onChange={setProduct} />
+    {product === 'auto' ? <><SectionLabel>Incident evidence</SectionLabel><ActionCard icon="car" title="I was in an incident" detail="Report what happened, attach footage, and ask witnesses for another angle." onPress={() => router.push('/road-help?role=driver')} /><ActionCard icon="document" title="I witnessed an incident" detail="Find a footage request and contribute your perspective." onPress={() => router.push('/road-help?role=bystander')} /></> : null}
     <SectionLabel>{product === 'auto' ? 'After a road incident' : 'When something happens at home'}</SectionLabel>
     <Panel>
       <View style={st.heading}><AppIcon name="document" size={25} /><Text style={st.title}>Make a recovery plan</Text></View>

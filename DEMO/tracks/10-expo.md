@@ -59,3 +59,7 @@ Use the inventory total in a tenant estimate, then open **Compare → Explore my
 For Auto, **Compare cars** now includes a monthly budget slider, precise plus/minus controls, and a payment-versus-insurance bar for each vehicle. The listings and prices remain illustrative.
 
 Web checks verify photo persistence, editing, deletion, price updates, and budgeting. The iOS JavaScript bundle exports successfully. A physical iPhone camera and native file-storage walkthrough still need verification in the rebuilt development app. Do not present browser screenshots as native camera proof.
+
+## Connected driver and witness recovery
+
+The mobile app now includes Road help for both drivers and bystanders. The website adds an **Insurer** tab under Intact. Demonstrate a driver report, a witness upload, a reviewer decision, and the status returning to the phone. Follow the [road-help script](../10-ROAD-HELP.md). Expo Image Picker handles photos and clips, Expo Video plays the evidence, and the existing recovery plan carries the incident reference. Credits are demo bookkeeping; file hashes do not establish authenticity or fault.

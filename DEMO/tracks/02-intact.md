@@ -76,3 +76,7 @@ Record this as a close-up phone segment for Devpost. It works without explaining
 3. Switch to Auto → **Compare cars**. Change the monthly budget. Say: "A car's payment is only part of the monthly cost. Pixie adds illustrative insurance and shows which cars fit my budget."
 
 Use the [new screenshots](../../docs/assets/intact/discovery/README.md) in the gallery. The inventory uses camera or library input, local persistence, and customer-entered values. Do not describe it as AI recognition or an appraisal. Vehicle listings remain examples, not a live AutoTrader feed. Keep the API running for the Home price explorer. Cached tenant prices cannot price arbitrary new choices.
+
+## Connected driver and witness recovery
+
+The mobile app now includes Road help for both drivers and bystanders. The website adds an **Insurer** tab under Intact. Demonstrate a driver report, a witness upload, a reviewer decision, and the status returning to the phone. Follow the [road-help script](../10-ROAD-HELP.md). Expo Image Picker handles photos and clips, Expo Video plays the evidence, and the existing recovery plan carries the incident reference. Credits are demo bookkeeping; file hashes do not establish authenticity or fault.

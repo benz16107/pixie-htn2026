@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ChecklistItem, ConsumerHeader, MiniStat, Panel, ProductSwitch } from '@/components/consumer';
+import { ActionCard, ChecklistItem, ConsumerHeader, MiniStat, Panel, ProductSwitch } from '@/components/consumer';
 import { Body, Button, Kicker, Screen, Title } from '@/components/ui';
 import { AUTO_PROTECT_ACTIONS, HOME_PROTECT_ACTIONS } from '@/lib/consumer';
 import { useQuote } from '@/lib/store';
@@ -36,6 +36,7 @@ export default function ProtectScreen() {
           <View style={st.buttonGap}><Button label={driveSummary ? 'View driving insights' : 'Start my first drive'} onPress={() => router.push('/driving-context')} /></View>
         </Panel>
       ) : null}
+      {product === 'auto' ? <ActionCard icon="document" title="Help with a road incident" detail="Witness requests, your contributions, and shared evidence records." onPress={() => router.push('/road-help?role=bystander')} /> : null}
       <Text accessibilityLiveRegion="polite" style={st.progress}>{completed} of {actions.length} checks complete</Text>
       {actions.map((action) => <ChecklistItem key={action.id} title={action.title} detail={action.detail} checked={done.includes(action.id)} onPress={() => toggle(action.id)} />)}
       {product === 'home' ? (

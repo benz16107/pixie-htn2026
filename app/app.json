@@ -90,11 +90,12 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Choose a photo to keep with your belongings inventory.",
-          "cameraPermission": "Photograph an item for your private belongings inventory.",
+          "photosPermission": "Choose photos or clips for your belongings or a road incident. Pixie asks before sharing incident files.",
+          "cameraPermission": "Photograph belongings or a road scene you choose to record. Sharing incident photos requires confirmation.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": false

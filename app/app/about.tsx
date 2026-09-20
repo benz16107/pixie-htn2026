@@ -60,6 +60,9 @@ export default function About() {
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Your belongings</Kicker>
       <Body style={{ fontSize: 15 }}>Item photos and replacement values stay in this app's local storage. They are not uploaded for recognition or sent with a quote. Only the contents amount you choose enters the estimate. You can edit or delete individual items. Removing app data removes the inventory; it is not a cloud backup.</Body>
 
+      <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Road incident evidence</Kicker>
+      <Body style={{ fontSize: 15 }}>Road help is a shared demo workspace. After you confirm sharing, its API stores incident details and uploaded files on the demo server for driver, witness and insurer review. Use test material only. This is different from your private belongings inventory. The reporter can delete a demo incident and its files. No automatic retention period, production login, push alert, payment, or insurer submission is connected. Hiding your contributor label does not redact a file.</Body>
+
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Limits</Kicker>
       {LIMITS.map((l) => (
         <Body key={l} style={{ fontSize: 15, marginBottom: 8 }}>

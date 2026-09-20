@@ -45,7 +45,8 @@ Expo Go cannot load the widget extension, Live Activity, SwiftUI, or Jetpack Com
 | --- | --- |
 | Expo Router | Home, Compare, Safety, Help tabs plus focused estimate, inventory, driving, and recovery screens |
 | Expo Image Picker | Camera and photo-library input for belongings |
-| Expo File System | Persistent inventory and copied photos in native app storage |
+| Expo File System | Persistent inventory, copied photos, and local road-help preferences |
+| Expo Video | Play submitted incident clips inside the consumer app |
 | Expo Location | Address lookup and foreground Drive Score samples |
 | Expo UI | Native SwiftUI and Jetpack Compose drive actions |
 | `expo-widgets` | iOS Home Screen widget and Live Activity |
@@ -98,3 +99,7 @@ The [discovery screenshots](assets/intact/discovery/README.md) show the added cu
 Photos have no automatic object recognition. Customers identify and value each item. Native photos are copied into the app's documents directory; the browser preview stores small image data in local storage. This is device-local storage, not cloud backup or an encrypted insurance vault. Deleting app data removes the inventory. Only the chosen contents amount enters the estimate, not item photos.
 
 The Home price explorer needs the live estimate service because the cached tenant examples do not price changed answers. It blocks saving a stale price when offline. Auto can calculate using its labelled bundled illustration. Neither flow binds coverage or submits an application. A signed native build must be rebuilt to include the new photo permission text and native modules.
+
+## Connected road help
+
+Auto → Help now includes driver reports and bystander contributions. Safety links to witness requests. Reports, files, review status, and demo credits share one API with the new Intact insurer tab. The recovery plan can import an incident reference and status snapshot. See the [full workflow and limits](ROAD-HELP.md) and [demo script](../DEMO/10-ROAD-HELP.md).
