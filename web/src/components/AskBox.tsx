@@ -116,7 +116,14 @@ export function AskBox({ canned }: { canned: string[] }) {
               <table className="w-full border-collapse text-[12px]">
                 <thead className="sticky top-0 bg-paper">
                   <tr className="border-b border-ink">
-                    {res.columns.map((c) => <th key={c} scope="col" className="kicker py-1.5 pr-4 text-left font-normal">{c.replaceAll("_", " ")}</th>)}
+                    {res.columns.map((c) => (
+                      // Federato column names are dot-paths. Wrapping them keeps the table inside
+                      // a 1280 screen; the full path stays on hover.
+                      <th key={c} scope="col" title={c}
+                          className="kicker max-w-[120px] break-words py-1.5 pr-4 text-left align-bottom font-normal normal-case leading-tight">
+                        {c.replaceAll("_", " ").replaceAll(".", ". ")}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
