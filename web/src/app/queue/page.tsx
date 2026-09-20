@@ -11,6 +11,7 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
   // The guideline is editable at /guideline, so the band ruler on every row has to read the one in
   // force rather than the two numbers that happened to be filed on disk.
   const [rowsRaw, declines, guideline] = await Promise.all([api.queue(view), api.declines(), api.guideline()]);
-  const rows = rowsRaw as unknown as (Row & { deskVerdict?: string; challengeRisks?: number })[];
+  const rows = (rowsRaw as unknown as (Row & { deskVerdict?: string; challengeRisks?: number })[])
+    .filter((row) => row.region !== "toronto" && !row.caseId.startsWith("TQ-"));
   return <Blotter rows={rows} view={view} declines={declines ?? null} t={guideline?.thresholds ?? THRESHOLDS} />;
 }

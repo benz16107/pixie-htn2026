@@ -47,11 +47,14 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
         <p className="cond hidden max-w-[52ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
           Ranked by score, with the undecided first. Renter quotes live in the separate Intact mode.
         </p>
+        <Link href="/cases/138" className="flex shrink-0 items-center border-l border-rule px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-ochre hover:bg-raise">
+          Start with case 138 →
+        </Link>
         <div className="ml-auto flex items-stretch border-l border-rule" role="group" aria-label="Which submissions">
           {(
             [
-              ["open", "open"],
-              ["all", "everything"],
+              ["open", "needs review"],
+              ["all", "all cases"],
             ] as const
           ).map(([v, label]) => (
             <Link
@@ -87,7 +90,7 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
         left={
           <>
             <span className="text-ochre">BLOTTER</span>
-            <span>showing {view === "open" ? "open submissions" : "every submission"}</span>
+            <span>showing {view === "open" ? "submissions that need review" : "all submissions"}</span>
             {here && (
               <span className="truncate text-ink">
                 #{here.caseId} {here.insured}

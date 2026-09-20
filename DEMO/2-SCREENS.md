@@ -21,8 +21,8 @@ Use this as a map of what exists. The timed track cards choose a small subset.
 
 ## Controls that matter
 
-- The PIXIE product switch opens either the Federato desk or Intact renter operations. Federato navigation uses **queue**, **guideline**, **portfolio**, **ask**, **backtest**, **demo**. Intact navigation uses **overview** and **renter quotes**.
-- In Federato, `?` opens the keyboard help dialog. Escape closes it. Keyboard focus stays in the dialog while open.
+- The PIXIE product switch opens either the Federato desk or Intact renter operations. Federato navigation uses **submissions**, **rulebook**, and **validation**. Intact navigation uses **overview** and **renter quotes**.
+- Portfolio, Ask and the recorded agent console remain available by direct URL for sponsor-specific demonstrations. They are supporting evidence, not steps in the default Federato pitch.
 - **reset demo** resets stored demo decisions/actions and restores filed rules. Use it between judges, not while another person is demonstrating.
 - **reset this case** in the broker reply panel clears only that case's demo actions and human changes, preserving other cases and active rules.
 - **Captured reply** is available only for case 138. It uses a captured email and recorded extraction, then performs verification and rescoring now. The panel labels the path.
