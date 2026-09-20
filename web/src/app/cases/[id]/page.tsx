@@ -12,6 +12,7 @@ import { Swimlanes } from "@/components/Swimlanes";
 import { PriceWaterfall, Waterfall } from "@/components/case/Waterfall";
 import { Views } from "@/components/case/Views";
 import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
+import { Briefing } from "@/components/case/Briefing";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
 
@@ -22,9 +23,9 @@ const BANDS: { band: Band; label: string }[] = [
 ];
 
 /** A collapsed summary that opens in place. Native details, so it works without JavaScript. */
-function Fold({ title, count, summary, children }: { title: string; count?: string; summary: string; children?: React.ReactNode }) {
+function Fold({ title, count, summary, children, brief }: { title: string; count?: string; summary: string; children?: React.ReactNode; brief?: string }) {
   return (
-    <details className="group min-w-0 border-r border-rule px-5 py-2.5 last:border-r-0 open:col-span-4 open:border-r-0 open:bg-land/40">
+    <details data-brief={brief} className="group min-w-0 border-r border-rule px-5 py-2.5 last:border-r-0 open:col-span-4 open:border-r-0 open:bg-land/40">
       <summary className="flex cursor-pointer list-none items-baseline gap-2 [&::-webkit-details-marker]:hidden">
         <span className="kicker">{title}</span>
         {count && <span className="num text-[11px] text-dim">{count}</span>}
@@ -65,7 +66,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   return (
     <main className="grid h-[calc(100vh-48px)] grid-rows-[62px_minmax(0,1fr)_auto] overflow-hidden">
       {/* ------------------------------- header ------------------------------- */}
-      <header className="flex items-center gap-4 border-b border-ink bg-land px-6">
+      <header className="relative flex items-center gap-4 border-b border-ink bg-land px-6">
         <div className="min-w-0">
           <p className="font-mono text-[11px] text-dim">
             <Link href="/queue" className="hover:text-ink hover:underline">
@@ -84,9 +85,12 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             desk said <b className="font-semibold">{verdict}</b>
           </span>
         )}
+        <Briefing caseId={view.caseId} />
         <span className="ml-auto" />
         {view.kind === "commercial" && (
-          <Actions caseId={view.caseId} facts={flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
+          <span data-brief="action" className="shrink-0">
+            <Actions caseId={view.caseId} facts={flippers.map((f) => f.fact)} proposed={view.actions.find((a) => a.key === "request_broker_info")?.status} />
+          </span>
         )}
       </header>
 
@@ -110,9 +114,11 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
 
           {isTenantExplain(explain) ? (
             <>
-              <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
+              <div data-brief="score" className="flex min-h-0 flex-1 flex-col">
+                <PriceWaterfall steps={explain.steps as unknown as PriceStep[]} annual={explain.annual} label={explain.label} />
+              </div>
               {view.receipt && (
-                <div className="border-t border-rule pt-3">
+                <div data-brief="facts" className="border-t border-rule pt-3">
                   <Receipt r={view.receipt} />
                 </div>
               )}
@@ -133,7 +139,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           )}
         </section>
 
-        <aside className="min-h-0 overflow-y-auto" aria-label="Challenge and precedent">
+        <aside data-brief="challenge" className="min-h-0 overflow-y-auto" aria-label="Challenge and precedent">
           {view.challenge ? (
             <Challenger c={view.challenge} deskVerdict={view.deskVerdict} rulesDecision={view.decision.kind} />
           ) : (
@@ -149,6 +155,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
       {/* --------------------------------- folds -------------------------------- */}
       <div className="grid auto-rows-min grid-cols-[repeat(4,minmax(0,1fr))] border-t border-ink">
         <Fold
+          brief="facts"
           title="Facts"
           count={`${view.facts.length}`}
           summary={`${view.facts.filter((f) => f.provenance === "known").length} known, ${view.facts.filter((f) => f.provenance === "estimated").length} estimated, ${view.facts.filter((f) => f.provenance === "missing").length} missing. Every one carries where it came from.`}

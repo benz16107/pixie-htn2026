@@ -72,7 +72,7 @@ export function Views({
         </p>
       </div>
 
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="flex min-h-0 flex-1 flex-col pt-2">
+      <div data-brief="score" id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="flex min-h-0 flex-1 flex-col pt-2">
         {tab === "2d" ? waterfall : surface ? <DecisionSpace s={surface} pin={pin} /> : null}
       </div>
 

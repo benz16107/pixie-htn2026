@@ -15,19 +15,27 @@ const down = (e: unknown) =>
 
 export async function GET(req: Request, ctx: RouteContext<"/api/atlas/[...path]">) {
   const { path } = await ctx.params;
+  const range = req.headers.get("range");
   let res: Response;
   try {
-    res = await fetch(target(req, path), { headers: { accept: req.headers.get("accept") ?? "*/*" }, cache: "no-store" });
+    res = await fetch(target(req, path), {
+      headers: { accept: req.headers.get("accept") ?? "*/*", ...(range ? { range } : {}) },
+      cache: "no-store",
+    });
   } catch (e) {
     return down(e);
   }
-  return new Response(res.body, {
-    status: res.status,
-    headers: {
-      "content-type": res.headers.get("content-type") ?? "application/json",
-      "cache-control": "no-store, no-transform",
-    },
+  const headers = new Headers({
+    "content-type": res.headers.get("content-type") ?? "application/json",
+    "cache-control": "no-store, no-transform",
   });
+  // Without these the briefing MP3 cannot be seeked: the browser refuses to move the playhead in a
+  // response it cannot range-request.
+  for (const h of ["accept-ranges", "content-range", "content-length"]) {
+    const v = res.headers.get(h);
+    if (v) headers.set(h, v);
+  }
+  return new Response(res.body, { status: res.status, headers });
 }
 
 export async function POST(req: Request, ctx: RouteContext<"/api/atlas/[...path]">) {

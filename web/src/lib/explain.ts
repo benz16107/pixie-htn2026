@@ -136,6 +136,26 @@ export type Precedent = {
   }[];
 };
 
+/** One sentence of the spoken briefing, and the part of the page it talks about. */
+export type BriefingMark = {
+  anchor: "score" | "facts" | "flip" | "challenge" | "action";
+  text: string;
+  startSec: number;
+  endSec: number;
+};
+
+export type Briefing = {
+  caseId: string;
+  script: string;
+  voiceId: string;
+  model: string;
+  audio: string;
+  audioUrl: string;
+  durationSec: number;
+  marks: BriefingMark[];
+  cached: boolean;
+};
+
 export type Challenge = {
   argument: string;
   verified?: boolean;
@@ -160,6 +180,8 @@ async function get<T>(path: string): Promise<T | null> {
 export const explainCase = (id: string) => get<Explain>(`/cases/${id}/explain`);
 export const sensitivityOf = (id: string) => get<Sensitivity>(`/cases/${id}/sensitivity`);
 export const precedentFor = (id: string) => get<Precedent>(`/cases/${id}/precedent`);
+/** Null when no voice key is configured: the page then stays silent, and everything still reads. */
+export const briefingFor = (id: string) => get<Briefing>(`/cases/${id}/briefing`);
 
 async function post<T>(path: string, body: unknown, at = base): Promise<T | null> {
   try {

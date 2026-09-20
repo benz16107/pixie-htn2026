@@ -62,7 +62,7 @@ export function WhatIf({
   }, [fact, value, score?.lo, score?.hi, kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <section aria-labelledby="whatif-h" className="border-t border-rule pt-3">
+    <section data-brief="flip" aria-labelledby="whatif-h" className="border-t border-rule pt-3">
       <div className="flex items-end gap-5">
         <div className="w-[196px] shrink-0">
           <h2 id="whatif-h" className="kicker">
