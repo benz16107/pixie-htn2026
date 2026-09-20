@@ -22,16 +22,14 @@ export function RecordButton() {
   }
 
   if (state === "unavailable") {
-    return <span className="font-mono text-[10.5px] text-dim">no replay (DSN unset)</span>;
+    return <span className="text-[11px] text-dim">no replay (DSN unset)</span>;
   }
   return (
     <button
       onClick={start}
       disabled={state === "recording"}
       title="Record this session to Sentry, with every field masked."
-      className={`rounded-sm border px-2 py-0.5 ${
-        state === "recording" ? "border-rust text-rust" : "border-ink hover:bg-paper"
-      }`}
+      className={`btn btn-quiet !px-2 !py-1 !text-[11.5px] ${state === "recording" ? "!border-red !text-red" : ""}`}
     >
       {state === "recording" ? "recording" : "Record this"}
     </button>

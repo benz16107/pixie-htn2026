@@ -1,54 +1,144 @@
 @import "tailwindcss";
 
-/* Cartographic tokens, from mockups/direction-cartographic.html */
+/*
+  D2: the printed report.
+  Stone-white uncoated stock, one ink, one grey, hairline rules and no boxes. Bodoni Moda carries
+  titles, decisions and large numerals; Schibsted Grotesk carries everything else. Red appears only
+  where something is wrong or a limit is crossed: a missing fact, a decline, a not-acceptable band,
+  a threshold mark. Nothing else is coloured.
+
+  The old cartographic token names stay as aliases so untouched components inherit the world.
+*/
 @theme {
-  --color-land: #ece6d6;
-  --color-paper: #f3efe4;
-  --color-ink: #2f2a22;
-  --color-dim: #6f6453;
-  --color-rule: #d4cab4;
-  --color-water: #c8d2cb;
-  --color-ochre: #8f6327;
-  --color-ochre-soft: #e4d9bf;
-  --color-rust: #a2492f;
-  --color-moss: #5e6f4a;
-  --font-serif: var(--font-newsreader), Georgia, serif;
-  --font-sans: var(--font-public-sans), system-ui, sans-serif;
-  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
-  --radius-sm: 4px;
+  --color-paper: #f4f3ef;
+  --color-ink: #1a1a19;
+  --color-dim: #63625c;
+  --color-rule: #c4c3bd;
+  --color-faint: #e8e7e2;
+  --color-red: #a62b1f;
+
+  --color-land: var(--color-faint);
+  --color-moss: var(--color-ink);
+  --color-ochre: var(--color-dim);
+  --color-ochre-soft: var(--color-faint);
+  --color-rust: var(--color-red);
+  --color-water: var(--color-faint);
+
+  --font-serif: var(--font-bodoni), "Bodoni 72", "Didot", Georgia, serif;
+  --font-sans: var(--font-schibsted), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --radius-sm: 0px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
-html { background: var(--color-paper); color: var(--color-ink); }
-body { font: 13px/1.45 var(--font-sans); font-variant-numeric: tabular-nums; }
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.kicker {
-  font: 600 10.5px var(--font-sans);
-  letter-spacing: 0.12em;
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  font: 400 14px/1.5 var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--color-ink); color: var(--color-paper); }
+
+/* Display: Bodoni with its optical sizes on. Tighten only when large. */
+.display {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+.display-lg { font-size: 44px; letter-spacing: -0.015em; line-height: 1.02; }
+.display-md { font-size: 27px; }
+.display-sm { font-size: 20px; line-height: 1.2; }
+.display-num { font-family: var(--font-serif); font-optical-sizing: auto; font-weight: 500; font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.01em; }
+
+/* Numerals in running text and tables: lining figures in the text face. Schibsted widens its
+   punctuation under tnum, so tabular figures are reserved for the display face. */
+.num { font-variant-numeric: lining-nums; }
+
+/* Small capitals: the running head, table heads, provenance marks, decisions. */
+.sc {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--color-dim);
 }
+.kicker, .folio { font-family: var(--font-sans); font-size: 10.5px; font-weight: 500; line-height: 1.2; letter-spacing: 0.09em; text-transform: uppercase; color: var(--color-dim); }
+
+/* Rules, never boxes. */
+.rule { border-top: 1px solid var(--color-rule); }
+.rule-ink { border-top: 1px solid var(--color-ink); }
+.rule-faint { border-top: 1px solid var(--color-faint); }
+
+/* A book table: an ink rule under the head and the foot, faint rules between rows. */
+table.book { width: 100%; border-collapse: collapse; }
+table.book th { font-family: var(--font-sans); font-size: 10.5px; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; color: var(--color-dim); text-align: left; padding: 0 12px 6px 0; vertical-align: bottom; }
+table.book thead tr { border-bottom: 1px solid var(--color-ink); }
+table.book td { padding: 7px 12px 7px 0; vertical-align: baseline; }
+table.book tbody tr + tr { border-top: 1px solid var(--color-faint); }
+table.book tbody { border-bottom: 1px solid var(--color-ink); }
+table.book th.r, table.book td.r { text-align: right; padding-right: 0; }
+table.book th:last-child, table.book td:last-child { padding-right: 0; }
+
+/* Text buttons: a hairline, ink on press. */
+.btn {
+  font: 500 12.5px/1 var(--font-sans);
+  letter-spacing: 0.01em;
+  padding: 7px 12px;
+  border: 1px solid var(--color-ink);
+  background: transparent;
+  color: var(--color-ink);
+  transition: background-color 120ms ease, color 120ms ease, transform 120ms var(--ease-out);
+}
+.btn-primary { background: var(--color-ink); color: var(--color-paper); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { background: var(--color-ink); color: var(--color-paper); }
+  .btn-primary:hover { background: #3a3a38; }
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { border-color: var(--color-rule); color: var(--color-dim); background: transparent; cursor: not-allowed; transform: none; }
+.btn-quiet { border-color: var(--color-rule); }
+
+.link { text-decoration: underline; text-decoration-thickness: from-font; text-underline-offset: 3px; text-decoration-color: var(--color-rule); transition: text-decoration-color 120ms ease; }
+@media (hover: hover) and (pointer: fine) { .link:hover { text-decoration-color: var(--color-ink); } }
+
 :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
-/* the contour texture behind the shell header: a map is the subject here */
-.contours {
-  background-image: url("/contours.svg");
-  background-size: 640px 400px;
-}
-/* motion: the interval narrows as evidence lands; lane cards arrive as events do */
-.iv { transition: transform 500ms cubic-bezier(0.77, 0, 0.175, 1); }
-.lane-card { transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+
+/* Column measures for reading. */
+.measure { max-width: 66ch; text-wrap: pretty; }
+
+/* The one authored motion: an interval narrows as evidence lands; a lane card arrives as its event does. */
+.iv { transition: transform 500ms var(--ease-in-out); }
+.lane-card { transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
 @starting-style { .lane-card { opacity: 0; transform: translateY(4px); } }
+
 /* A hazard lookup or a working case pulses at its point on the map. */
 @keyframes pulse-ring {
   from { r: 8px; opacity: 0.85; }
   to { r: 34px; opacity: 0; }
 }
-.pulse-ring { animation: pulse-ring 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite; }
+.pulse-ring { animation: pulse-ring 1.8s var(--ease-out) infinite; }
 .pulse-ring-2 { animation-delay: 0.6s; }
-.pin { transition: fill 300ms ease-out, r 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.pin { transition: fill 300ms ease-out, r 200ms var(--ease-out); }
 
-/* the spoken briefing rings the part of the page it is talking about, and nothing else moves */
-[data-brief] { transition: box-shadow 220ms cubic-bezier(0.23, 1, 0.32, 1); }
-[data-brief].brief-on { box-shadow: inset 0 0 0 2px var(--color-ochre); border-radius: 4px; }
+/* The spoken briefing marks the passage it is reading with a rule in the margin. */
+[data-brief] { transition: box-shadow 220ms var(--ease-out); }
+[data-brief].brief-on { box-shadow: -14px 0 0 -12px var(--color-ink); }
+
+/* Hatching for a cap: a printed rule, not a colour. */
+.hatch { background: repeating-linear-gradient(-45deg, var(--color-ink) 0 1px, transparent 1px 5px); }
+
+/* Everything on the live desk is dense; keep the paper flat, no contour texture. */
+.contours { background-image: none; }
 
 @media (prefers-reduced-motion: reduce) {
   [data-brief] { transition: none; }
@@ -56,4 +146,5 @@ body { font: 13px/1.45 var(--font-sans); font-variant-numeric: tabular-nums; }
   .iv { transition: none; }
   .lane-card { transition: opacity 200ms ease; }
   @starting-style { .lane-card { transform: none; } }
+  .btn:active { transform: none; }
 }

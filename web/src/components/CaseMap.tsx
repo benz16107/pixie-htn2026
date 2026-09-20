@@ -67,10 +67,10 @@ export default function CaseMap({
       <div ref={box} className="h-full w-full" />
       <svg aria-hidden className="pointer-events-none absolute inset-0" width={size.w} height={size.h}>
         {hexes.map((h) => (
-          <polygon key={h.cell} points={poly(h.ring)} fill="#B7813A" fillOpacity={0.12 + h.level * 0.12} stroke="#8F6327" strokeOpacity={0.6} strokeWidth={1} />
+          <polygon key={h.cell} points={poly(h.ring)} fill="#1a1a19" fillOpacity={0.05 + h.level * 0.08} stroke="#1a1a19" strokeOpacity={0.35} strokeWidth={0.75} />
         ))}
-        {home && <polygon points={poly(home)} fill="#B7813A" fillOpacity={0.14} stroke="#2F2A22" strokeWidth={2.5} />}
-        <circle cx={size.w / 2} cy={size.h / 2} r={7} fill="#A2492F" stroke="#F3EFE4" strokeWidth={2.5} />
+        {home && <polygon points={poly(home)} fill="#1a1a19" fillOpacity={0.08} stroke="#1a1a19" strokeWidth={1.5} />}
+        <circle cx={size.w / 2} cy={size.h / 2} r={6} fill="#1a1a19" stroke="#f4f3ef" strokeWidth={2} />
       </svg>
     </div>
   );

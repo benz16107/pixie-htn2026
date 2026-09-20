@@ -109,27 +109,27 @@ function layout(events: DeskEvent[], lanes: Actor[]): { cards: Card[]; cols: num
 }
 
 const TONE: Record<string, string> = {
-  decision: "border-[1.5px] border-ink bg-paper",
-  conflict: "border-rust bg-paper",
+  decision: "border-ink bg-paper",
+  conflict: "border-red bg-paper",
   resolution: "border-ink bg-paper",
   note: "border-dashed border-dim bg-paper",
-  query_retry: "border-rust/70 bg-land",
+  query_retry: "border-red bg-paper",
 };
 
 function CardView({ c, x, y }: { c: Card; x: number; y: number }) {
   const { e } = c;
   const d = describe(e);
-  const tone = TONE[e.kind] ?? (GEO.has(e.actor) ? "border-ochre bg-ochre-soft" : "border-rule bg-land");
+  const tone = TONE[e.kind] ?? (GEO.has(e.actor) ? "border-dim bg-paper" : "border-rule bg-paper");
   const full = str(e.body.text);
   return (
     <li
-      className={`lane-card absolute rounded-sm border px-2 py-1 text-[11px] leading-[1.28] has-[details[open]]:z-30 ${tone}`}
+      className={`lane-card absolute border px-2 py-1 text-[11px] leading-[1.28] has-[details[open]]:z-30 ${tone}`}
       style={{ left: x, top: y, width: CARD_W, minHeight: CARD_H }}
       title={full}
     >
-      <span className="float-right ml-1 font-mono text-[10px] text-dim">{(e.tMs / 1000).toFixed(0).padStart(2, "0")}s</span>
+      <span className="num float-right ml-1 text-[10px] text-dim">{(e.tMs / 1000).toFixed(0).padStart(2, "0")}s</span>
       {d.tag && (
-        <span className={`mr-1 font-mono text-[9.5px] uppercase tracking-wide ${e.kind === "conflict" || e.kind === "query_retry" ? "text-rust" : "text-dim"}`}>{d.tag}</span>
+        <span className={`sc mr-1 text-[9.5px] ${e.kind === "conflict" || e.kind === "query_retry" ? "text-red" : "text-dim"}`}>{d.tag}</span>
       )}
       <span className={c.chips.length ? "line-clamp-1" : "line-clamp-2"}>{d.title}</span>
       {d.meta && <span className="line-clamp-1 text-[10.5px] text-dim">{d.meta}</span>}
@@ -137,21 +137,21 @@ function CardView({ c, x, y }: { c: Card; x: number; y: number }) {
         <span className="mt-0.5 flex flex-wrap gap-1">
           {c.chips.slice(0, 3).map((t) =>
             t.kind === "action" ? (
-              <span key={t.id} className="rounded-sm bg-moss px-[5px] font-mono text-[9.5px] font-medium text-paper">
+              <span key={t.id} className="num bg-ink px-[5px] text-[9.5px] font-medium text-paper">
                 {str(t.body.text)} · {str(t.body.status)}
               </span>
             ) : (
               <details key={t.id} className="group relative">
-                <summary className="cursor-pointer list-none rounded-sm bg-moss px-[5px] font-mono text-[9.5px] font-medium text-paper [&::-webkit-details-marker]:hidden">
+                <summary className="num cursor-pointer list-none bg-ink px-[5px] text-[9.5px] font-medium text-paper [&::-webkit-details-marker]:hidden">
                   {str(t.body.tool)} <span aria-hidden className="inline-block transition-transform duration-150 group-open:rotate-90">›</span>
                 </summary>
-                <pre className="absolute left-0 top-full z-20 mt-1 max-h-64 w-[320px] overflow-auto whitespace-pre-wrap break-words rounded-sm border border-ink bg-paper p-2 font-mono text-[10.5px] leading-snug shadow-[0_6px_16px_-6px_rgba(47,42,34,0.35)]">
+                <pre className="absolute left-0 top-full z-20 mt-1 max-h-64 w-[320px] overflow-auto whitespace-pre-wrap break-words border border-ink bg-paper p-2 font-mono text-[10.5px] leading-snug">
                   {JSON.stringify({ args: t.body.args, result: t.body.result }, null, 2)}
                 </pre>
               </details>
             ),
           )}
-          {c.chips.length > 3 && <span className="font-mono text-[9.5px] text-dim">+{c.chips.length - 3}</span>}
+          {c.chips.length > 3 && <span className="num text-[9.5px] text-dim">+{c.chips.length - 3}</span>}
         </span>
       )}
     </li>
@@ -169,7 +169,7 @@ function Arrows({ cards, pos, height, width }: { cards: Card[]; pos: Map<string,
     <svg aria-hidden className="pointer-events-none absolute left-0 top-0 overflow-visible" width={width} height={height}>
       <defs>
         <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8z" fill="#2F2A22" />
+          <path d="M0,0 L8,4 L0,8z" fill="#1a1a19" />
         </marker>
       </defs>
       {edges.map(({ from, to, dashed }) => {
@@ -180,7 +180,7 @@ function Arrows({ cards, pos, height, width }: { cards: Card[]; pos: Map<string,
         const y2 = b.y + CARD_H / 2;
         const mid = b.x > x1 ? x1 + (b.x - x1) / 2 : x1 + 6;
         const d = b.x > x1 ? `M${x1},${y1} H${mid} V${y2} H${b.x - 2}` : `M${a.x + CARD_W / 2},${y1 + (y2 > y1 ? CARD_H / 2 : -CARD_H / 2)} V${y2 + (y2 > y1 ? -CARD_H / 2 : CARD_H / 2) - (y2 > y1 ? 2 : -2)}`;
-        return <path key={`${from}-${to}`} d={d} fill="none" stroke="#2F2A22" strokeWidth={1.25} strokeDasharray={dashed ? "4 3" : undefined} markerEnd="url(#arr)" />;
+        return <path key={`${from}-${to}`} d={d} fill="none" stroke="#1a1a19" strokeWidth={1} strokeDasharray={dashed ? "4 3" : undefined} markerEnd="url(#arr)" />;
       })}
     </svg>
   );
@@ -236,12 +236,12 @@ export function Swimlanes({
   const height = TOP + LANES.length * LANE_H;
   const width = cols * COL_W + 12;
   const pos = new Map(shown.map((c) => [c.e.id, { x: c.col * COL_W + 6, y: TOP + c.lane * LANE_H + (LANE_H - CARD_H) / 2 }]));
-  const btn = "rounded-sm border border-ink px-2 py-px font-mono text-[11px] transition-colors duration-150 hover:bg-ink hover:text-paper";
+  const btn = "btn btn-quiet !px-2 !py-1 !text-[11px]";
 
   return (
     <section aria-labelledby="lanes-h" className={`flex min-h-0 flex-col ${pad}`}>
       <div className="mb-2 flex shrink-0 items-center gap-6 overflow-hidden whitespace-nowrap">
-        <h2 id="lanes-h" className="kicker shrink-0 truncate">{heading}</h2>
+        <h2 id="lanes-h" className="folio shrink-0 truncate">{heading}</h2>
         {controls && (
         <div className="flex items-center gap-2" role="group" aria-label="Replay">
           <button className={btn} onClick={() => { setSpeed(1); setClock(0); }}>Replay 1×</button>
@@ -253,18 +253,18 @@ export function Swimlanes({
           <span className="num">{cards.length}</span> steps, <span className="num">{sorted.length}</span> events. Columns are moments, not seconds.
         </span>
         <div className="ml-auto flex w-[360px] items-center gap-3">
-          <span className="kicker whitespace-nowrap">Interval</span>
+          <span className="folio whitespace-nowrap">Interval</span>
           <div className="flex-1"><IntervalBar score={score} compact /></div>
           <span className="num w-[44px] text-[11.5px]" aria-live="polite">{score ? `${score.lo}–${score.hi}` : "—"}</span>
         </div>
-        <span className="kicker font-mono">
+        <span className="folio">
           t+ <span className="num">{((clock === null ? end : Math.min(clock, end)) / 1000).toFixed(0)}</span> s
         </span>
       </div>
       <div className="flex min-h-0 flex-1 overflow-y-auto">
         <ul className="shrink-0" style={{ width: LABEL_W, paddingTop: TOP }} aria-hidden>
           {LANES.map((l) => (
-            <li key={l} className="flex items-center border-b border-dashed border-rule text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ height: LANE_H }}>
+            <li key={l} className="sc flex items-center border-b border-faint text-dim" style={{ height: LANE_H }}>
               {l}
             </li>
           ))}
@@ -272,7 +272,7 @@ export function Swimlanes({
         <div ref={scroller} className="relative min-w-0 flex-1 overflow-x-auto overflow-y-auto overscroll-x-contain pb-2" tabIndex={0} aria-label="Desk events, scroll sideways for earlier steps">
           <div className="relative" style={{ width: Math.max(width, 100), height }}>
             {LANES.map((l, i) => (
-              <div key={l} className="absolute inset-x-0 border-b border-dashed border-rule" style={{ top: TOP + i * LANE_H, height: LANE_H }}>
+              <div key={l} className="absolute inset-x-0 border-b border-faint" style={{ top: TOP + i * LANE_H, height: LANE_H }}>
                 {l === "human" && !shown.some((c) => c.e.actor === "human") && (
                   <span className="sticky left-0 inline-block px-1.5 pt-[18px] text-[11px] text-dim">Waiting on the underwriter. Replies to the digest land here.</span>
                 )}
@@ -280,7 +280,7 @@ export function Swimlanes({
             ))}
             {colTimes.map((t, i) =>
               i % 2 === 0 ? (
-                <span key={i} className="absolute top-0 font-mono text-[9.5px] text-dim" style={{ left: i * COL_W + 8 }}>
+                <span key={i} className="num absolute top-0 text-[10px] text-dim" style={{ left: i * COL_W + 8 }}>
                   {(t / 1000).toFixed(1)}s
                 </span>
               ) : null,

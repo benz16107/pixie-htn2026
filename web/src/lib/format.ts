@@ -94,4 +94,4 @@ export function whenLabel(at: string): string {
 
 /** Replaces "premium:not_acceptable" inside a sentence with "premium not acceptable". */
 export const prettyBands = (s: string) =>
-  s.replace(/\b([a-z_]+):(target|acceptable|not_acceptable)\b/g, (_, f, b) => `${f.replaceAll("_", " ")} ${b.replaceAll("_", " ")}`);
+  s.replace(/\b([a-z0-9_]+):(target|acceptable|not_acceptable)\b/g, (_, f, b) => `${f.replaceAll("_", " ")} ${b.replaceAll("_", " ")}`);

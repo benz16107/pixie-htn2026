@@ -14,7 +14,6 @@ const NAME: Record<string, string> = {
   challenger: "Challenger",
   human: "Underwriter",
 };
-const GEO = new Set(["hazard", "portfolio"]);
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const QUIET = new Set(["tool_call", "run_stats", "query", "query_retry", "note"]);
 
@@ -61,20 +60,11 @@ function headline(e: DeskEvent): { title: string; detail: string } {
 }
 
 /**
- * The case walks the desk. The rail is a real row of stations, one column each, and the band
- * below it holds a single card: what the desk is saying right now, or the broker email when
+ * The case walks the desk. The rail is a printed row of stations, one column each, and the band
+ * below it holds a single passage: what the desk is saying right now, or the broker email when
  * that moment comes. Everything earlier is in the chatter log, so nothing stacks.
  */
-export function StationLine({
-  events,
-  caseTitle,
-  takeover,
-}: {
-  events: DeskEvent[];
-  caseTitle: string;
-  /** A moment that owns the card slot for as long as it lasts, e.g. the broker email. */
-  takeover?: ReactNode;
-}) {
+export function StationLine({ events, caseTitle, takeover }: { events: DeskEvent[]; caseTitle: string; takeover?: ReactNode }) {
   const loud = events.filter((e) => !QUIET.has(e.kind));
   const present = ORDER.filter((a) => loud.some((e) => e.actor === a));
   const stations = present.length ? present : ORDER.slice(0, 6);
@@ -83,58 +73,47 @@ export function StationLine({
   const pct = ((at + 0.5) / stations.length) * 100;
   const here = latest ? loud.filter((e) => e.actor === latest.actor).length : 0;
   const h = latest ? headline(latest) : null;
-  const geo = !!latest && GEO.has(latest.actor);
+  const conflict = latest?.kind === "conflict" || latest?.kind === "query_retry";
 
   return (
-    <section className="relative z-10 shrink-0 border-t border-ink bg-paper px-4 pb-2.5 pt-1.5" aria-label="Where the case is on the desk">
-      {/* the case token, alone on its row, so it can travel without meeting anything */}
-      <div className="relative h-[21px]">
+    <section className="relative z-10 shrink-0 border-t border-ink bg-paper px-5 pb-3 pt-2" aria-label="Where the case is on the desk">
+      {/* the case marker, alone on its row, so it can travel without meeting anything */}
+      <div className="relative h-[20px]">
         <div
-          className="num absolute top-0 -translate-x-1/2 whitespace-nowrap rounded-sm bg-ink px-2 py-[2px] text-[10px] text-paper transition-[left] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          className="num absolute top-0 -translate-x-1/2 whitespace-nowrap bg-ink px-2 py-[2px] text-[10.5px] text-paper transition-[left] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
           style={{ left: `clamp(66px, ${pct}%, calc(100% - 66px))` }}
         >
-          {caseTitle} · {loud.length} steps
+          {caseTitle}, {loud.length} steps
         </div>
       </div>
 
       <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${stations.length}, minmax(0, 1fr))` }}>
-        <span aria-hidden className="absolute inset-x-0 top-[6px] h-[2px] bg-rule" />
+        <span aria-hidden className="absolute inset-x-0 top-[6px] h-px bg-rule" />
         <span
           aria-hidden
-          className="absolute left-0 top-[6px] h-[2px] bg-ink transition-[width] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          className="absolute left-0 top-[6px] h-px bg-ink transition-[width] duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
           style={{ width: `${pct}%` }}
         />
         {stations.map((a, i) => {
           const mine = loud.filter((e) => e.actor === a);
           const live = i === at;
           return (
-            <li key={a} className="relative flex flex-col items-center gap-[5px]">
-              <span
-                className={`size-[14px] rounded-full border-2 bg-paper ${
-                  live ? "border-rust shadow-[0_0_0_5px_rgba(162,73,47,0.14)]" : mine.length ? "border-ink bg-ink" : "border-rule"
-                }`}
-              />
-              <span className={`truncate text-[10px] font-semibold uppercase tracking-[0.09em] ${live ? "text-rust" : mine.length ? "text-ink" : "text-dim"}`}>
-                {NAME[a]}
-              </span>
-              <span className="num text-[9px] text-dim">{mine.length ? `${mine.length} step${mine.length > 1 ? "s" : ""}` : "—"}</span>
+            <li key={a} className="relative flex flex-col items-center gap-[6px]">
+              <span className={`size-[13px] rounded-full border bg-paper ${live ? "border-ink bg-ink" : mine.length ? "border-ink" : "border-rule"}`} />
+              <span className={`sc truncate ${live ? "text-ink" : mine.length ? "text-ink" : "text-dim"}`}>{NAME[a]}</span>
+              <span className="num text-[10px] text-dim">{mine.length ? `${mine.length} step${mine.length > 1 ? "s" : ""}` : ""}</span>
             </li>
           );
         })}
       </ol>
 
-      {/* one card slot: it swaps, it never stacks */}
+      {/* one passage: it swaps, it never stacks */}
       <div className="mt-2 h-[104px]">
         {takeover ??
           (h && latest ? (
-            <article
-              key={latest.id}
-              className={`lane-card flex h-full flex-col overflow-hidden rounded-sm border px-3 py-2 text-[12px] leading-snug ${
-                geo ? "border-ochre bg-ochre-soft/70" : "border-ink bg-land/60"
-              }`}
-            >
-              <p className="kicker mb-0.5">{NAME[latest.actor] ?? latest.actor}</p>
-              <b className="block truncate font-semibold" title={h.title}>
+            <article key={latest.id} className={`lane-card flex h-full flex-col overflow-hidden border-l pl-3 pr-2 py-1 text-[12.5px] leading-[1.4] ${conflict ? "border-red" : "border-ink"}`}>
+              <p className="folio mb-0.5">{NAME[latest.actor] ?? latest.actor}</p>
+              <b className="block truncate font-medium" title={h.title}>
                 {h.title}
               </b>
               {h.detail && (
@@ -142,12 +121,12 @@ export function StationLine({
                   {h.detail}
                 </span>
               )}
-              <span className="num mt-auto pt-1 text-[9.5px] text-dim">
-                t+{(latest.tMs / 1000).toFixed(0)}s{here > 1 ? ` · ${here} steps here` : ""} · earlier steps are in the chatter log
+              <span className="num mt-auto pt-1 text-[10.5px] text-dim">
+                t+{(latest.tMs / 1000).toFixed(0)}s{here > 1 ? `, ${here} steps here` : ""}. Earlier steps are in the chatter log.
               </span>
             </article>
           ) : (
-            <p className="flex h-full items-center text-[12px] text-dim">The case has not reached a station yet.</p>
+            <p className="flex h-full items-center text-[12.5px] italic text-dim">The case has not reached a station yet.</p>
           ))}
       </div>
     </section>

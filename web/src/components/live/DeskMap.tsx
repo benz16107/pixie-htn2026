@@ -9,12 +9,12 @@ export type MapPin = { caseId: string; insured: string; lat: number; lng: number
 export type Pulse = { id: string; lat: number; lng: number; label: string };
 
 const FILL: Record<string, string> = {
-  open: "#F3EFE4",
-  decline: "#A2492F",
-  refer: "#B7813A",
-  accept: "#5E6F4A",
-  approve: "#5E6F4A",
-  routed: "#8A7F6B",
+  open: "#f4f3ef",
+  decline: "#a62b1f",
+  refer: "#63625c",
+  accept: "#1a1a19",
+  approve: "#1a1a19",
+  routed: "#c4c3bd",
 };
 
 export default function DeskMap({
@@ -112,22 +112,22 @@ export default function DeskMap({
 
   return (
     // Land and contours sit under the canvas: when tiles fail the panel still reads as a map.
-    <div className="contours absolute inset-0 bg-land">
+    <div className="absolute inset-0 bg-faint grayscale">
       <div ref={box} className="h-full w-full" />
       {trouble && (
-        <p className="absolute bottom-2 left-2 z-10 rounded-sm border border-rule bg-paper/90 px-2 py-0.5 font-mono text-[10px] text-dim">{trouble}</p>
+        <p className="absolute bottom-2 left-2 z-10 border border-rule bg-paper/90 px-2 py-0.5 text-[11px] text-dim">{trouble}</p>
       )}
       <svg className="absolute inset-0" width={size.w} height={size.h} style={{ pointerEvents: "none" }} aria-hidden>
         {hexes.map((h) => {
           const pts = h.ring.map(([la, ln]) => { const p = at(la, ln); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; }).join(" ");
-          return <polygon key={h.cell} points={pts} fill="#B7813A" fillOpacity={0.1 + h.level * 0.11} stroke="#8F6327" strokeOpacity={0.5} strokeWidth={1} />;
+          return <polygon key={h.cell} points={pts} fill="#1a1a19" fillOpacity={0.04 + h.level * 0.06} stroke="#1a1a19" strokeOpacity={0.35} strokeWidth={0.75} />;
         })}
         {pulses.map((p) => {
           const { x, y } = at(p.lat, p.lng);
           return (
             <g key={p.id}>
-              <circle className="pulse-ring" cx={x} cy={y} r={10} fill="none" stroke="#A2492F" strokeWidth={2} />
-              <circle className="pulse-ring pulse-ring-2" cx={x} cy={y} r={10} fill="none" stroke="#A2492F" strokeWidth={1.5} />
+              <circle className="pulse-ring" cx={x} cy={y} r={10} fill="none" stroke="#a62b1f" strokeWidth={2} />
+              <circle className="pulse-ring pulse-ring-2" cx={x} cy={y} r={10} fill="none" stroke="#a62b1f" strokeWidth={1.5} />
             </g>
           );
         })}
@@ -137,13 +137,13 @@ export default function DeskMap({
           return (
             <g key={p.caseId} style={{ pointerEvents: "auto", cursor: "pointer" }} onClick={() => onPick(p.caseId)}>
               <title>{`#${p.caseId} ${p.insured}: ${p.state === "settled" ? p.decision : p.state}`}</title>
-              {working && <circle className="pulse-ring" cx={x} cy={y} r={9} fill="none" stroke="#2F2A22" strokeWidth={1.5} />}
+              {working && <circle className="pulse-ring" cx={x} cy={y} r={9} fill="none" stroke="#1a1a19" strokeWidth={1.5} />}
               <circle
                 cx={x}
                 cy={y}
                 r={p.state === "waiting" ? 4.5 : 7}
-                fill={p.state === "settled" ? (FILL[p.decision] ?? FILL.routed) : "#ECE6D6"}
-                stroke="#2F2A22"
+                fill={p.state === "settled" ? (FILL[p.decision] ?? FILL.routed) : "#e8e7e2"}
+                stroke="#1a1a19"
                 strokeWidth={working ? 2.5 : 1.5}
                 className="pin"
               />

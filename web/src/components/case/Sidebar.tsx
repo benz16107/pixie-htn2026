@@ -1,56 +1,59 @@
 import { money } from "@/components/bits";
 import type { Challenge, Precedent } from "@/lib/explain";
 
-/** The Challenger's case against the decision: sized risks, a remedy each, and what would change its mind. */
+/** The Challenger's case against the decision, set as a written argument: sized risks, a remedy each, and what would change its mind. */
 export function Challenger({ c, deskVerdict, rulesDecision }: { c: Challenge; deskVerdict?: string; rulesDecision: string }) {
   const moved = deskVerdict && deskVerdict !== rulesDecision;
   return (
-    <section aria-labelledby="ch-h" className="min-w-0 overflow-hidden border-b border-rule px-4 py-3">
-      <div className="flex items-baseline gap-2">
-        <h2 id="ch-h" className="font-serif text-[18px] font-semibold">
-          The case against
-        </h2>
-        <span className="font-mono text-[10.5px] text-dim">Challenger agent</span>
-        {c.verified && <span className="ml-auto font-mono text-[10px] text-moss">✓ numbers verified</span>}
-      </div>
-
+    <div className="min-w-0">
+      <p className="measure text-[15px] leading-[1.6]">
+        {c.argument}
+        {c.verified && (
+          <span className="ml-2 whitespace-nowrap text-[12px] text-dim" title="Every number in the argument was checked against the facts">
+            ✓ numbers verified
+          </span>
+        )}
+      </p>
       {moved && (
-        <p className="mt-2 rounded-sm border border-ochre bg-ochre-soft px-2 py-1.5 text-[11.5px] leading-snug">
-          The rules say <b className="font-semibold">{rulesDecision}</b>. After the challenge the desk went with{" "}
-          <b className="font-semibold">{deskVerdict.replaceAll("_", " ")}</b>.
+        <p className="measure mt-3 text-[13.5px] leading-[1.5] text-dim">
+          The rules say <span className="text-ink">{rulesDecision}</span>. After the challenge the desk went with <span className="text-ink">{deskVerdict.replaceAll("_", " ")}</span>.
         </p>
       )}
 
-      <p className="mt-2 text-[12px] leading-snug">{c.argument}</p>
-
-      <ul className="mt-2">
-        {c.risks.map((r) => (
-          <li key={r.risk} className="border-t border-rule py-2">
-            <p className="flex items-baseline gap-2">
-              <span aria-hidden className="mt-[3px] size-[6px] shrink-0 rounded-full bg-rust" />
-              <b className="min-w-0 text-[12.5px] font-semibold">{r.risk}</b>
-              {r.grounded && <span className="ml-auto shrink-0 font-mono text-[9.5px] text-moss">grounded</span>}
-            </p>
-            <p className="mt-1 text-[11.5px] leading-snug">{r.size}</p>
-            {r.likelihood && <p className="mt-0.5 text-[11px] italic leading-snug text-dim">{r.likelihood}</p>}
-            <p className="mt-1 text-[11.5px] leading-snug text-dim">Remedy: {r.remedy}</p>
+      <ol className="mt-6">
+        {c.risks.map((r, i) => (
+          <li key={r.risk} className="rule-faint grid grid-cols-[36px_minmax(0,1fr)] gap-x-2 py-3.5">
+            <span className="display-num text-[20px] leading-none text-dim">{i + 1}</span>
+            <div className="min-w-0">
+              <p className="text-[14px] font-medium leading-[1.4]">
+                {r.risk}
+                {r.grounded && <span className="sc ml-2 text-dim">grounded</span>}
+              </p>
+              <p className="measure mt-1.5 text-[13.5px] leading-[1.5]">{r.size}</p>
+              {r.likelihood && <p className="measure mt-1 text-[13px] italic leading-[1.5] text-dim">{r.likelihood}</p>}
+              <p className="measure mt-1.5 text-[13.5px] leading-[1.5]">
+                <span className="text-dim">Remedy. </span>
+                {r.remedy}
+              </p>
+            </div>
           </li>
         ))}
-      </ul>
+      </ol>
 
       {c.changeMyMind.length > 0 && (
-        <div className="mt-2 rounded-sm bg-land px-3 py-2">
-          <p className="kicker mb-1">What would change my mind</p>
-          <ul className="space-y-0.5">
+        <div className="rule-ink mt-2 pt-3">
+          <p className="folio mb-2">What would change its mind</p>
+          <ul className="measure space-y-1 text-[13.5px] leading-[1.5]">
             {c.changeMyMind.map((m) => (
-              <li key={m} className="relative pl-3 text-[11.5px] leading-snug before:absolute before:left-0 before:top-[7px] before:size-[5px] before:rounded-full before:bg-ink">
-                {m}
+              <li key={m} className="grid grid-cols-[36px_minmax(0,1fr)]">
+                <span className="text-dim">·</span>
+                <span>{m}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -62,43 +65,43 @@ export function PrecedentPanel({ p }: { p: Precedent }) {
   const written = p.hits.filter((h): h is typeof h & { lossRatio: number; premium: number } => typeof h.lossRatio === "number");
   const worst = written.length ? written.reduce((a, b) => (b.lossRatio > a.lossRatio ? b : a)) : null;
   return (
-    <section aria-labelledby="pr-h" className="px-4 py-3">
-      <div className="flex items-baseline gap-2">
-        <h2 id="pr-h" className="font-serif text-[18px] font-semibold">
-          We wrote {p.hits.length} like this
-        </h2>
-        <span className="font-mono text-[10.5px] text-dim">{p.backend}</span>
-      </div>
-      <p className="mt-1 text-[11.5px] leading-snug text-dim">{p.basisExplained}</p>
-      <ul className="mt-2">
-        {p.hits.map((h) => (
-          <li key={h.policyNumber ?? h.insured} className="border-t border-rule py-1.5">
-            <p className="flex items-baseline gap-2">
-              <b className="min-w-0 flex-1 truncate text-[12px] font-medium">{h.insured}</b>
-              <span className="num text-[11px] text-dim">{h.state}</span>
-              {typeof h.lossRatio === "number" ? (
-                <span className={`num text-[11.5px] ${h.lossRatio >= 1 ? "text-rust" : "text-moss"}`}>{h.lossRatio.toFixed(2)}</span>
-              ) : (
-                <span className="font-mono text-[10.5px] text-dim">declined</span>
-              )}
-            </p>
-            <p className="num text-[10.5px] text-dim">
-              {money(h.tiv)} TIV ·{" "}
-              {typeof h.premium === "number"
-                ? `premium ${money(h.premium)} · incurred ${money(h.incurred ?? 0)} · ${h.decision}`
-                : h.outcome}
-            </p>
-          </li>
-        ))}
-      </ul>
-      {worst ? (
-        <p className="mt-1.5 text-[11.5px] leading-snug">
-          The worst of them, {worst.insured}, ran a loss ratio of <b className="num font-semibold">{worst.lossRatio.toFixed(2)}</b> on{" "}
-          {money(worst.premium)} of premium.
-        </p>
-      ) : (
-        <p className="mt-1.5 text-[11.5px] leading-snug">Every one of them was declined, so none of them ran a loss.</p>
-      )}
-    </section>
+    <div>
+      <p className="text-[13px] leading-[1.5] text-dim">{p.basisExplained.charAt(0).toUpperCase() + p.basisExplained.slice(1)}.</p>
+      <table className="book mt-3 text-[13px]">
+        <thead>
+          <tr>
+            <th>Insured</th>
+            <th className="w-[40px]">State</th>
+            <th className="r w-[70px]">TIV</th>
+            <th className="r w-[80px]">Premium</th>
+            <th className="r w-[70px]">Loss ratio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {p.hits.map((h) => (
+            <tr key={h.policyNumber ?? h.insured} title={h.outcome}>
+              <td className="min-w-0">
+                <span className="block truncate">{h.insured}</span>
+              </td>
+              <td className="num text-dim">{h.state}</td>
+              <td className="r num">{money(h.tiv)}</td>
+              <td className="r num">{typeof h.premium === "number" ? money(h.premium) : <span className="text-red">declined</span>}</td>
+              <td className={`r num ${typeof h.lossRatio === "number" && h.lossRatio >= 1 ? "text-red" : ""}`}>
+                {typeof h.lossRatio === "number" ? h.lossRatio.toFixed(2) : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="measure mt-3 text-[13.5px] leading-[1.5]">
+        {worst ? (
+          <>
+            The worst of them, {worst.insured}, ran a loss ratio of <span className="num font-medium">{worst.lossRatio.toFixed(2)}</span> on {money(worst.premium)} of premium.
+          </>
+        ) : (
+          "Every one of them was declined, so none of them ran a loss."
+        )}
+      </p>
+    </div>
   );
 }

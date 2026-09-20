@@ -13,29 +13,29 @@ export type Pin = { caseId: string; insured: string; decision: string; site: { l
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 type RGBA = [number, number, number, number];
-const INK: RGBA = [47, 42, 34, 255];
-const PAPER: RGBA = [243, 239, 228, 255];
+const INK: RGBA = [26, 26, 25, 255];
+const PAPER: RGBA = [244, 243, 239, 255];
 export const PIN_FILL: Record<string, RGBA> = {
   open: PAPER, // hollow, ringed in ink: still undecided
-  decline: [162, 73, 47, 255],
-  refer: [183, 129, 58, 255],
-  accept: [94, 111, 74, 255],
-  approve: [94, 111, 74, 255],
-  routed: [122, 111, 94, 170],
+  decline: [166, 43, 31, 255],
+  refer: [99, 98, 92, 255],
+  accept: [26, 26, 25, 255],
+  approve: [26, 26, 25, 255],
+  routed: [196, 195, 189, 255],
 };
 
 // Pull OpenFreeMap's Positron toward the Cartographic palette instead of shipping a custom style.
 export function earthTone(map: MapLibre) {
   for (const l of map.getStyle().layers) {
     const id = l.id;
-    if (l.type === "background") map.setPaintProperty(id, "background-color", "#ECE6D6");
+    if (l.type === "background") map.setPaintProperty(id, "background-color", "#efeeea");
     else if (l.type === "fill")
-      map.setPaintProperty(id, "fill-color", id.includes("water") ? "#C8D2CB" : id === "park" || id.includes("wood") ? "#E1DCC6" : "#E6DFCC");
+      map.setPaintProperty(id, "fill-color", id.includes("water") ? "#dcdbd6" : id === "park" || id.includes("wood") ? "#e6e5e0" : "#e9e8e3");
     else if (l.type === "line")
-      map.setPaintProperty(id, "line-color", id.includes("water") ? "#AFC0B6" : id.startsWith("boundary") ? "#A89C80" : "#D4CAB4");
+      map.setPaintProperty(id, "line-color", id.includes("water") ? "#cfcec9" : id.startsWith("boundary") ? "#9a9994" : "#d6d5d0");
     else if (l.type === "symbol") {
-      map.setPaintProperty(id, "text-color", id.startsWith("water") ? "#5F6E66" : "#6E6452");
-      map.setPaintProperty(id, "text-halo-color", "#F3EFE4");
+      map.setPaintProperty(id, "text-color", "#63625c");
+      map.setPaintProperty(id, "text-halo-color", "#f4f3ef");
     }
   }
 }
@@ -93,8 +93,8 @@ export default function BookMap({
           id: "hexes",
           data: hexes,
           getPolygon: (h) => h.ring.map(([lat, lng]) => [lng, lat]),
-          getFillColor: (h) => [183, 129, 58, 40 + h.level * 45],
-          getLineColor: (h) => (h.cell === highlight ? INK : [143, 99, 39, 160]),
+          getFillColor: (h) => [26, 26, 25, 14 + h.level * 22],
+          getLineColor: (h) => (h.cell === highlight ? INK : [26, 26, 25, 90]),
           getLineWidth: (h) => (h.cell === highlight ? 3 : 1),
           lineWidthUnits: "pixels",
           pickable: !compact,

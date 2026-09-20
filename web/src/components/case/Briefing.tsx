@@ -5,11 +5,11 @@ import { PROXY } from "@/lib/live";
 
 /**
  * The case read aloud. Each sentence carries the part of the page it is about, so as the voice
- * reaches it that region takes a thin ochre ring: `[data-brief="score" | "facts" | "flip" |
+ * reaches it that passage takes a rule in the margin: `[data-brief="score" | "facts" | "flip" |
  * "challenge" | "action"]` anywhere on the page, styled in globals.css.
  *
  * Sound is never a prerequisite. The script is listed as text, and clicking a line moves the
- * highlight (and the playhead) whether or not anything is playing.
+ * mark (and the playhead) whether or not anything is playing.
  */
 export function Briefing({ caseId }: { caseId: string }) {
   const [data, setData] = useState<Data | null>(null);
@@ -30,7 +30,7 @@ export function Briefing({ caseId }: { caseId: string }) {
   const current = marks.findIndex((m) => second >= m.startSec && second < m.endSec);
   const anchor = current >= 0 ? marks[current].anchor : null;
 
-  // The regions live in server-rendered sections all over the page, so the ring is set on the DOM
+  // The regions live in server-rendered sections all over the page, so the mark is set on the DOM
   // rather than threaded through as props.
   useEffect(() => {
     const ring = (on: boolean) =>
@@ -53,7 +53,7 @@ export function Briefing({ caseId }: { caseId: string }) {
     if (!el) return;
     if (el.paused) {
       if (second >= 0) el.currentTime = second;
-      else setSecond(0); // ring the first region straight away, before the first timeupdate
+      else setSecond(0); // mark the first passage straight away, before the first timeupdate
       el.play().catch(() => setPlaying(false));
     } else {
       el.pause();
@@ -61,7 +61,7 @@ export function Briefing({ caseId }: { caseId: string }) {
   };
 
   return (
-    <div className="relative flex shrink-0 items-center gap-1.5">
+    <div className="relative flex shrink-0 items-baseline gap-5 text-[13px]">
       <audio
         ref={audio}
         src={PROXY + data.audioUrl}
@@ -74,43 +74,25 @@ export function Briefing({ caseId }: { caseId: string }) {
         }}
         onTimeUpdate={(e) => setSecond(e.currentTarget.currentTime)}
       />
-      <button
-        onClick={toggle}
-        aria-label={playing ? "Pause the briefing" : "Read this case aloud"}
-        className="flex items-center gap-1.5 rounded-sm border border-rule bg-paper px-2 py-1 text-[11.5px] transition-colors duration-150 hover:border-ink active:scale-[0.97]"
-      >
-        <span aria-hidden className="font-mono text-[10px] leading-none">
-          {playing ? "❙❙" : "▶"}
-        </span>
-        {playing ? "Pause" : "Read this case"}
-        <span className="num text-[10.5px] text-dim">{clock(data.durationSec)}</span>
+      <button onClick={toggle} aria-label={playing ? "Pause the briefing" : "Read this case aloud"} className="link decoration-rule hover:decoration-ink">
+        {playing ? "Pause the reading" : "Read this case aloud"}
+        <span className="num ml-1.5 text-dim">{clock(data.durationSec)}</span>
       </button>
-      <button
-        onClick={() => setShowScript((v) => !v)}
-        aria-expanded={showScript}
-        className="rounded-sm border border-rule px-1.5 py-1 text-[11.5px] text-dim transition-colors duration-150 hover:border-ink hover:text-ink"
-      >
+      <button onClick={() => setShowScript((v) => !v)} aria-expanded={showScript} className="link text-dim decoration-rule hover:text-ink hover:decoration-ink">
         Script
       </button>
 
       {showScript && (
-        <ol className="absolute left-0 top-full z-30 mt-1 w-[420px] rounded-sm border border-ink bg-paper p-2 text-[11.5px] leading-snug shadow-[0_6px_20px_rgba(47,42,34,0.14)]">
+        <ol className="absolute right-0 top-full z-30 mt-2 w-[440px] border border-ink bg-paper p-2 text-[13px] leading-[1.45]">
           {marks.map((m, i) => (
             <li key={m.startSec}>
-              <button
-                onClick={() => go(m.startSec)}
-                className={`block w-full rounded-sm px-1.5 py-1 text-left transition-colors duration-150 hover:bg-land ${
-                  i === current ? "bg-ochre-soft" : ""
-                }`}
-              >
-                <span className="num mr-2 text-[10px] text-dim">{clock(m.startSec)}</span>
+              <button onClick={() => go(m.startSec)} className={`block w-full px-2 py-1.5 text-left transition-colors duration-150 hover:bg-faint ${i === current ? "bg-faint" : ""}`}>
+                <span className="num mr-3 text-[11px] text-dim">{clock(m.startSec)}</span>
                 {m.text}
               </button>
             </li>
           ))}
-          <li className="px-1.5 pt-1 text-[10.5px] text-dim">
-            Read by {data.model}. Every number in it was computed before it was spoken.
-          </li>
+          <li className="px-2 pt-2 text-[11.5px] text-dim">Read by {data.model}. Every number in it was computed before it was spoken.</li>
         </ol>
       )}
     </div>

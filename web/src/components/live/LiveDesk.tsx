@@ -267,40 +267,37 @@ export function LiveDesk(props: LiveProps) {
   const sent = outbox.find((o) => (o.status ?? "").startsWith("sent")) ?? outbox[0];
   const decidedNow = Object.values(run.cases).filter((c) => c.status === "settled").length;
   const costCase = focusCase?.costUsd;
-  const btn = "rounded-sm border border-ink px-2 py-0.5 transition-colors duration-150 hover:bg-paper";
+  const btn = "btn btn-quiet !px-2 !py-1 !text-[11.5px]";
+  const seg = (on: boolean) => `px-2 py-1 text-[11.5px] transition-colors duration-120 ${on ? "bg-ink text-paper" : "hover:bg-faint"}`;
   const latest = chatEvents.at(-1);
   const caption = nowLine(latest, run.running);
 
   return (
-    <main className="grid h-screen grid-rows-[44px_26px_minmax(0,1fr)_246px] overflow-hidden bg-paper">
-      {/* ------------------------------ top strip ------------------------------ */}
-      <header className="contours flex items-center gap-3 overflow-hidden border-b border-ink bg-land px-4 text-[11.5px]">
-        <span className="shrink-0 text-[12px] font-semibold tracking-[0.16em]">PIXIE LIVE</span>
-        <span className="num hidden shrink-0 2xl:inline">
-          <b className="font-semibold">158</b> subs · <b className="font-semibold">{allRows.length}</b> open ·{" "}
-          <b className="font-semibold">{deskRows.length}</b> desk · <b className="font-semibold">{decidedNow}</b> decided
+    <main className="grid h-screen grid-rows-[46px_28px_minmax(0,1fr)_246px] overflow-hidden bg-paper">
+      {/* ------------------------------ masthead ------------------------------ */}
+      <header className="flex items-center gap-4 overflow-hidden border-b border-ink px-5 text-[11.5px]">
+        <span className="display shrink-0 text-[19px] leading-none">Pixie</span>
+        <span className="folio shrink-0">Live desk</span>
+        <span className="num hidden shrink-0 text-dim 2xl:inline">
+          158 submissions, {allRows.length} open, {deskRows.length} at the desk, {decidedNow} decided
         </span>
-        <span className="num shrink-0 rounded-sm border border-rule bg-paper/70 px-2 py-0.5" aria-live="off">
-          {((run.totals.steps || run.totals.total ? Math.min(run.elapsed, run.totals.runMs || run.elapsed) : 0) / 1000).toFixed(1)}s ·{" "}
-          {run.totals.steps} steps · ${run.totals.cost.toFixed(3)}
-          {costCase !== undefined && <span className="text-dim"> · case ${costCase.toFixed(3)}</span>}
+        <span className="num shrink-0 border-l border-rule pl-4" aria-live="off">
+          {((run.totals.steps || run.totals.total ? Math.min(run.elapsed, run.totals.runMs || run.elapsed) : 0) / 1000).toFixed(1)}s, {run.totals.steps} steps, $
+          {run.totals.cost.toFixed(3)}
+          {costCase !== undefined && <span className="text-dim"> (this case ${costCase.toFixed(3)})</span>}
         </span>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <div className="flex rounded-sm border border-ink" role="group" aria-label="Run mode">
-            <button onClick={startSweep} aria-pressed={mode === "sweep"} className={`px-2 py-0.5 ${mode === "sweep" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="flex border border-ink" role="group" aria-label="Run mode">
+            <button onClick={startSweep} aria-pressed={mode === "sweep"} className={seg(mode === "sweep")}>
               Sweep
             </button>
-            <button
-              onClick={() => startFocus(selected ?? "138")}
-              aria-pressed={mode === "focus"}
-              className={`px-2 py-0.5 ${mode === "focus" ? "bg-ink text-paper" : "hover:bg-paper"}`}
-            >
+            <button onClick={() => startFocus(selected ?? "138")} aria-pressed={mode === "focus"} className={seg(mode === "focus")}>
               Focus
             </button>
           </div>
-          <div className="flex rounded-sm border border-rule" role="group" aria-label="Speed">
+          <div className="flex border border-rule" role="group" aria-label="Speed">
             {([1, 2, 4] as Speed[]).map((s) => (
-              <button key={s} onClick={() => run.setSpeed(s)} aria-pressed={run.speed === s} className={`num px-1.5 py-0.5 ${run.speed === s ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+              <button key={s} onClick={() => run.setSpeed(s)} aria-pressed={run.speed === s} className={`num ${seg(run.speed === s)}`}>
                 {s}×
               </button>
             ))}
@@ -309,18 +306,15 @@ export function LiveDesk(props: LiveProps) {
             Run live
           </button>
           <RecordButton />
-          <button
-            onClick={runDemo}
-            className="rounded-sm border border-ink bg-ink px-3 py-1 font-semibold text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:scale-[0.98]"
-          >
+          <button onClick={runDemo} className="btn btn-primary !px-3 !py-1.5 !text-[11.5px]">
             Run the demo
           </button>
-          <div className="flex rounded-sm border border-ink" role="group" aria-label="Region">
-            <button onClick={() => setRegion("desk")} aria-pressed={region === "desk"} className={`px-2 py-0.5 ${region === "desk" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+          <div className="flex border border-ink" role="group" aria-label="Region">
+            <button onClick={() => setRegion("desk")} aria-pressed={region === "desk"} className={seg(region === "desk")}>
               <span className="hidden 2xl:inline">Commercial desk</span>
               <span className="2xl:hidden">Desk</span>
             </button>
-            <button onClick={loadQuote} aria-pressed={region === "toronto"} className={`px-2 py-0.5 ${region === "toronto" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+            <button onClick={loadQuote} aria-pressed={region === "toronto"} className={seg(region === "toronto")}>
               <span className="hidden 2xl:inline">Toronto renter</span>
               <span className="2xl:hidden">Renter</span>
             </button>
@@ -328,50 +322,52 @@ export function LiveDesk(props: LiveProps) {
         </div>
       </header>
 
-      <div className="flex items-center gap-2 border-b border-rule bg-paper px-4 text-[12px]">
-        <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${run.running ? "animate-pulse bg-ochre motion-reduce:animate-none" : "bg-rule"}`} />
-        <p className="min-w-0 flex-1 truncate" aria-live="polite">
+      <div className="flex items-center gap-3 border-b border-rule bg-paper px-5 text-[12.5px]">
+        <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${run.running ? "bg-ink" : "bg-rule"}`} />
+        <p className={`min-w-0 flex-1 truncate ${run.running ? "italic" : ""}`} aria-live="polite">
           {caption}
         </p>
-        <nav className="relative z-30 flex shrink-0 gap-1" aria-label="Demo beats">
-        {BEATS.map((b, i) => (
-          <button
-            key={b}
-            onClick={() => goBeat(i)}
-            aria-pressed={beat === i}
-            aria-label={`Beat ${i + 1}: ${b}`}
-            className={`rounded-sm border px-1.5 text-[10px] transition-colors duration-150 ${beat === i ? "border-ink bg-ink text-paper" : "border-rule bg-paper/80 text-dim hover:border-ink hover:text-ink"}`}
-          >
-            {i + 1} {b}
-          </button>
-        ))}
-              </nav>
+        <nav className="relative z-30 flex shrink-0 gap-4" aria-label="Demo beats">
+          {BEATS.map((b, i) => (
+            <button
+              key={b}
+              onClick={() => goBeat(i)}
+              aria-pressed={beat === i}
+              aria-label={`Beat ${i + 1}: ${b}`}
+              className={`num text-[11px] underline-offset-[5px] decoration-1 transition-colors duration-150 ${beat === i ? "underline" : "text-dim hover:text-ink"}`}
+            >
+              {i + 1} {b}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* ------------------------------- middle -------------------------------- */}
-      <div className="grid min-h-0 grid-cols-[214px_minmax(0,1fr)_318px_222px]">
-        <aside className="min-h-0 overflow-y-auto border-r border-rule px-2 py-2" aria-label="Open queue">
+      <div className="grid min-h-0 grid-cols-[218px_minmax(0,1fr)_318px_222px]">
+        <aside className="min-h-0 overflow-y-auto border-r border-rule" aria-label="Open queue">
           <QueueRail rows={rows} cases={run.cases} selected={selected} flash={flash} onPick={(id) => startFocus(id)} />
         </aside>
 
         <section className="flex min-h-0 flex-col overflow-hidden border-r border-rule" aria-label={mode === "focus" ? "The case walking the desk" : "Map"}>
           <div className="relative min-h-0 flex-1">
-            <div className={mode === "focus" && region === "desk" ? "absolute inset-0 opacity-45" : "absolute inset-0"}>
+            <div className={mode === "focus" && region === "desk" ? "absolute inset-0 opacity-50" : "absolute inset-0"}>
               <DeskMap pins={region === "toronto" ? [] : pins} hexes={hexes} focus={focusPoint} pulses={pulses} onPick={(id) => startFocus(id)} reduced={reduced} />
             </div>
             {mode === "focus" && region === "desk" && focusCase && (
-              <div className="pointer-events-none absolute left-5 top-4 max-w-[420px]">
-                <p className="kicker">Case #{selected} · {focusCase.row.line} · {focusCase.row.state}</p>
-                <h2 className="font-serif text-[26px] font-semibold leading-tight">{focusCase.row.insured}</h2>
-                <p className="text-[12px] text-dim">{money(focusCase.row.valueAtStake)} at stake. Watch what the desk had to find out.</p>
+              <div className="pointer-events-none absolute left-5 top-4 max-w-[440px]">
+                <p className="folio">
+                  Case {selected}, {focusCase.row.line}, {focusCase.row.state}
+                </p>
+                <h2 className="display display-md mt-1">{focusCase.row.insured}</h2>
+                <p className="mt-1 text-[12.5px] text-dim">{money(focusCase.row.valueAtStake)} at stake. Watch what the desk had to find out.</p>
               </div>
             )}
             {region === "toronto" && quote && (
-              <div className="absolute left-5 top-4 max-w-[420px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12px]">
-                <p className="kicker">Same engine, Toronto pack</p>
-                <p>
+              <div className="absolute left-5 top-4 max-w-[420px] border-l border-ink bg-paper/95 py-1 pl-3 pr-3 text-[12.5px] leading-[1.45]">
+                <p className="folio">Same engine, Toronto pack</p>
+                <p className="mt-1">
                   {quote.address}: break-ins, fire protection and basement flooding priced per hex, then capped. Quote{" "}
-                  <b className="num">${quote.annual.toFixed(2)}</b> a year.
+                  <b className="num font-medium">${quote.annual.toFixed(2)}</b> a year.
                 </p>
               </div>
             )}
@@ -382,23 +378,23 @@ export function LiveDesk(props: LiveProps) {
               caseTitle={`Case ${selected}`}
               takeover={
                 showEmail ? (
-                  <article className="lane-card flex h-full gap-3 overflow-hidden rounded-sm border border-ink bg-paper px-3 py-2 text-[11.5px] leading-snug">
+                  <article className="lane-card flex h-full gap-4 overflow-hidden border-l border-ink py-1 pl-3 text-[12px] leading-[1.4]">
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                      <p className="kicker mb-0.5">Broker email · to {sent?.to ?? email.to}</p>
-                      <b className="block truncate font-semibold" title={sent?.subject ?? email.subject}>
+                      <p className="folio mb-0.5">Broker email, to {sent?.to ?? email.to}</p>
+                      <b className="block truncate font-medium" title={sent?.subject ?? email.subject}>
                         {sent?.subject ?? email.subject}
                       </b>
                       <p className="mt-0.5 line-clamp-3 text-dim" title={sent?.body ?? email.body.join("\n\n")}>
                         {(sent?.body ?? email.body.join("\n\n")).replace(/^Hi[^\n]*\n+/, "")}
                       </p>
                     </div>
-                    <div className="flex w-[132px] shrink-0 flex-col items-start gap-1 border-l border-rule pl-3">
-                      <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className={`${btn} bg-ink text-paper hover:bg-ink/85 disabled:opacity-50`}>
+                    <div className="flex w-[136px] shrink-0 flex-col items-start gap-1.5 border-l border-rule pl-3">
+                      <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className="btn btn-primary !px-2 !py-1 !text-[11.5px]">
                         {sent ? "Send again" : "Send it"}
                       </button>
-                      <span className="num text-[10px] text-moss">{emailStatus || (sent ? `gmail: ${sent.status}` : "")}</span>
-                      {sent && <span className="text-[9.5px] text-dim">Outbox {sent.key ?? ""} · Composio Gmail</span>}
-                      <button onClick={() => setShowEmail(false)} className="num mt-auto text-[10px] text-dim underline-offset-2 hover:underline">
+                      <span className="num text-[10.5px]">{emailStatus || (sent ? `gmail: ${sent.status}` : "")}</span>
+                      {sent && <span className="text-[10px] text-dim">Outbox {sent.key ?? ""}, Composio Gmail</span>}
+                      <button onClick={() => setShowEmail(false)} className="link mt-auto text-[10.5px] text-dim">
                         Back to the desk
                       </button>
                     </div>
@@ -413,7 +409,7 @@ export function LiveDesk(props: LiveProps) {
           <CasePanel c={selected ? (details[selected] ?? null) : null} state={focusCase} typed={!reduced} onStart={runDemo} />
         </section>
 
-        <aside className="min-h-0 overflow-hidden px-2.5 py-2" aria-label="Phone mirror">
+        <aside className="min-h-0 overflow-hidden px-3 py-2.5" aria-label="Phone mirror">
           <Phone tab={phoneTab} setTab={setPhoneTab} digest={digest} onSend={sendDigest} sending={sendingDigest} reply={reply} quote={quote} />
         </aside>
       </div>
@@ -426,8 +422,8 @@ export function LiveDesk(props: LiveProps) {
           ) : (
             <>
               {focusCase?.status === "settled" && focusCase.events.length > 0 && !hasSpecialist && (
-                <p className="shrink-0 px-4 pt-1 text-[12.5px]">
-                  <b className="font-semibold">No specialist time spent: decided at triage.</b> <span className="text-dim">{triageReason}</span>
+                <p className="shrink-0 px-5 pt-1.5 text-[12.5px]">
+                  <b className="font-medium">No specialist time spent: decided at triage.</b> <span className="text-dim">{triageReason}</span>
                 </p>
               )}
               <Swimlanes
@@ -437,14 +433,14 @@ export function LiveDesk(props: LiveProps) {
                 laneH={28}
                 controls={false}
                 follow
-                pad="px-4 pb-0 pt-1"
-                heading={`Agent lanes · case ${selected ?? ""}`}
+                pad="px-5 pb-0 pt-1.5"
+                heading={`Agent lanes, case ${selected ?? ""}`}
               />
             </>
           )}
         </div>
         <div className="flex min-h-0 flex-col overflow-hidden border-l border-rule px-3 py-2">
-          <p className="kicker mb-1">Agent chatter</p>
+          <p className="folio mb-1.5">Agent chatter</p>
           <div className="min-h-0 flex-1 overflow-hidden">
             <Chatter events={chatEvents} onPick={setHighlight} active={highlight} onStart={runDemo} />
           </div>
@@ -452,56 +448,53 @@ export function LiveDesk(props: LiveProps) {
       </div>
 
       {overlay && (
-        <div className="absolute inset-x-0 bottom-0 top-[70px] z-20 grid place-items-center bg-ink/35 p-10" onClick={() => setOverlay(null)}>
-          <div className="w-[720px] rounded-sm border border-ink bg-paper p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute inset-x-0 bottom-0 top-[74px] z-20 grid place-items-center bg-ink/30 p-10" onClick={() => setOverlay(null)}>
+          <div className="w-[760px] border border-ink bg-paper px-10 py-9" onClick={(e) => e.stopPropagation()}>
             {overlay === "backtest" && backtest && (
               <>
-                <h2 className="font-serif text-[26px] font-semibold">The guideline versus the book</h2>
-                <ul className="mt-3 space-y-1.5 text-[13px]">
+                <p className="folio">Backtest</p>
+                <h2 className="display display-lg mt-2">The guideline against the book</h2>
+                <ul className="measure mt-6 space-y-3 text-[15px] leading-[1.55]">
                   <li>
-                    <b className="num">{backtest.over}</b> of <b className="num">{backtest.of}</b> bound property policies sit above the $175,000 premium
-                    ceiling, so the humans wrote outside the 2025 guideline routinely.
+                    <b className="num font-medium">{backtest.over}</b> of <b className="num font-medium">{backtest.of}</b> bound property policies sit above the $175,000 premium ceiling, so the
+                    humans wrote outside the 2025 guideline routinely.
                   </li>
                   <li>
-                    <b className="num">{backtest.declines}</b> human declines carry an underwriting reason
+                    <b className="num font-medium">{backtest.declines}</b> human declines carry an underwriting reason
                     {backtest.excluded > 0 && (
                       <>
-                        ; <b className="num">{backtest.excluded}</b> broker withdrawals are excluded
+                        ; <b className="num font-medium">{backtest.excluded}</b> broker withdrawals are excluded
                       </>
                     )}
                     .
                   </li>
                   <li>
-                    Enrichment changed <b className="num">{backtest.changed}</b> tiers across <b className="num">{backtest.n3}</b> cases.
+                    Enrichment changed <b className="num font-medium">{backtest.changed}</b> tiers across <b className="num font-medium">{backtest.n3}</b> cases.
                   </li>
                   <li>
-                    Bound property loss ratio <b className="num">{backtest.lossRatio.toFixed(2)}</b> over {backtest.of} policies.
+                    Bound property loss ratio <b className="num font-medium">{backtest.lossRatio.toFixed(2)}</b> over {backtest.of} policies.
                   </li>
                 </ul>
-                <p className="mt-3 font-mono text-[11px] text-dim">Pre-registered at {backtest.prereg.slice(0, 12)} before the first run.</p>
+                <p className="num mt-5 text-[12px] text-dim">Pre-registered at {backtest.prereg.slice(0, 12)} before the first run.</p>
               </>
             )}
             {overlay === "close" && (
               <>
-                <h2 className="font-serif text-[28px] font-semibold">Every number is code. Every decision is traceable.</h2>
-                <p className="mt-3 text-[14px] leading-relaxed">
-                  The desk spent <b className="num">{run.totals.steps}</b> model steps and <b className="num">${run.totals.cost.toFixed(2)}</b> on{" "}
-                  {run.totals.total} submissions, and only where information could flip a decision. The same engine priced a Toronto renter from the
-                  same rules and the same caps, and it runs on your schema.
+                <h2 className="display display-lg">Every number is code. Every decision is traceable.</h2>
+                <p className="measure mt-5 text-[16px] leading-[1.6]">
+                  The desk spent <b className="num font-medium">{run.totals.steps}</b> model steps and <b className="num font-medium">${run.totals.cost.toFixed(2)}</b> on {run.totals.total}{" "}
+                  submissions, and only where information could flip a decision. The same engine priced a Toronto renter from the same rules and the same
+                  caps, and it runs on your schema.
                 </p>
               </>
             )}
-            <button className="mt-4 rounded-sm border border-ink px-3 py-1 text-[12px]" onClick={() => setOverlay(null)}>
+            <button className="btn mt-7" onClick={() => setOverlay(null)}>
               Back to the desk (Esc)
             </button>
           </div>
         </div>
       )}
-      {!apiUp && (
-        <p className="absolute bottom-2 left-3 rounded-sm border border-rule bg-paper px-2 py-0.5 font-mono text-[10.5px] text-dim">
-          offline: replaying recorded runs from disk
-        </p>
-      )}
+      {!apiUp && <p className="absolute bottom-2 left-3 border border-rule bg-paper px-2 py-0.5 text-[11px] text-dim">Offline: replaying recorded runs from disk.</p>}
       <p className="sr-only">Value at stake {money(deskRows.reduce((n, r) => n + r.valueAtStake, 0))}</p>
     </main>
   );

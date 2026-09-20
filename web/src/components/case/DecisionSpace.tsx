@@ -15,16 +15,16 @@ import type { Surface, SurfaceAxis, Tier } from "@/lib/explain";
 const SPAN = 100; // the floor is 100 x 100 world units, centred on the origin
 const HALF = SPAN / 2;
 const ZS = 0.62; // score points -> world units, so a 100-point column is shorter than the floor is wide
-const INK = [47, 42, 34] as const;
-const DIM = [111, 100, 83] as const;
-const RULE = [212, 202, 180] as const;
+const INK = [26, 26, 25] as const;
+const DIM = [99, 98, 92] as const;
+const RULE = [196, 195, 189] as const;
 
 const TIER_RGB: Record<Tier, [number, number, number]> = {
-  accept: [94, 111, 74], // moss
-  open: [143, 99, 39], // ochre
-  refer: [143, 99, 39],
-  decline: [162, 73, 47], // rust
-  routed: [111, 100, 83], // dim
+  accept: [26, 26, 25], // ink: the desk can write it
+  open: [150, 149, 143], // grey: still open
+  refer: [150, 149, 143],
+  decline: [166, 43, 31], // red: a line crossed
+  routed: [196, 195, 189], // rule
 };
 const TIER_WORD: Record<Tier, string> = {
   accept: "accept",
@@ -94,7 +94,7 @@ export default function DecisionSpace({ s, pin }: { s: Surface; pin: Pin }) {
         object?.tier
           ? {
               text: `${ax.ticks[object.i]} · ${ay.ticks[object.j]}\nscore ${object.lo === object.hi ? object.lo : `${object.lo} to ${object.hi}`}\n${TIER_WORD[object.tier as Tier]}`,
-              style: { background: "#2f2a22", color: "#f3efe4", fontSize: "11px", padding: "6px 8px", borderRadius: "4px", whiteSpace: "pre-line", lineHeight: "1.4" },
+              style: { background: "#1a1a19", color: "#f4f3ef", fontSize: "12px", padding: "6px 9px", borderRadius: "0", whiteSpace: "pre-line", lineHeight: "1.4" },
             }
           : null,
       onViewStateChange: ({ viewState }) => setView(viewState as typeof HOME),

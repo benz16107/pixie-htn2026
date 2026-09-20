@@ -12,19 +12,19 @@ function Attempt({ a, i, last }: { a: AskResult["attempts"][number]; i: number; 
     <li className="relative border-l border-rule pb-4 pl-6 last:pb-0">
       <span
         aria-hidden
-        className={`absolute -left-[7px] top-0.5 grid size-[13px] place-items-center rounded-full border text-[8px] ${ok ? "border-moss bg-moss text-paper" : "border-rust bg-paper text-rust"}`}
+        className={`absolute -left-[7px] top-0.5 grid size-[13px] place-items-center rounded-full border text-[8px] ${ok ? "border-ink bg-ink text-paper" : "border-red bg-paper text-red"}`}
       >
         {ok ? "✓" : "×"}
       </span>
-      <p className="kicker">
-        Attempt {i + 1} · {ok ? <span className="text-moss">ran, {a.rows} rows</span> : <span className="text-rust">{a.error ? "API rejected it" : "lint stopped it"}</span>}
+      <p className="folio">
+        Attempt {i + 1}, {ok ? <span>ran, {a.rows} rows</span> : <span className="text-red">{a.error ? "API rejected it" : "lint stopped it"}</span>}
       </p>
-      <pre className="mt-1 overflow-x-auto rounded-sm border border-rule bg-land p-2.5 font-mono text-[11px] leading-snug">{JSON.stringify(a.payload, null, 2)}</pre>
+      <pre className="mt-1 overflow-x-auto border-l border-rule pl-3 font-mono text-[11px] leading-snug">{JSON.stringify(a.payload, null, 2)}</pre>
       {a.lint.map((l) => (
-        <p key={l} className="mt-1 text-[12px]"><span className="mr-1.5 font-mono text-[10.5px] text-ochre">LINT</span>{l}</p>
+        <p key={l} className="mt-1 text-[12px]"><span className="sc mr-1.5">lint</span>{l}</p>
       ))}
       {a.error && (
-        <p className="mt-1 font-mono text-[11.5px] text-rust"><span className="mr-1.5 text-[10.5px]">ERROR</span>{a.error}</p>
+        <p className="mt-1 text-[12px] text-red"><span className="sc mr-1.5">error</span>{a.error}</p>
       )}
       {!ok && !last && <p className="mt-1 text-[12px] text-dim">Fed back to Intake, which rewrote the query below.</p>}
     </li>
@@ -54,7 +54,7 @@ export function AskBox({ canned }: { canned: string[] }) {
     <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-12">
       <div>
         <form onSubmit={(e) => { e.preventDefault(); if (q.trim()) ask(q); }}>
-          <label htmlFor="q" className="kicker">Question, in plain English</label>
+          <label htmlFor="q" className="folio">Question, in plain English</label>
           <div className="mt-1.5 flex gap-2">
             <input
               id="q"
@@ -64,22 +64,22 @@ export function AskBox({ canned }: { canned: string[] }) {
               autoComplete="off"
               aria-describedby={miss ? "q-miss" : undefined}
               aria-invalid={miss ? true : undefined}
-              className="min-w-0 flex-1 rounded-sm border border-ink bg-paper px-3 py-2 text-[14px] placeholder:text-dim"
+              className="min-w-0 flex-1 border-b border-ink bg-transparent px-0 py-2 text-[16px] placeholder:text-dim"
             />
-            <button disabled={busy} className="rounded-sm border border-ink bg-ink px-4 text-[13px] font-medium text-paper transition-colors duration-150 hover:bg-ink/85 disabled:opacity-60">
+            <button disabled={busy} className="btn btn-primary">
               {busy ? "Asking…" : "Ask"}
             </button>
           </div>
-          {miss && <p id="q-miss" className="mt-1.5 text-[12px] text-rust">{miss}</p>}
+          {miss && <p id="q-miss" className="mt-1.5 text-[12px] text-red">{miss}</p>}
         </form>
-        <p className="kicker mt-4">Cached questions</p>
-        <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        <p className="folio mt-6">Cached questions</p>
+        <ul className="mt-2">
           {canned.map((c) => (
-            <li key={c}>
+            <li key={c} className="rule-faint">
               <button
                 onClick={() => ask(c)}
                 aria-pressed={res?.question === c}
-                className={`rounded-sm border px-2.5 py-1 text-left text-[12px] transition-colors duration-150 ${res?.question === c ? "border-ink bg-land" : "border-rule hover:border-ink"}`}
+                className={`block w-full py-1.5 text-left text-[13px] transition-colors duration-150 ${res?.question === c ? "underline underline-offset-4" : "text-dim hover:text-ink"}`}
               >
                 {c}
               </button>
@@ -88,7 +88,7 @@ export function AskBox({ canned }: { canned: string[] }) {
         </ul>
         {res && (
           <>
-            <p className="kicker mt-6">What Intake tried</p>
+            <p className="folio mt-8">What Intake tried</p>
             <p className="mt-1 max-w-[60ch] text-[12.5px] text-dim">{res.rationale}</p>
             <ol className="mt-3 ml-1.5">
               {res.attempts.map((a, i) => <Attempt key={i} a={a} i={i} last={i === res.attempts.length - 1} />)}
@@ -102,25 +102,25 @@ export function AskBox({ canned }: { canned: string[] }) {
         {!res && !busy && (
           <p className="pt-7 text-dim">Ask a question or pick a cached one. Intake writes the Federato query, lint checks it, and the rows appear here.</p>
         )}
-        {busy && <div className="mt-7 h-40 animate-pulse rounded-sm bg-land motion-reduce:animate-none" />}
+        {busy && <div className="mt-7 h-40 bg-faint" />}
         {res && !busy && (
           <>
-            <h2 id="ans-h" className="kicker">Answer</h2>
-            <p className="mt-1 font-serif text-[20px] leading-snug">{res.answer}</p>
-            <p className={`mt-1.5 text-[12px] ${verified ? "text-moss" : "text-rust"}`}>
+            <h2 id="ans-h" className="folio">Answer</h2>
+            <p className="display display-md mt-2 max-w-[40ch]">{res.answer}</p>
+            <p className={`mt-3 text-[12.5px] ${verified ? "text-dim" : "text-red"}`}>
               {verified ? "✓ Verified against rows" : "× Not verified"}: the answer says{" "}
               <span className="num">{Number.isNaN(claimed) ? "no number" : claimed}</span>, the query returned{" "}
               <span className="num">{res.rows.length}</span> rows.
             </p>
             <div className="mt-4 max-h-[520px] overflow-auto">
-              <table className="w-full border-collapse text-[12px]">
+              <table className="book text-[12.5px]">
                 <thead className="sticky top-0 bg-paper">
-                  <tr className="border-b border-ink">
+                  <tr>
                     {res.columns.map((c) => (
                       // Federato column names are dot-paths. Wrapping them keeps the table inside
                       // a 1280 screen; the full path stays on hover.
                       <th key={c} scope="col" title={c}
-                          className="kicker max-w-[120px] break-words py-1.5 pr-4 text-left align-bottom font-normal normal-case leading-tight">
+                          className="max-w-[120px] break-words !normal-case !tracking-normal leading-tight">
                         {c.replaceAll("_", " ").replaceAll(".", ". ")}
                       </th>
                     ))}
@@ -128,9 +128,9 @@ export function AskBox({ canned }: { canned: string[] }) {
                 </thead>
                 <tbody>
                   {res.rows.map((r, i) => (
-                    <tr key={i} className="border-b border-rule">
+                    <tr key={i}>
                       {res.columns.map((c) => (
-                        <td key={c} className={`py-1.5 pr-4 ${typeof r[c] === "number" ? "num" : ""}`}>{cell(r[c])}</td>
+                        <td key={c} className={typeof r[c] === "number" ? "num" : ""}>{cell(r[c])}</td>
                       ))}
                     </tr>
                   ))}

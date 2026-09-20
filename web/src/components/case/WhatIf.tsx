@@ -12,7 +12,7 @@ const VERDICT: Record<string, string> = {
   routed: "Routed. No guideline scores this line.",
 };
 
-/** Drag a fact, watch the decision flip. Every number here comes back from POST /cases/{id}/whatif. */
+/** Drag a fact along a printed number line and watch the decision flip. Every number comes back from POST /cases/{id}/whatif. */
 export function WhatIf({
   caseId,
   fact,
@@ -64,24 +64,22 @@ export function WhatIf({
   }, [fact, value, score?.lo, score?.hi, kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <section data-brief="flip" aria-labelledby="whatif-h" className="border-t border-rule pt-3">
-      <div className="flex items-end gap-5">
-        <div className="w-[196px] shrink-0">
-          <h2 id="whatif-h" className="kicker">
+    <section data-brief="flip" aria-labelledby="whatif-h" className="rule mt-8 pt-5">
+      <div className="grid grid-cols-12 items-end gap-x-8">
+        <div className="col-span-3">
+          <h3 id="whatif-h" className="folio">
             What if the {label.toLowerCase()} were
-          </h2>
-          <p className="num text-[22px] font-medium leading-tight">{usd(value)}</p>
-          <p className="text-[11.5px] text-dim">
-            Drag it. {flips.length ? flips[0].text : "The desk re-scores the whole case on every step."}
-          </p>
+          </h3>
+          <p className="display-num mt-1 text-[30px] leading-none">{usd(value)}</p>
+          <p className="mt-2 text-[12.5px] leading-[1.45] text-dim">Drag it. {flips.length ? flips[0].text : "The desk re-scores the whole case on every step."}</p>
         </div>
 
-        <div className="relative h-[42px] flex-1">
-          <div className="absolute inset-x-0 top-4 h-1.5 rounded-sm border border-rule bg-land" />
+        <div className="relative col-span-6 h-[48px] self-center">
+          <div className="absolute inset-x-0 top-[26px] h-px bg-rule" />
           {flips.map((f) => (
-            <div key={f.at} className="absolute top-1.5 h-[26px] border-l-[1.5px] border-dashed border-rust" style={{ left: `${(f.at / MAX) * 100}%` }}>
-              <span className="num absolute left-1 top-0 whitespace-nowrap text-[10px] text-rust">
-                {f.display}, {f.from} becomes {f.to}
+            <div key={f.at} className="absolute top-[14px] h-[24px] w-px bg-red" style={{ left: `${(f.at / MAX) * 100}%` }}>
+              <span className="num absolute left-1.5 top-[-15px] whitespace-nowrap text-[10.5px] text-red">
+                {f.display}: {f.from} becomes {f.to}
               </span>
             </div>
           ))}
@@ -93,28 +91,32 @@ export function WhatIf({
             value={value}
             onChange={(e) => setValue(+e.target.value)}
             aria-label={`${label} what-if`}
-            className="absolute inset-x-0 top-2 h-6 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:h-[22px] [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-[3px] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-paper [&::-webkit-slider-thumb]:bg-ink"
+            className="absolute inset-x-0 top-[14px] h-6 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:h-[22px] [&::-webkit-slider-thumb]:w-[3px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-ink [&::-moz-range-thumb]:h-[22px] [&::-moz-range-thumb]:w-[3px] [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-ink"
           />
+          <p className="absolute inset-x-0 top-[34px] flex justify-between text-[10.5px] text-dim">
+            <span>$0</span>
+            <span>$200,000</span>
+          </p>
         </div>
 
-        <div className="w-[236px] shrink-0 text-right">
-          <p className="kicker">{res ? "If that were true" : "As it stands"}</p>
-          <p className="num text-[25px] font-medium leading-none">
-            {score ? (score.lo === score.hi ? score.lo : `${score.lo}-${score.hi}`) : "—"}
+        <div className="col-span-3 text-right">
+          <p className="folio">{res ? "If that were true" : "As it stands"}</p>
+          <p className={`display-num mt-1 text-[30px] leading-none ${kind === "decline" ? "text-red" : ""}`}>
+            {score ? (score.lo === score.hi ? score.lo : `${score.lo}–${score.hi}`) : "none"}
           </p>
-          <p className="text-[11.5px] text-dim" aria-live="polite">
+          <p className="mt-2 text-[12.5px] leading-[1.45] text-dim" aria-live="polite">
             {VERDICT[kind] ?? kind}
           </p>
         </div>
       </div>
       {res?.decisiveOverride && (
-        <p className="mt-1.5 text-[11.5px]">
-          <span className="mr-1.5 font-mono text-[10px] text-ochre">DECISIVE</span>
+        <p className="mt-3 text-[13px]">
+          <span className="sc mr-2">decisive</span>
           {res.decisiveOverride} alone changes the decision, so it is worth asking for.
         </p>
       )}
       {value !== start && (
-        <button onClick={() => setValue(start)} className="mt-1.5 rounded-sm border border-rule px-2 py-0.5 text-[11px] transition-colors duration-150 hover:border-ink">
+        <button onClick={() => setValue(start)} className="btn btn-quiet mt-3">
           Back to what we know
         </button>
       )}

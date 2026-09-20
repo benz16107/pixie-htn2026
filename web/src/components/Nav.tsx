@@ -9,39 +9,47 @@ const LINKS = [
   { href: "/backtest", label: "Backtest" },
 ];
 
+/** The running head of every page: wordmark, section, and the edition the report is printed from. */
 export function Nav() {
   const path = usePathname();
   if (path.startsWith("/live")) return null; // the live desk is its own full-screen surface
   return (
-    <header className="contours flex h-12 items-center gap-10 border-b border-rule bg-land px-8">
-      <Link href="/queue" className="text-[12px] font-semibold tracking-[0.16em]">
-        PIXIE<span className="ml-2.5 font-normal tracking-[0.04em] text-dim">underwriting desk</span>
+    <header className="mx-auto flex max-w-[1320px] items-baseline gap-10 border-b border-ink px-8 pb-3 pt-5">
+      <Link href="/queue" className="display text-[22px] leading-none tracking-[0.02em]">
+        Pixie
       </Link>
-      <nav aria-label="Main">
-        <ul className="flex gap-1">
-          {LINKS.map((l) => {
-            const on = path.startsWith(l.href) || (l.href === "/queue" && path.startsWith("/cases"));
-            return (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  aria-current={on ? "page" : undefined}
-                  className={`block rounded-sm px-3 py-1 text-[13px] transition-colors duration-150 hover:bg-paper ${
-                    on ? "bg-paper font-semibold underline decoration-rust decoration-2 underline-offset-[6px]" : "text-dim"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav aria-label="Main" className="flex gap-7 text-[13px]">
+        {LINKS.map((l) => {
+          const on = path.startsWith(l.href) || (l.href === "/queue" && path.startsWith("/cases"));
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={on ? "page" : undefined}
+              className={`underline-offset-[7px] decoration-1 transition-colors duration-150 ${on ? "underline" : "text-dim hover:text-ink"}`}
+            >
+              {l.label}
+            </Link>
+          );
+        })}
       </nav>
-      <span className="ml-auto font-mono text-[11px] text-dim">Federato snapshot · 158 submissions</span>
-      <span className="flex gap-3 text-[11.5px] text-dim">
-        <Link href="/privacy" className="hover:text-ink hover:underline">Privacy</Link>
-        <Link href="/terms" className="hover:text-ink hover:underline">Terms</Link>
-      </span>
+      <span className="folio ml-auto">Underwriting desk</span>
+      <span className="folio">Federato snapshot, 158 submissions</span>
     </header>
+  );
+}
+
+/** The foot of every page: what this is, and the two documents a form collects a name under. */
+export function Colophon() {
+  const path = usePathname();
+  if (path.startsWith("/live")) return null;
+  return (
+    <footer className="mx-auto mt-16 flex max-w-[1320px] items-baseline gap-6 border-t border-rule px-8 pb-10 pt-4 text-[12px] text-dim">
+      <span>Pixie, an underwriting desk built at Hack the North 2026. The data is Federato&apos;s synthetic snapshot, not real customers.</span>
+      <span className="ml-auto flex gap-5">
+        <Link href="/privacy" className="link">Privacy</Link>
+        <Link href="/terms" className="link">Terms</Link>
+      </span>
+    </footer>
   );
 }
