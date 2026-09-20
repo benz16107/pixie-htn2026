@@ -12,7 +12,7 @@ function Attempt({ a, i, last }: { a: AskResult["attempts"][number]; i: number; 
     <li className="relative border-l border-rule pb-4 pl-6 last:pb-0">
       <span
         aria-hidden
-        className={`absolute -left-[7px] top-0.5 grid size-[13px] place-items-center rounded-full border text-[8px] ${ok ? "border-moss bg-moss text-paper" : "border-rust bg-paper text-rust"}`}
+        className={`absolute -left-[7px] top-0.5 grid size-[13px] place-items-center rounded-full border text-[9px] ${ok ? "border-moss bg-moss text-paper" : "border-rust bg-paper text-rust"}`}
       >
         {ok ? "✓" : "×"}
       </span>
@@ -21,10 +21,10 @@ function Attempt({ a, i, last }: { a: AskResult["attempts"][number]; i: number; 
       </p>
       <pre className="mt-1 overflow-x-auto rounded-sm border border-rule bg-land p-2.5 font-mono text-[11px] leading-snug">{JSON.stringify(a.payload, null, 2)}</pre>
       {a.lint.map((l) => (
-        <p key={l} className="mt-1 text-[12px]"><span className="mr-1.5 font-mono text-[10.5px] text-ochre">LINT</span>{l}</p>
+        <p key={l} className="mt-1 text-[12px]"><span className="mr-1.5 font-mono text-[10px] text-ochre">LINT</span>{l}</p>
       ))}
       {a.error && (
-        <p className="mt-1 font-mono text-[11.5px] text-rust"><span className="mr-1.5 text-[10.5px]">ERROR</span>{a.error}</p>
+        <p className="mt-1 font-mono text-[11px] text-rust"><span className="mr-1.5 text-[10px]">ERROR</span>{a.error}</p>
       )}
       {!ok && !last && <p className="mt-1 text-[12px] text-dim">Fed back to Intake, which rewrote the query below.</p>}
     </li>
@@ -64,9 +64,9 @@ export function AskBox({ canned }: { canned: string[] }) {
               autoComplete="off"
               aria-describedby={miss ? "q-miss" : undefined}
               aria-invalid={miss ? true : undefined}
-              className="min-w-0 flex-1 rounded-sm border border-ink bg-paper px-3 py-2 text-[14px] placeholder:text-dim"
+              className="min-w-0 flex-1 rounded-sm border border-edge bg-paper px-3 py-2 text-[13px] placeholder:text-dim"
             />
-            <button disabled={busy} className="rounded-sm border border-ink bg-ink px-4 text-[13px] font-medium text-paper transition-colors duration-150 hover:bg-ink/85 disabled:opacity-60">
+            <button disabled={busy} className="rounded-sm border border-ochre bg-ochre px-4 text-[13px] font-medium text-paper transition-colors duration-150 hover:bg-ochre/85 disabled:opacity-60">
               {busy ? "Asking…" : "Ask"}
             </button>
           </div>
@@ -79,7 +79,7 @@ export function AskBox({ canned }: { canned: string[] }) {
               <button
                 onClick={() => ask(c)}
                 aria-pressed={res?.question === c}
-                className={`rounded-sm border px-2.5 py-1 text-left text-[12px] transition-colors duration-150 ${res?.question === c ? "border-ink bg-land" : "border-rule hover:border-ink"}`}
+                className={`rounded-sm border px-2.5 py-1 text-left text-[12px] transition-colors duration-150 ${res?.question === c ? "border-edge bg-land" : "border-rule hover:border-edge"}`}
               >
                 {c}
               </button>
@@ -89,7 +89,7 @@ export function AskBox({ canned }: { canned: string[] }) {
         {res && (
           <>
             <p className="kicker mt-6">What Intake tried</p>
-            <p className="mt-1 max-w-[60ch] text-[12.5px] text-dim">{res.rationale}</p>
+            <p className="mt-1 max-w-[60ch] text-[12px] text-dim">{res.rationale}</p>
             <ol className="mt-3 ml-1.5">
               {res.attempts.map((a, i) => <Attempt key={i} a={a} i={i} last={i === res.attempts.length - 1} />)}
             </ol>
@@ -115,7 +115,7 @@ export function AskBox({ canned }: { canned: string[] }) {
             <div className="mt-4 max-h-[520px] overflow-auto">
               <table className="w-full border-collapse text-[12px]">
                 <thead className="sticky top-0 bg-paper">
-                  <tr className="border-b border-ink">
+                  <tr className="border-b border-edge">
                     {res.columns.map((c) => (
                       // Federato column names are dot-paths. Wrapping them keeps the table inside
                       // a 1280 screen; the full path stays on hover.

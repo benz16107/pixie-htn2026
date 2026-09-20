@@ -36,7 +36,7 @@ function RailRows({
             onClick={() => onPick(r.caseId)}
             aria-current={on ? "true" : undefined}
             className={`absolute inset-x-0 flex items-center gap-2 rounded-sm border px-2 text-left transition-[transform,background-color,border-color] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
-              flash === r.caseId ? "animate-pulse border-moss bg-moss/20 motion-reduce:animate-none" : on ? "border-ink bg-land" : "border-transparent hover:border-rule hover:bg-land/60"
+              flash === r.caseId ? "animate-pulse border-moss bg-moss/20 motion-reduce:animate-none" : on ? "border-edge bg-land" : "border-transparent hover:border-rule hover:bg-land/60"
             }`}
             style={{ transform: `translateY(${(top + i) * C_ROW_H}px)`, height: C_ROW_H - 3 }}
           >
@@ -133,7 +133,7 @@ export function SweepBoard({ cases, onPick }: { cases: Record<string, CaseState>
             <li key={c.row.caseId}>
               <button onClick={() => onPick(c.row.caseId)} className="flex w-full items-center gap-2 rounded-sm px-1 py-0.5 text-left hover:bg-land">
                 <span className="num w-[92px] shrink-0 truncate text-[11px]">#{c.row.caseId} {c.row.state}</span>
-                <span className="w-[130px] shrink-0 truncate text-[11.5px]">{c.row.insured}</span>
+                <span className="w-[130px] shrink-0 truncate text-[11px]">{c.row.insured}</span>
                 <span className="flex h-3 w-[180px] shrink-0 items-center gap-[2px]">
                   {c.events.slice(-30).map((e) => (
                     <span key={e.id} className={`lane-card h-2.5 w-1 rounded-[1px] ${ACTOR[e.actor] ?? "bg-rule"}`} />
@@ -168,9 +168,9 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
 
   if (!c)
     return (
-      <div className="p-4 text-[12.5px]">
+      <div className="p-4 text-[12px]">
         <p className="text-dim">Pick a case from the queue on the left, or a pin on the map. The case and its decision appear here.</p>
-        <button onClick={onStart} className="mt-3 rounded-sm border border-ink bg-ink px-3 py-1 text-paper transition-colors duration-150 hover:bg-ink/85">
+        <button onClick={onStart} className="mt-3 rounded-sm border border-ochre bg-ochre px-3 py-1 text-paper transition-colors duration-150 hover:bg-ochre/85">
           Run the demo
         </button>
       </div>
@@ -178,8 +178,8 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
   return (
     <div className="flex min-h-0 flex-col gap-2 overflow-y-auto px-4 py-3">
       <div>
-        <p className="num text-[10.5px] text-dim">CASE #{c.caseId}</p>
-        <h2 className="font-serif text-[21px] font-semibold leading-tight text-balance">{c.title}</h2>
+        <p className="num text-[10px] text-dim">CASE #{c.caseId}</p>
+        <h2 className="font-serif text-[20px] font-semibold leading-tight text-balance">{c.title}</h2>
       </div>
       {score && (score.lo !== 0 || score.hi !== 0) ? (
         <div>
@@ -201,7 +201,7 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
             const live = seen.has(f.id) || state?.status === "settled";
             const pv = state && !live && f.provenance !== "known" ? "missing" : f.provenance;
             return (
-              <li key={f.id} className="flex items-baseline gap-2 text-[11.5px]">
+              <li key={f.id} className="flex items-baseline gap-2 text-[11px]">
                 <span className="w-[86px] shrink-0 truncate text-dim">{f.label}</span>
                 <span className={`num min-w-0 flex-1 truncate transition-colors duration-300 ${FACT_STATE[pv]}`} title={f.source}>
                   {state && !live && f.provenance !== "known" ? "waiting" : f.display}
@@ -226,7 +226,7 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
           {conflicts.map((e) => {
             const fix = resolutions.find((r) => r.body.conflict_id === e.body.conflict_id);
             return (
-              <div key={e.id} className="lane-card mb-1 rounded-sm border border-rust px-2 py-1 text-[11.5px]">
+              <div key={e.id} className="lane-card mb-1 rounded-sm border border-rust px-2 py-1 text-[11px]">
                 <span className="line-clamp-3" title={prettyBands(str(e.body.text))}>
                   {prettyBands(str(e.body.text))}
                 </span>
@@ -240,7 +240,7 @@ export function CasePanel({ c, state, typed, onStart }: { c: CaseView | null; st
           })}
         </div>
       )}
-      {!explanation && state?.status === "working" && <p className="text-[11.5px] text-dim">The desk is still working this case…</p>}
+      {!explanation && state?.status === "working" && <p className="text-[11px] text-dim">The desk is still working this case…</p>}
     </div>
   );
 }
@@ -256,7 +256,7 @@ function Typed({ text, on }: { text: string; on: boolean }) {
   // Nine lines is what the column holds at 900px. The rest is one hover away, and the same
   // sentence is in the chatter log.
   return (
-    <p className="line-clamp-8 font-serif text-[13.5px] leading-snug" title={text}>
+    <p className="line-clamp-8 font-serif text-[13px] leading-snug" title={text}>
       {text.slice(0, n)}
       {n < text.length && <span className="animate-pulse">▍</span>}
     </p>
@@ -279,11 +279,11 @@ export function Chatter({ events, onPick, active, onStart }: { events: DeskEvent
     decision: "border-l-ink bg-land",
   };
   return (
-    <ul ref={box} className="h-full overflow-y-auto pr-1 text-[11.5px] leading-snug" aria-live="polite" aria-label="Agent chatter">
+    <ul ref={box} className="h-full overflow-y-auto pr-1 text-[11px] leading-snug" aria-live="polite" aria-label="Agent chatter">
       {lines.length === 0 && (
         <li className="text-dim">
           The agents talk here: who asked whom, what came back, what they disagreed about.
-          <button onClick={onStart} className="mt-2 block rounded-sm border border-ink px-2 py-1 text-ink transition-colors duration-150 hover:bg-land">
+          <button onClick={onStart} className="mt-2 block rounded-sm border border-edge px-2 py-1 text-ink transition-colors duration-150 hover:bg-land">
             Run the demo
           </button>
         </li>

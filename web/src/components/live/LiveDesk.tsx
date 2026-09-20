@@ -267,15 +267,15 @@ export function LiveDesk(props: LiveProps) {
   const sent = outbox.find((o) => (o.status ?? "").startsWith("sent")) ?? outbox[0];
   const decidedNow = Object.values(run.cases).filter((c) => c.status === "settled").length;
   const costCase = focusCase?.costUsd;
-  const btn = "rounded-sm border border-ink px-2 py-0.5 transition-colors duration-150 hover:bg-paper";
+  const btn = "rounded-sm border border-edge px-2 py-0.5 transition-colors duration-150 hover:bg-raise";
   const latest = chatEvents.at(-1);
   const caption = nowLine(latest, run.running);
 
   return (
-    <main className="grid h-screen grid-rows-[44px_26px_minmax(0,1fr)_246px] overflow-hidden bg-paper">
+    <main className="grid h-screen grid-rows-[44px_26px_minmax(0,1fr)_226px_22px] overflow-hidden bg-paper">
       {/* ------------------------------ top strip ------------------------------ */}
-      <header className="contours flex items-center gap-3 overflow-hidden border-b border-ink bg-land px-4 text-[11.5px]">
-        <span className="shrink-0 text-[12px] font-semibold tracking-[0.16em]">PIXIE LIVE</span>
+      <header className="flex items-center gap-3 overflow-hidden border-b border-edge bg-land px-4 text-[11px]">
+        <span className="shrink-0 text-[12px] font-semibold tracking-[0.18em] text-ochre">PIXIE LIVE</span>
         <span className="num hidden shrink-0 2xl:inline">
           <b className="font-semibold">158</b> subs · <b className="font-semibold">{allRows.length}</b> open ·{" "}
           <b className="font-semibold">{deskRows.length}</b> desk · <b className="font-semibold">{decidedNow}</b> decided
@@ -286,21 +286,21 @@ export function LiveDesk(props: LiveProps) {
           {costCase !== undefined && <span className="text-dim"> · case ${costCase.toFixed(3)}</span>}
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <div className="flex rounded-sm border border-ink" role="group" aria-label="Run mode">
-            <button onClick={startSweep} aria-pressed={mode === "sweep"} className={`px-2 py-0.5 ${mode === "sweep" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+          <div className="flex rounded-sm border border-edge" role="group" aria-label="Run mode">
+            <button onClick={startSweep} aria-pressed={mode === "sweep"} className={`px-2 py-0.5 ${mode === "sweep" ? "bg-ochre text-paper" : "hover:bg-raise"}`}>
               Sweep
             </button>
             <button
               onClick={() => startFocus(selected ?? "138")}
               aria-pressed={mode === "focus"}
-              className={`px-2 py-0.5 ${mode === "focus" ? "bg-ink text-paper" : "hover:bg-paper"}`}
+              className={`px-2 py-0.5 ${mode === "focus" ? "bg-ochre text-paper" : "hover:bg-raise"}`}
             >
               Focus
             </button>
           </div>
           <div className="flex rounded-sm border border-rule" role="group" aria-label="Speed">
             {([1, 2, 4] as Speed[]).map((s) => (
-              <button key={s} onClick={() => run.setSpeed(s)} aria-pressed={run.speed === s} className={`num px-1.5 py-0.5 ${run.speed === s ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+              <button key={s} onClick={() => run.setSpeed(s)} aria-pressed={run.speed === s} className={`num px-1.5 py-0.5 ${run.speed === s ? "bg-ochre text-paper" : "hover:bg-raise"}`}>
                 {s}×
               </button>
             ))}
@@ -311,16 +311,16 @@ export function LiveDesk(props: LiveProps) {
           <RecordButton />
           <button
             onClick={runDemo}
-            className="rounded-sm border border-ink bg-ink px-3 py-1 font-semibold text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:scale-[0.98]"
+            className="rounded-sm border border-ochre bg-ochre px-3 py-1 font-semibold text-paper transition-[background-color,transform] duration-150 hover:bg-ochre/85 active:scale-[0.98]"
           >
             Run the demo
           </button>
-          <div className="flex rounded-sm border border-ink" role="group" aria-label="Region">
-            <button onClick={() => setRegion("desk")} aria-pressed={region === "desk"} className={`px-2 py-0.5 ${region === "desk" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+          <div className="flex rounded-sm border border-edge" role="group" aria-label="Region">
+            <button onClick={() => setRegion("desk")} aria-pressed={region === "desk"} className={`px-2 py-0.5 ${region === "desk" ? "bg-ochre text-paper" : "hover:bg-raise"}`}>
               <span className="hidden 2xl:inline">Commercial desk</span>
               <span className="2xl:hidden">Desk</span>
             </button>
-            <button onClick={loadQuote} aria-pressed={region === "toronto"} className={`px-2 py-0.5 ${region === "toronto" ? "bg-ink text-paper" : "hover:bg-paper"}`}>
+            <button onClick={loadQuote} aria-pressed={region === "toronto"} className={`px-2 py-0.5 ${region === "toronto" ? "bg-ochre text-paper" : "hover:bg-raise"}`}>
               <span className="hidden 2xl:inline">Toronto renter</span>
               <span className="2xl:hidden">Renter</span>
             </button>
@@ -340,7 +340,7 @@ export function LiveDesk(props: LiveProps) {
             onClick={() => goBeat(i)}
             aria-pressed={beat === i}
             aria-label={`Beat ${i + 1}: ${b}`}
-            className={`rounded-sm border px-1.5 text-[10px] transition-colors duration-150 ${beat === i ? "border-ink bg-ink text-paper" : "border-rule bg-paper/80 text-dim hover:border-ink hover:text-ink"}`}
+            className={`rounded-sm border px-1.5 text-[10px] transition-colors duration-150 ${beat === i ? "border-ochre bg-ochre text-paper" : "border-rule bg-paper/80 text-dim hover:border-edge hover:text-ink"}`}
           >
             {i + 1} {b}
           </button>
@@ -362,12 +362,12 @@ export function LiveDesk(props: LiveProps) {
             {mode === "focus" && region === "desk" && focusCase && (
               <div className="pointer-events-none absolute left-5 top-4 max-w-[420px]">
                 <p className="kicker">Case #{selected} · {focusCase.row.line} · {focusCase.row.state}</p>
-                <h2 className="font-serif text-[26px] font-semibold leading-tight">{focusCase.row.insured}</h2>
+                <h2 className="cond text-[24px] font-semibold leading-tight">{focusCase.row.insured}</h2>
                 <p className="text-[12px] text-dim">{money(focusCase.row.valueAtStake)} at stake. Watch what the desk had to find out.</p>
               </div>
             )}
             {region === "toronto" && quote && (
-              <div className="absolute left-5 top-4 max-w-[420px] rounded-sm border border-ink bg-paper/95 px-3 py-2 text-[12px]">
+              <div className="absolute left-5 top-4 max-w-[420px] rounded-sm border border-edge bg-paper/95 px-3 py-2 text-[12px]">
                 <p className="kicker">Same engine, Toronto pack</p>
                 <p>
                   {quote.address}: break-ins, fire protection and basement flooding priced per hex, then capped. Quote{" "}
@@ -382,7 +382,7 @@ export function LiveDesk(props: LiveProps) {
               caseTitle={`Case ${selected}`}
               takeover={
                 showEmail ? (
-                  <article className="lane-card flex h-full gap-3 overflow-hidden rounded-sm border border-ink bg-paper px-3 py-2 text-[11.5px] leading-snug">
+                  <article className="lane-card flex h-full gap-3 overflow-hidden rounded-sm border border-edge bg-paper px-3 py-2 text-[11px] leading-snug">
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                       <p className="kicker mb-0.5">Broker email · to {sent?.to ?? email.to}</p>
                       <b className="block truncate font-semibold" title={sent?.subject ?? email.subject}>
@@ -393,11 +393,11 @@ export function LiveDesk(props: LiveProps) {
                       </p>
                     </div>
                     <div className="flex w-[132px] shrink-0 flex-col items-start gap-1 border-l border-rule pl-3">
-                      <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className={`${btn} bg-ink text-paper hover:bg-ink/85 disabled:opacity-50`}>
+                      <button onClick={sendEmail} disabled={!selected || emailStatus === "sending…"} className={`${btn} bg-ochre text-paper hover:bg-ochre/85 disabled:opacity-50`}>
                         {sent ? "Send again" : "Send it"}
                       </button>
                       <span className="num text-[10px] text-moss">{emailStatus || (sent ? `gmail: ${sent.status}` : "")}</span>
-                      {sent && <span className="text-[9.5px] text-dim">Outbox {sent.key ?? ""} · Composio Gmail</span>}
+                      {sent && <span className="text-[9px] text-dim">Outbox {sent.key ?? ""} · Composio Gmail</span>}
                       <button onClick={() => setShowEmail(false)} className="num mt-auto text-[10px] text-dim underline-offset-2 hover:underline">
                         Back to the desk
                       </button>
@@ -419,14 +419,14 @@ export function LiveDesk(props: LiveProps) {
       </div>
 
       {/* ------------------------- lanes and chatter --------------------------- */}
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_300px] border-t border-ink">
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_300px] border-t border-edge">
         <div className="relative flex min-h-0 flex-col overflow-hidden">
           {mode === "sweep" ? (
             <SweepBoard cases={run.cases} onPick={startFocus} />
           ) : (
             <>
               {focusCase?.status === "settled" && focusCase.events.length > 0 && !hasSpecialist && (
-                <p className="shrink-0 px-4 pt-1 text-[12.5px]">
+                <p className="shrink-0 px-4 pt-1 text-[12px]">
                   <b className="font-semibold">No specialist time spent: decided at triage.</b> <span className="text-dim">{triageReason}</span>
                 </p>
               )}
@@ -452,11 +452,11 @@ export function LiveDesk(props: LiveProps) {
       </div>
 
       {overlay && (
-        <div className="absolute inset-x-0 bottom-0 top-[70px] z-20 grid place-items-center bg-ink/35 p-10" onClick={() => setOverlay(null)}>
-          <div className="w-[720px] rounded-sm border border-ink bg-paper p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute inset-x-0 bottom-0 top-[70px] z-20 grid place-items-center bg-paper/80 p-10" onClick={() => setOverlay(null)}>
+          <div className="w-[720px] rounded-sm border border-edge bg-land p-6 shadow-[0_24px_60px_rgba(0,0,0,0.7)]" onClick={(e) => e.stopPropagation()}>
             {overlay === "backtest" && backtest && (
               <>
-                <h2 className="font-serif text-[26px] font-semibold">The guideline versus the book</h2>
+                <h2 className="cond text-[24px] font-semibold">The guideline versus the book</h2>
                 <ul className="mt-3 space-y-1.5 text-[13px]">
                   <li>
                     <b className="num">{backtest.over}</b> of <b className="num">{backtest.of}</b> bound property policies sit above the $175,000 premium
@@ -483,25 +483,45 @@ export function LiveDesk(props: LiveProps) {
             )}
             {overlay === "close" && (
               <>
-                <h2 className="font-serif text-[28px] font-semibold">Every number is code. Every decision is traceable.</h2>
-                <p className="mt-3 text-[14px] leading-relaxed">
+                <h2 className="cond text-[24px] font-semibold">Every number is code. Every decision is traceable.</h2>
+                <p className="mt-3 text-[13px] leading-relaxed">
                   The desk spent <b className="num">{run.totals.steps}</b> model steps and <b className="num">${run.totals.cost.toFixed(2)}</b> on{" "}
                   {run.totals.total} submissions, and only where information could flip a decision. The same engine priced a Toronto renter from the
                   same rules and the same caps, and it runs on your schema.
                 </p>
               </>
             )}
-            <button className="mt-4 rounded-sm border border-ink px-3 py-1 text-[12px]" onClick={() => setOverlay(null)}>
+            <button className="mt-4 rounded-sm border border-edge px-3 py-1 text-[12px]" onClick={() => setOverlay(null)}>
               Back to the desk (Esc)
             </button>
           </div>
         </div>
       )}
-      {!apiUp && (
-        <p className="absolute bottom-2 left-3 rounded-sm border border-rule bg-paper px-2 py-0.5 font-mono text-[10.5px] text-dim">
-          offline: replaying recorded runs from disk
-        </p>
-      )}
+      <footer className="flex h-[22px] items-center gap-3 overflow-hidden border-t border-edge bg-land px-3 text-[10px] text-faint">
+        <span className="text-ochre">PIXIE LIVE</span>
+        {!apiUp && <span className="text-rust">offline: replaying recorded runs from disk</span>}
+        <span className="num">
+          {decidedNow} of {deskRows.length} desk cases settled
+        </span>
+        <span className="ml-auto flex items-center gap-3">
+        <span className="flex items-center gap-1">
+          <kbd className="key">Space</kbd> run
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="key">1</kbd>–<kbd className="key">6</kbd> beats
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="key">[</kbd>
+          <kbd className="key">]</kbd> scrub 5s
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="key">e</kbd> end
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="key">Esc</kbd> close
+        </span>
+        </span>
+      </footer>
       <p className="sr-only">Value at stake {money(deskRows.reduce((n, r) => n + r.valueAtStake, 0))}</p>
     </main>
   );
