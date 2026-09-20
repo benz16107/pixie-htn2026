@@ -134,5 +134,9 @@ Screens: `web/src/app/queue/page.tsx`, `web/src/app/cases/[id]/page.tsx`,
 `web/src/components/QueueTable.tsx`, `web/src/components/case/*`.
 
 Screenshots at 1512x900 in `web/screenshots/`: `d1-queue.png`, `d1-case.png`,
-`d1-case-decision-space.png`, `d1-live.png`, `d1-keys.png`, `d1-map.png`, `d1-backtest.png`,
-`d1-ask.png`.
+`d1-case-decision-space.png`, `d1-case-whatif.png`, `d1-case-tenant.png`, `d1-live.png`,
+`d1-keys.png`, `d1-map.png`, `d1-backtest.png`, `d1-ask.png`.
+
+`d1-case-whatif.png` is the one to look at second: it was taken by pressing `f` then the right
+arrow 45 times, which walks the premium past $50,000 and flips the case to `83 ACCEPT` against
+the live API, with the focus ring on the slider the whole time.
