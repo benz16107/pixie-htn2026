@@ -94,19 +94,10 @@ export default function HomeQuoteScreen() {
       <Progress current={1} total={3} labels={['Address', 'Coverage', 'Estimate']} />
       <View style={{ paddingTop: 12, paddingBottom: 20 }}>
         <Kicker>Tenant insurance · Toronto</Kicker>
-        <Title style={{ marginTop: 8 }}>A renter estimate in one review.</Title>
+        <Title style={{ marginTop: 8 }}>Cover your place.</Title>
         <Body style={{ marginTop: 10 }}>
-          Pick your address, confirm five prefilled details, and get an itemised estimate. You can see what changed the price and send the same receipt to an advisor.
+          Enter your address, choose your coverage, and get an estimate with every cost explained.
         </Body>
-      </View>
-
-      <View style={st.coverage} accessible accessibilityLabel="The quote covers your place, your things, and your liability">
-        <View style={st.coverageHead}><Text style={st.coverageTitle}>Your renter quote</Text><Text style={st.coverageTime}>ABOUT 2 MIN</Text></View>
-        {['Find your address', 'Confirm your coverage', 'Get a sourced estimate'].map((label, i) => (
-          <View key={label} style={st.coverageLine}>
-            <Text style={st.coverageIndex}>0{i + 1}</Text><Text style={st.coverageName}>{label}</Text><Text style={st.coverageState}>{i === 0 ? 'Now' : i === 1 ? 'One screen' : 'Receipt'}</Text>
-          </View>
-        ))}
       </View>
 
       <View onLayout={(event) => { addressTop.current = event.nativeEvent.layout.y; }}>
@@ -154,7 +145,7 @@ export default function HomeQuoteScreen() {
 }
 
 const st = StyleSheet.create({
-  label: { fontFamily: F.sansBold, fontSize: 15, color: C.ink, marginBottom: 6 },
+  label: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 15, color: C.ink, marginBottom: 6 },
   input: {
     minHeight: 50,
     borderWidth: 1,
@@ -168,12 +159,4 @@ const st = StyleSheet.create({
   },
   error: { fontFamily: F.sans, fontSize: 14, color: C.rust, marginTop: 6 },
   errorEmpty: { height: 0, marginTop: 0, overflow: 'hidden' },
-  coverage: { marginBottom: 24, borderWidth: 1, borderColor: C.rule, borderRadius: 16, overflow: 'hidden', backgroundColor: C.ink },
-  coverageHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#365158' },
-  coverageTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.paper },
-  coverageTime: { fontFamily: F.monoMedium, fontSize: 10, color: '#AFC1C4', letterSpacing: 0.8 },
-  coverageLine: { minHeight: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#365158' },
-  coverageIndex: { width: 34, fontFamily: F.mono, fontSize: 11, color: '#FF8B7C' },
-  coverageName: { flex: 1, fontFamily: F.sansMedium, fontSize: 15, color: C.paper },
-  coverageState: { fontFamily: F.sans, fontSize: 12, color: '#AFC1C4' },
 });

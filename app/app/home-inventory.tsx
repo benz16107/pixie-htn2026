@@ -20,19 +20,19 @@ export default function HomeInventoryScreen() {
   return (
     <Screen>
       <Kicker>Home & tenant · room inventory</Kicker>
-      <Title style={st.title}>Know what you would need to replace.</Title>
-      <Body style={st.lead}>Review a room inventory, adjust what you own, and save the total with your insurance records.</Body>
+      <Title style={st.title}>Your belongings</Title>
+      <Body style={st.lead}>Review the example inventory and keep track of what you would need to replace.</Body>
       {!scanned ? (
-        <Panel tone="ink">
+        <Panel>
           <Text style={st.room}>LIVING ROOM</Text>
           <Text style={st.scanTitle}>Start with four common household items.</Text>
-          <Body style={st.inverse}>You review every detected item before anything is saved. This preview does not need camera access.</Body>
+          <Body style={st.inverse}>This example includes furniture and electronics. Review the items and their estimated values.</Body>
           <View style={{ marginTop: 18 }}><Button label="Preview room inventory" onPress={() => setScanned(true)} /></View>
         </Panel>
       ) : (
         <Panel>
           <SourceMark live={false} />
-          <Kicker style={{ marginTop: 14 }}>Review detected items</Kicker>
+          <Kicker style={{ marginTop: 14 }}>Example items</Kicker>
           {ITEMS.map((item) => (
             <View key={item.name} style={st.row}><Text style={st.item}>{item.name}</Text><Text style={st.value}>${item.value.toLocaleString('en-CA')}</Text></View>
           ))}
@@ -49,15 +49,15 @@ export default function HomeInventoryScreen() {
 const st = StyleSheet.create({
   title: { marginTop: 8 },
   lead: { marginTop: 10, marginBottom: 20, color: C.dim },
-  room: { fontFamily: F.monoMedium, fontSize: 10, letterSpacing: 1, color: '#AFC1C4' },
-  scanTitle: { marginTop: 12, fontFamily: F.sansBold, fontSize: 23, lineHeight: 28, color: C.paper },
-  inverse: { marginTop: 8, color: '#D8E2E3', fontSize: 14 },
+  room: { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 10, letterSpacing: 1, color: C.dim },
+  scanTitle: { marginTop: 12, fontFamily: F.sansBold, fontWeight: '600', fontSize: 23, lineHeight: 28, color: C.ink },
+  inverse: { marginTop: 8, color: C.dim, fontSize: 14 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.rule },
-  item: { flex: 1, fontFamily: F.sansMedium, fontSize: 15, color: C.ink },
+  item: { flex: 1, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 15, color: C.ink },
   value: { fontFamily: F.mono, fontSize: 14, color: C.ink },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginVertical: 18 },
-  totalLabel: { fontFamily: F.sansBold, fontSize: 16, color: C.ink },
-  total: { fontFamily: F.monoMedium, fontSize: 25, color: C.ink },
-  saved: { marginTop: 12, fontFamily: F.sansMedium, color: C.moss },
+  totalLabel: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 16, color: C.ink },
+  total: { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 25, color: C.ink },
+  saved: { marginTop: 12, fontFamily: F.sansMedium, fontWeight: '500', color: C.moss },
   context: { marginTop: 16, marginBottom: 24, fontSize: 13, lineHeight: 19, color: C.dim },
 });

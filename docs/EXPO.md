@@ -2,6 +2,14 @@
 
 Pixie is a consumer insurance app for Home and Auto. The phone does not expose the presentation framework used on the website. Customers see four everyday destinations: Home, Compare, Safety, and Help. A Home and Auto switch changes the tools and policy context without moving the customer into a second app.
 
+## Consumer interface
+
+The September 20 refresh follows Apple's guidance on [typography](https://developer.apple.com/design/human-interface-guidelines/typography) and [tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars). It uses platform system fonts, grouped white cards over a neutral background, one blue action color, labelled tabs, and a Home/Auto segmented control. Large titles identify the current task. Supporting screens keep the standard stack back button.
+
+Icons use SF Symbols through `expo-symbols` on iOS and vector paths on web and Android. Emoji and character-based navigation icons have been removed. Buttons and product controls have at least 44-point touch targets, text retains native font scaling, and press feedback respects reduced motion.
+
+Current [phone-size screenshots](assets/intact/apple-refresh/README.md) cover Home, Auto, Compare, Safety, Help, and Drive Score. The refresh passed TypeScript, Expo Doctor, web export, tenant-estimate and recovery-plan browser flows, and layout checks at 320, 390, and 430 pixels. Native iPhone visual verification remains pending because the device host was unavailable.
+
 ## What works
 
 Home includes the complete Toronto tenant estimate. A customer can enter an address or use location, inspect the neighbourhood data used by the model, confirm coverage, receive an itemized estimate, listen to the result, and save or share a PDF. The Safety tab includes a reviewed room inventory. Home pricing currently covers tenant insurance only.

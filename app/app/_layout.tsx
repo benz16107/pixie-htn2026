@@ -1,12 +1,7 @@
-import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
-import { Newsreader_600SemiBold } from '@expo-google-fonts/newsreader';
-import { PublicSans_400Regular, PublicSans_500Medium, PublicSans_600SemiBold } from '@expo-google-fonts/public-sans';
-import { useFonts } from 'expo-font';
-import { Link, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Sentry from '@sentry/react-native';
@@ -28,22 +23,8 @@ Sentry.init({
 });
 
 function RootLayout() {
-  const [loaded, error] = useFonts({
-    Newsreader_600SemiBold,
-    PublicSans_400Regular,
-    PublicSans_500Medium,
-    PublicSans_600SemiBold,
-    DMMono_400Regular,
-    DMMono_500Medium,
-  });
   const reduced = useReducedMotion();
-
-  useEffect(() => {
-    if (error) throw error;
-    if (loaded) SplashScreen.hideAsync();
-  }, [loaded, error]);
-
-  if (!loaded) return null;
+  useEffect(() => { void SplashScreen.hideAsync(); }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -51,34 +32,21 @@ function RootLayout() {
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: C.paper },
+          headerStyle: { backgroundColor: C.background },
           headerShadowVisible: false,
-          headerTintColor: C.ink,
-          headerTitleStyle: { fontFamily: F.sansBold, fontSize: 15 },
+          headerTintColor: C.ochre,
+          headerTitleStyle: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 17, color: C.ink },
           headerBackButtonDisplayMode: 'minimal',
-          contentStyle: { backgroundColor: C.paper },
+          contentStyle: { backgroundColor: C.background },
           animation: reduced ? 'fade' : 'default',
-          headerTitle: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.ochre }} />
-              <Text style={{ fontFamily: F.sansBold, fontSize: 15, color: C.ink, letterSpacing: 1.1 }}>PIXIE</Text>
-              <Text style={{ fontFamily: F.sansMedium, fontSize: 11, color: C.dim }}>INSURANCE</Text>
-            </View>
-          ),
-          headerRight: () => (
-            <Link href="/about" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="About Pixie: sources, fairness and limits" hitSlop={12} style={{ minHeight: 44, justifyContent: 'center' }}>
-                <Text style={{ fontFamily: F.sansMedium, fontSize: 15, color: C.ink, textDecorationLine: 'underline' }}>About</Text>
-              </Pressable>
-            </Link>
-          ),
+
         }}
       >
-        <Stack.Screen name="(lifecycle)" options={{ title: 'Pixie Insurance', headerBackVisible: false }} />
+        <Stack.Screen name="(lifecycle)" options={{ title: 'Pixie', headerShown: false }} />
         <Stack.Screen name="home-quote" options={{ title: 'Tenant quote' }} />
         <Stack.Screen name="auto-compare" options={{ title: 'Compare vehicles' }} />
         <Stack.Screen name="home-inventory" options={{ title: 'Room inventory' }} />
-        <Stack.Screen name="driving-context" options={{ title: 'Drive context' }} />
+        <Stack.Screen name="driving-context" options={{ title: 'Drive score' }} />
         <Stack.Screen name="recovery-plan" options={{ title: 'Recovery plan' }} />
         <Stack.Screen name="map" options={{ title: 'Your block' }} />
         <Stack.Screen name="questions/[step]" options={{ title: 'Your unit' }} />

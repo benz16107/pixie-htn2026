@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextProps, type ViewStyle } from 'react-native';
-import Animated, { cubicBezier } from 'react-native-reanimated';
+import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { C, F } from '@/lib/theme';
@@ -34,14 +34,15 @@ export function Progress({ current, total, labels }: { current: number; total: n
 
 // Press feedback: scale on press-in through a Reanimated CSS transition, 120ms strong ease-out.
 function Pressed({ pressed, children, style }: { pressed: boolean; children: ReactNode; style: ViewStyle | ViewStyle[] }) {
+  const reduced = useReducedMotion();
   return (
     <Animated.View
       style={[
         style,
         {
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          transform: [{ scale: pressed && !reduced ? 0.98 : 1 }],
           transitionProperty: 'transform',
-          transitionDuration: 120,
+          transitionDuration: reduced ? 0 : 120,
           transitionTimingFunction: EASE_OUT,
         },
       ]}
@@ -132,7 +133,7 @@ export function Contours({ height = 180 }: { height?: number }) {
 
 // Scrollable content with a solid bottom action bar above the home indicator. The bar's measured
 // height reserves matching scroll padding so the last line of content is never hidden behind it.
-export function Screen({ children, footer, scrollRef }: { children: ReactNode; footer?: ReactNode; scrollRef?: RefObject<ScrollView | null> }) {
+export function Screen({ children, footer, scrollRef, topSafe = false }: { children: ReactNode; footer?: ReactNode; scrollRef?: RefObject<ScrollView | null>; topSafe?: boolean }) {
   const inset = useSafeAreaInsets();
   const [footerH, setFooterH] = useState(0);
   const internalScrollRef = useRef<ScrollView>(null);
@@ -143,8 +144,8 @@ export function Screen({ children, footer, scrollRef }: { children: ReactNode; f
   }, [activeScrollRef]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.paper }}>
-      <ScrollView ref={activeScrollRef} contentContainerStyle={{ paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled">
+    <View style={{ flex: 1, backgroundColor: C.background, paddingTop: topSafe ? inset.top : 0 }}>
+      <ScrollView ref={activeScrollRef} contentContainerStyle={{ paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
         <View style={s.screenInner}>{children}</View>
       </ScrollView>
       {footer ? (
@@ -161,29 +162,29 @@ export function Screen({ children, footer, scrollRef }: { children: ReactNode; f
 
 export const s = StyleSheet.create({
   screenInner: { width: '100%', maxWidth: 660, minWidth: 0, boxSizing: 'border-box', alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20 },
-  title: { fontFamily: F.sansBold, fontSize: 32, lineHeight: 35, color: C.ink, letterSpacing: -0.8 },
-  body: { fontFamily: F.sans, fontSize: 16, lineHeight: 23, color: C.ink },
+  title: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 32, lineHeight: 38, color: C.ink, letterSpacing: -0.8 },
+  body: { fontFamily: F.sans, fontSize: 17, lineHeight: 24, color: C.ink },
   dim: { color: C.dim },
-  kicker: { fontFamily: F.sansBold, fontSize: 11, letterSpacing: 1.1, textTransform: 'uppercase', color: C.dim },
+  kicker: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 13, letterSpacing: 0.1, color: C.dim },
   mono: { fontFamily: F.mono, fontSize: 14, color: C.ink, fontVariant: ['tabular-nums'] },
   btn: { minHeight: 52, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 13, alignItems: 'center', justifyContent: 'center' },
   primary: { backgroundColor: C.ochre },
-  secondary: { borderWidth: 1, borderColor: C.ink, backgroundColor: C.paper },
+  secondary: { backgroundColor: C.ochreSoft },
   link: { minHeight: 44, paddingHorizontal: 4 },
   disabled: { opacity: 0.45 },
-  btnText: { fontFamily: F.sansBold, fontSize: 16, color: C.ink },
-  linkText: { textDecorationLine: 'underline', fontFamily: F.sansMedium },
+  btnText: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 17, color: C.ochre },
+  linkText: { color: C.ochre, fontFamily: F.sansMedium, fontWeight: '500' },
   choice: { flexDirection: 'row', gap: 14, alignItems: 'flex-start', minHeight: 62, padding: 15, borderRadius: 14, borderWidth: 1, borderColor: C.rule, backgroundColor: C.paper, marginBottom: 10 },
   choiceOn: { borderColor: C.ochre, borderWidth: 1.5, backgroundColor: C.ochreSoft },
-  choiceTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.ink, marginBottom: 2 },
+  choiceTitle: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 17, color: C.ink, marginBottom: 2 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: C.dim, marginTop: 2 },
   radioOn: { borderColor: C.ochre, borderWidth: 6 },
   progressWrap: { marginBottom: 20 },
   progressTrack: { width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: C.rule },
   progressValue: { height: '100%', borderRadius: 2, backgroundColor: C.ochre },
   progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7 },
-  progressLabel: { fontFamily: F.sansMedium, fontSize: 11, color: C.dim },
-  progressLabelOn: { color: C.ink, fontFamily: F.sansBold },
+  progressLabel: { fontFamily: F.sansMedium, fontWeight: '500', fontSize: 11, color: C.dim },
+  progressLabelOn: { color: C.ink, fontFamily: F.sansBold, fontWeight: '600' },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: C.paper, paddingTop: 12, gap: 6 },
   footerInner: { width: '100%', maxWidth: 660, minWidth: 0, boxSizing: 'border-box', alignSelf: 'center', paddingHorizontal: 20, gap: 6 },
 });

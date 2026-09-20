@@ -36,7 +36,7 @@ export default function About() {
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Fairness guardrails</Kicker>
       {GUARDRAILS.map(([h, t]) => (
         <View key={h} style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.rule }}>
-          <Text style={{ fontFamily: F.sansBold, fontSize: 16, color: C.ink }}>{h}</Text>
+          <Text style={{ fontFamily: F.sansBold, fontWeight: '600', fontSize: 16, color: C.ink }}>{h}</Text>
           <Body style={{ fontSize: 15 }}>{t}</Body>
         </View>
       ))}
@@ -51,7 +51,7 @@ export default function About() {
             accessibilityHint="Opens the dataset page"
             style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', backgroundColor: pressed ? C.land : 'transparent' })}
           >
-            <Text style={{ fontFamily: F.sansMedium, fontSize: 16, color: C.ink, textDecorationLine: 'underline' }}>{s.name}</Text>
+            <Text style={{ fontFamily: F.sansMedium, fontWeight: '500', fontSize: 16, color: C.ink, textDecorationLine: 'underline' }}>{s.name}</Text>
           </Pressable>
           <Dim style={{ fontSize: 14 }}>{s.use}</Dim>
         </View>

@@ -177,23 +177,22 @@ export default function DrivingContextScreen() {
 
   return (
     <Screen>
-      <ConsumerHeader title="Drive score" detail="A private coaching view for your current trip." />
-      <Kicker>AUTO INSIGHTS</Kicker>
-      <Title style={st.title}>See what shapes your score.</Title>
-      <Body style={st.lead}>Pixie combines phone-measured speed changes with coarse road context. A school approach or dense intersection can lower the context score even when your driving is steady.</Body>
+      <Title>Drive score</Title>
+      <Body style={st.lead}>Your driving habits and road context, explained.</Body>
 
-      <Panel tone="ink">
+
+      <Panel>
         <View style={st.scoreHero}>
-          <View><Text style={st.score}>{score}</Text><Text style={st.scoreBand}>{assessment ? scoreLabel(score) : 'Ready to start'}</Text></View>
+          <View><Text style={st.score}>{assessment ? score : '—'}</Text><Text style={st.scoreBand}>{assessment ? scoreLabel(score) : 'Ready to start'}</Text></View>
           <View style={st.liveReadout}>
-            <Text style={st.liveLabel}>{active ? 'LIVE DRIVE' : 'LAST SESSION'}</Text>
+            <Text style={st.liveLabel}>{active ? (sampleMode ? 'Sample drive' : 'Live drive') : 'Trip summary'}</Text>
             <Text style={st.speed}>{metrics.currentSpeedKmh}<Text style={st.speedUnit}> km/h</Text></Text>
           </View>
         </View>
         <View style={st.darkStats}>
-          <MiniStat inverse value={`${metrics.distanceKm.toFixed(1)} km`} label="DISTANCE" />
-          <MiniStat inverse value={timeLabel(metrics.durationSeconds)} label="TIME" />
-          <MiniStat inverse value={String(metrics.speedingEvents + metrics.hardBrakeEvents)} label="EVENTS" />
+          <MiniStat value={`${metrics.distanceKm.toFixed(1)} km`} label="Distance" />
+          <MiniStat value={timeLabel(metrics.durationSeconds)} label="Duration" />
+          <MiniStat value={String(metrics.speedingEvents + metrics.hardBrakeEvents)} label="Events" />
         </View>
       </Panel>
 
@@ -203,16 +202,16 @@ export default function DrivingContextScreen() {
       {!active && Platform.OS !== 'web' ? <Button kind="link" label="Preview with a Toronto sample" onPress={startSampleDrive} /> : null}
       {permission === 'denied' ? <Text accessibilityLiveRegion="polite" style={st.denied}>Location is unavailable. You can still use the Toronto sample.</Text> : null}
 
-      <Kicker style={st.section}>What appears on your iPhone</Kicker>
+      <Kicker style={st.section}>On your Home & Lock Screen</Kicker>
       <View style={st.surfaceRow}>
         <View style={st.widgetPreview}>
-          <Text style={st.previewKicker}>PIXIE DRIVE SCORE</Text>
+          <Text style={st.previewKicker}>Pixie Drive Score</Text>
           <Text style={st.previewArea}>{assessment?.assessment.routeFactors[0]?.areaLabel ?? zone.name}</Text>
           <Text style={st.previewContext}>{assessment?.assessment.routeFactors[0]?.label ?? zone.context}</Text>
           <Text style={st.previewScore}>{score} score · {metrics.currentSpeedKmh} km/h</Text>
         </View>
         <View style={st.lockPreview}>
-          <Text style={st.previewKicker}>DRIVE SCORE ACTIVE</Text>
+          <Text style={[st.previewKicker, { color: C.paper }]}>Drive Score</Text>
           <View style={st.lockRow}><Text style={st.lockScore}>{score}</Text><Text style={st.lockDetail}>{zone.name}{'\n'}{metrics.currentSpeedKmh} km/h</Text></View>
           <Text style={st.lockFoot}>Lock Screen + Dynamic Island</Text>
         </View>
@@ -234,14 +233,14 @@ export default function DrivingContextScreen() {
           <Kicker>Your score, explained</Kicker>
           <View style={st.resultRow}><Text style={st.resultLabel}>Driving behavior</Text><Text style={st.resultValue}>{assessment.assessment.behaviorScore}</Text></View>
           <View style={st.resultRow}><Text style={st.resultLabel}>Road context</Text><Text style={st.resultValue}>{Math.round(assessment.assessment.routeContextScore)}</Text></View>
-          {assessment.assessment.routeFactors.slice(0, 3).map((factor) => <Body key={factor.key} style={st.factor}>• {factor.label}: {factor.areaLabel}</Body>)}
+          {assessment.assessment.routeFactors.slice(0, 3).map((factor) => <Body key={factor.key} style={st.factor}>{factor.label}: {factor.areaLabel}</Body>)}
           <Body style={st.disclosure}>The coaching score is 75% driving events and 25% route context. It cannot change an estimate or premium.</Body>
         </Panel>
       ) : null}
 
       <Panel>
         <Kicker>Your privacy</Kicker>
-        <Body style={st.disclosure}>Tracking runs only while this screen’s foreground drive is active. Pixie rounds route points to three decimals, sends at most 50 coarse points for classification, stores no route, and keeps this coaching score separate from pricing.</Body>
+        <Body style={st.disclosure}>Location is used only while this drive is open in the foreground. Approximate route points help explain the road context. No route is stored, and your score never changes your premium.</Body>
       </Panel>
     </Screen>
   );
@@ -251,38 +250,38 @@ const st = StyleSheet.create({
   title: { marginTop: 7 },
   lead: { marginTop: 10, marginBottom: 18, color: C.dim },
   scoreHero: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 14 },
-  score: { color: C.paper, fontFamily: F.monoMedium, fontSize: 68, lineHeight: 70 },
-  scoreBand: { marginTop: 2, color: '#BFD0D2', fontFamily: F.sansMedium, fontSize: 13 },
+  score: { color: C.ochre, fontFamily: F.sansBold, fontWeight: '600', fontSize: 68, lineHeight: 70 },
+  scoreBand: { marginTop: 2, color: C.dim, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 13 },
   liveReadout: { alignItems: 'flex-end', paddingBottom: 4 },
-  liveLabel: { color: '#FF8B7C', fontFamily: F.monoMedium, fontSize: 9, letterSpacing: 1 },
-  speed: { marginTop: 7, color: C.paper, fontFamily: F.monoMedium, fontSize: 25 },
-  speedUnit: { color: '#BFD0D2', fontFamily: F.sans, fontSize: 12 },
-  darkStats: { flexDirection: 'row', marginTop: 15, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#456066' },
+  liveLabel: { color: C.dim, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 12 },
+  speed: { marginTop: 7, color: C.ink, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 25 },
+  speedUnit: { color: C.dim, fontFamily: F.sans, fontSize: 12 },
+  darkStats: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 15, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.rule },
   actionGap: { marginTop: 14 },
-  denied: { marginTop: 8, color: C.ochre, fontFamily: F.sansMedium, fontSize: 13 },
+  denied: { marginTop: 8, color: C.ochre, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 13 },
   section: { marginTop: 24, marginBottom: 9 },
-  surfaceRow: { flexDirection: 'row', gap: 10 },
-  widgetPreview: { flex: 0.85, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: '#E7ECEC', justifyContent: 'space-between' },
-  lockPreview: { flex: 1.15, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: C.ink },
-  previewKicker: { color: C.ochre, fontFamily: F.monoMedium, fontSize: 8, letterSpacing: 0.8 },
-  previewArea: { marginTop: 11, color: C.ink, fontFamily: F.sansBold, fontSize: 17, lineHeight: 20 },
+  surfaceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  widgetPreview: { flex: 1, minWidth: 140, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: C.paper, justifyContent: 'space-between' },
+  lockPreview: { flex: 1, minWidth: 140, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: '#243650' },
+  previewKicker: { color: C.ochre, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 11 },
+  previewArea: { marginTop: 11, color: C.ink, fontFamily: F.sansBold, fontWeight: '600', fontSize: 17, lineHeight: 20 },
   previewContext: { marginTop: 5, color: C.dim, fontFamily: F.sans, fontSize: 11, lineHeight: 15 },
-  previewScore: { marginTop: 10, color: C.ink, fontFamily: F.monoMedium, fontSize: 10 },
+  previewScore: { marginTop: 10, color: C.ink, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 10 },
   lockRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 },
-  lockScore: { color: C.paper, fontFamily: F.monoMedium, fontSize: 40 },
-  lockDetail: { flex: 1, color: C.paper, fontFamily: F.sansMedium, fontSize: 12, lineHeight: 17 },
+  lockScore: { color: C.paper, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 40 },
+  lockDetail: { flex: 1, color: C.paper, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 12, lineHeight: 17 },
   lockFoot: { marginTop: 'auto', color: '#AFC1C4', fontFamily: F.sans, fontSize: 10 },
   previewNote: { marginTop: 9, color: C.dim, fontSize: 12, lineHeight: 17 },
   zones: { gap: 8 },
   zone: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderWidth: 1, borderColor: C.rule, borderRadius: 14 },
   zoneOn: { borderColor: C.ochre, backgroundColor: C.ochreSoft },
-  zoneName: { fontFamily: F.sansBold, fontSize: 15, color: C.ink },
+  zoneName: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 15, color: C.ink },
   zoneContext: { marginTop: 3, fontFamily: F.sans, fontSize: 12, lineHeight: 16, color: C.dim },
-  zoneLimit: { color: C.ink, fontFamily: F.monoMedium, fontSize: 16 },
+  zoneLimit: { color: C.ink, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 16 },
   zoneUnit: { color: C.dim, fontFamily: F.sans, fontSize: 8 },
-  resultRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#E4BBB5' },
-  resultLabel: { color: C.dim, fontFamily: F.sansMedium, fontSize: 14 },
-  resultValue: { color: C.ink, fontFamily: F.monoMedium, fontSize: 18 },
+  resultRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.rule },
+  resultLabel: { color: C.dim, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 14 },
+  resultValue: { color: C.ink, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 18 },
   factor: { marginTop: 9, color: C.dim, fontSize: 12, lineHeight: 17 },
   disclosure: { marginTop: 12, color: C.dim, fontSize: 12, lineHeight: 18 },
 });

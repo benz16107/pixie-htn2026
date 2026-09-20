@@ -198,7 +198,6 @@ export default function QuoteScreen() {
       <Dim>About {money(q.monthly)} a month</Dim>
       {q.decision.reasons.map((r) => (
         <Body key={r} style={{ marginTop: 6 }}>
-          {approve ? '✓ ' : '→ '}
           {r.replace('last 3 years', 'last 5 years')}
         </Body>
       ))}
@@ -231,7 +230,7 @@ export default function QuoteScreen() {
       <View style={{ marginTop: 22 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Kicker>Why this price</Kicker>
-          <Kicker style={{ color: exact ? C.moss : C.rust }}>{exact ? '✓ Lines add up exactly' : '× Lines do not add up'}</Kicker>
+          <Kicker style={{ color: exact ? C.moss : C.rust }}>{exact ? 'Receipt verified' : 'Check receipt'}</Kicker>
         </View>
         <Dim style={{ fontSize: 13, marginBottom: 8 }}>Tap a line to see its source and the exact multiplier.</Dim>
         <View style={[st.line, { borderTopColor: C.ink, borderTopWidth: 1.5 }]} accessible accessibilityLabel={`Base price ${money(q.receipt.base)}: $20,000 contents, $1 million liability, $1,000 deductible`}>
@@ -248,7 +247,7 @@ export default function QuoteScreen() {
         <Animated.View entering={enter(q.receipt.lines.length)} style={[st.line, st.total]}>
           <Text style={[st.lineLabel, { fontFamily: F.sansBold }]}>Total</Text>
           <View style={st.leader} />
-          <Mono style={[st.amount, { fontFamily: F.monoMedium, fontSize: 17 }]}>{money(cents / 100)}</Mono>
+          <Mono style={[st.amount, { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 17 }]}>{money(cents / 100)}</Mono>
         </Animated.View>
         <Text style={st.label}>{q.label}</Text>
 
@@ -287,23 +286,23 @@ export default function QuoteScreen() {
 
 const st = StyleSheet.create({
   skeleton: { backgroundColor: C.land, borderRadius: 12, marginTop: 14 },
-  chip: { fontFamily: F.sansBold, fontSize: 11, letterSpacing: 1, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, overflow: 'hidden', borderWidth: 1 },
+  chip: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 11, letterSpacing: 1, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, overflow: 'hidden', borderWidth: 1 },
   approve: { backgroundColor: C.moss, borderColor: C.moss, color: C.paper },
   refer: { backgroundColor: C.ochreSoft, borderColor: C.ochre, color: C.ink },
-  price: { fontFamily: F.sansBold, fontSize: 46, lineHeight: 52, color: C.ink, marginTop: 8, letterSpacing: -1.2, fontVariant: ['tabular-nums'] },
+  price: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 46, lineHeight: 52, color: C.ink, marginTop: 8, letterSpacing: -1.2, fontVariant: ['tabular-nums'] },
   per: { fontFamily: F.sans, fontSize: 18, color: C.dim },
   note: { fontFamily: F.sans, fontSize: 14, lineHeight: 20, color: C.ink, backgroundColor: C.ochreSoft, padding: 12, borderRadius: 12, marginTop: 12 },
   coverageCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: C.rule, backgroundColor: C.paper },
-  coverageValue: { fontFamily: F.sansBold, fontSize: 15, color: C.ink, marginTop: 4 },
+  coverageValue: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 15, color: C.ink, marginTop: 4 },
   editButton: { minWidth: 48, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' },
-  editText: { fontFamily: F.sansBold, fontSize: 14, color: C.rust, textDecorationLine: 'underline' },
+  editText: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 14, color: C.rust, textDecorationLine: 'underline' },
   shareStatus: { fontFamily: F.sans, fontSize: 13, lineHeight: 18, color: C.moss, marginTop: 10 },
   line: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.rule, borderStyle: 'dashed' },
-  lineLabel: { fontFamily: F.sansMedium, fontSize: 16, color: C.ink, flexShrink: 1 },
+  lineLabel: { fontFamily: F.sansMedium, fontWeight: '500', fontSize: 16, color: C.ink, flexShrink: 1 },
   leader: { flex: 1, minWidth: 8 },
   amount: { fontFamily: F.mono, fontSize: 15, color: C.ink, minWidth: 72, textAlign: 'right' },
-  disclosure: { width: 14, fontFamily: F.sansBold, fontSize: 16, color: C.dim, textAlign: 'right' },
-  cap: { fontFamily: F.monoMedium, fontSize: 10, letterSpacing: 1, color: C.ink, borderWidth: 1, borderColor: C.ink, paddingHorizontal: 4, borderRadius: 3 },
+  disclosure: { width: 14, fontFamily: F.sansBold, fontWeight: '600', fontSize: 16, color: C.dim, textAlign: 'right' },
+  cap: { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 10, letterSpacing: 1, color: C.ink, borderWidth: 1, borderColor: C.ink, paddingHorizontal: 4, borderRadius: 3 },
   total: { flexDirection: 'row', alignItems: 'baseline', gap: 8, borderTopColor: C.ink, borderTopWidth: 2, borderStyle: 'solid' },
   label: { fontFamily: F.sans, fontSize: 13, color: C.dim, marginTop: 6 },
   rec: { marginTop: 22, padding: 16, borderRadius: 14, backgroundColor: C.ochreSoft },

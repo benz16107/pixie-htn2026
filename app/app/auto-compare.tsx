@@ -24,7 +24,7 @@ export default function AutoCompareScreen() {
   return (
     <Screen footer={<Button label={`Use ${autoListing.make} ${autoListing.model}`} onPress={() => router.dismissTo('/decide')} />}>
       <Kicker>Auto · listing comparison</Kicker>
-      <Title style={st.title}>See the car cost and cover together.</Title>
+      <Title style={st.title}>Find your next car.</Title>
       <Body style={st.lead}>Choose an example listing to compare the monthly car cost with an illustrative insurance estimate.</Body>
 
       <View accessibilityRole="radiogroup" accessibilityLabel="Vehicle listings">
@@ -43,7 +43,7 @@ export default function AutoCompareScreen() {
               style={({ pressed }) => [st.card, selected && st.cardOn, pressed && { opacity: 0.75 }]}
             >
               <View style={st.cardHead}>
-                <View style={{ flex: 1, minWidth: 0 }}><Kicker>{vehicle.year} · EXAMPLE LISTING</Kicker><Text style={st.name}>{vehicle.make} {vehicle.model}</Text></View>
+                <View style={{ flex: 1, minWidth: 0 }}><Kicker>{vehicle.year} · Example listing</Kicker><Text style={st.name}>{vehicle.make} {vehicle.model}</Text></View>
                 <View style={[st.radio, selected && st.radioOn]} />
               </View>
               <Text style={st.listPrice}>${vehicle.listingPrice.toLocaleString('en-CA')}</Text>
@@ -51,9 +51,9 @@ export default function AutoCompareScreen() {
                 <>
                   <SourceMark live={!!live} />
                   <View style={st.stats}>
-                    <MiniStat value={`$${vehicle.paymentMonthly}`} label="CAR / MO" />
-                    <MiniStat value={`$${estimate.monthly}`} label="COVER / MO" />
-                    <MiniStat value={`$${estimate.ownershipMonthly}`} label="COMBINED" />
+                    <MiniStat value={`$${vehicle.paymentMonthly}`} label="Car / month" />
+                    <MiniStat value={`$${estimate.monthly}`} label="Cover / month" />
+                    <MiniStat value={`$${estimate.ownershipMonthly}`} label="Total / month" />
                   </View>
                 </>
               ) : <ActivityIndicator color={C.ochre} accessibilityLabel="Loading estimate" style={{ alignSelf: 'flex-start', marginTop: 18 }} />}
@@ -72,8 +72,8 @@ const st = StyleSheet.create({
   card: { borderWidth: 1, borderColor: C.rule, borderRadius: 16, padding: 16, marginBottom: 12, backgroundColor: C.paper },
   cardOn: { borderColor: C.ochre, borderWidth: 2, backgroundColor: C.ochreSoft },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  name: { marginTop: 5, fontFamily: F.sansBold, fontSize: 20, color: C.ink },
-  listPrice: { marginTop: 6, marginBottom: 12, fontFamily: F.monoMedium, fontSize: 14, color: C.dim },
+  name: { marginTop: 5, fontFamily: F.sansBold, fontWeight: '600', fontSize: 20, color: C.ink },
+  listPrice: { marginTop: 6, marginBottom: 12, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 14, color: C.dim },
   radio: { width: 22, height: 22, borderWidth: 1.5, borderColor: C.dim, borderRadius: 11 },
   radioOn: { borderColor: C.ochre, borderWidth: 7 },
   stats: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 },

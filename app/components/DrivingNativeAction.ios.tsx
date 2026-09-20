@@ -7,7 +7,7 @@ export function DrivingNativeAction({ label, onPress, disabled }: { label: strin
       <Button
         label={label}
         onPress={onPress}
-        modifiers={[buttonStyle('borderedProminent'), controlSize('large'), tint('#B64032'), disabledModifier(!!disabled)]}
+        modifiers={[buttonStyle('borderedProminent'), controlSize('large'), tint('#0066CC'), disabledModifier(!!disabled)]}
       />
     </Host>
   );

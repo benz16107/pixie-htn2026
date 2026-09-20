@@ -1,48 +1,32 @@
 import { router } from 'expo-router';
-import { View } from 'react-native';
-import { ActionCard, ConsumerHeader, MiniStat, Panel, ProductSwitch } from '@/components/consumer';
-import { Body, Button, Kicker, Screen, Title } from '@/components/ui';
+import { StyleSheet, Text, View } from 'react-native';
+import { AppIcon } from '@/components/AppIcon';
+import { ActionCard, ConsumerHeader, Panel, ProductSwitch, SectionLabel } from '@/components/consumer';
+import { Body, Button, Screen } from '@/components/ui';
 import { useQuote } from '@/lib/store';
+import { C, F } from '@/lib/theme';
 
-export default function RecoverScreen() {
+export default function HelpScreen() {
   const { product, setProduct, driveSummary } = useQuote();
-  return (
-    <Screen>
-      <ConsumerHeader title="Help when you need it" detail="Safety first, then one clear record." />
-      <ProductSwitch product={product} onChange={setProduct} />
-      <Title style={{ marginTop: 24 }}>{product === 'auto' ? 'Something happened on the road?' : 'Something happened at home?'}</Title>
-      <Body style={{ marginTop: 9, marginBottom: 18 }}>Start with immediate safety, then keep the details you may need in one local plan.</Body>
-      {product === 'auto' ? (
-        <Panel tone="warm">
-          <Kicker>Driving context</Kicker>
-          {driveSummary ? (
-            <>
-              <View style={{ flexDirection: 'row', marginTop: 8 }}>
-                <MiniStat value={String(driveSummary.score)} label="LAST SCORE" />
-                <MiniStat value={`${driveSummary.maxSpeedKmh}`} label="MAX KM/H" />
-                <MiniStat value={`${driveSummary.speedingEvents + driveSummary.hardBrakeEvents}`} label="EVENTS" />
-              </View>
-              <Body style={{ marginBottom: 12, fontSize: 13 }}>{driveSummary.area}. This coaching record remains separate from your incident plan.</Body>
-            </>
-          ) : <Body style={{ marginTop: 8, marginBottom: 12 }}>No recent drive is saved in this session. Driving insights can still help explain the road context before an incident.</Body>}
-          <Button kind="secondary" label={driveSummary ? 'Review last drive' : 'Open driving insights'} onPress={() => router.push('/driving-context')} />
-        </Panel>
-      ) : null}
-      <Panel tone="ink">
-        <Kicker style={{ color: '#AFC1C4' }}>Your private recovery plan</Kicker>
-        <Body style={{ marginTop: 8, color: '#F7F3E9' }}>
-          Your checklist and notes stay in this flow until you choose to export them. Recovery details never change the estimate shown elsewhere in Pixie.
-        </Body>
-      </Panel>
-      <ActionCard
-        title={product === 'auto' ? 'Start an auto recovery plan' : 'Start a home recovery plan'}
-        detail={product === 'auto' ? 'Check safety, record the scene, and prepare one clear summary.' : 'Limit further damage, record affected rooms, and prepare one clear summary.'}
-        meta="WORKS WITHOUT A NETWORK"
-        onPress={() => router.push({ pathname: '/recovery-plan', params: { product } })}
-      />
-      <Body style={{ marginTop: 14, marginBottom: 24, fontSize: 13, lineHeight: 19 }}>
-        If anyone is hurt or the area is unsafe, call emergency services before using this checklist. Pixie organizes recovery information; it does not submit a claim.
-      </Body>
-    </Screen>
-  );
+  return <Screen topSafe>
+    <ConsumerHeader title="Help" detail="One clear next step, when you need it." />
+    <ProductSwitch product={product} onChange={setProduct} />
+    <SectionLabel>{product === 'auto' ? 'After a road incident' : 'When something happens at home'}</SectionLabel>
+    <Panel>
+      <View style={st.heading}><AppIcon name="document" size={25} /><Text style={st.title}>Make a recovery plan</Text></View>
+      <Body style={st.description}>{product === 'auto' ? 'Check everyone is safe, record what happened, and keep the details together.' : 'Check your safety, record any damage, and prepare a summary of what happened.'}</Body>
+      <Button label="Get started" onPress={() => router.push({ pathname: '/recovery-plan', params: { product } })} />
+      <View style={st.privacy}><AppIcon name="lock" size={14} color={C.dim} /><Text style={st.note}>Your notes stay private until you share them.</Text></View>
+    </Panel>
+    <Text style={st.note}>If anyone is hurt or in danger, call emergency services first. Pixie prepares a personal record; it does not submit a claim.</Text>
+    <SectionLabel>{product === 'auto' ? 'Your driving' : 'Your records'}</SectionLabel>
+    {product === 'auto' ? <ActionCard icon="drive" title={driveSummary ? 'Review your last drive' : 'Driving insights'} detail={driveSummary ? `Score ${driveSummary.score}. Review your driving and road context.` : 'Understand your driving score before your next trip.'} onPress={() => router.push('/driving-context')} /> : <ActionCard icon="inventory" title="Your belongings" detail="Review your inventory before making a plan." onPress={() => router.push('/home-inventory')} />}
+  </Screen>;
 }
+const st = StyleSheet.create({
+  heading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, fontFamily: F.sansBold, fontWeight: '600', fontSize: 21, lineHeight: 26, color: C.ink },
+  description: { marginTop: 16, marginBottom: 20, fontSize: 16, color: C.dim },
+  privacy: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 16 },
+  note: { flexShrink: 1, fontFamily: F.sans, fontSize: 13, lineHeight: 19, color: C.dim },
+});

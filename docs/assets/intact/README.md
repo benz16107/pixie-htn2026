@@ -1,5 +1,7 @@
 # Intact submission images
 
+The latest mobile designs are in [apple-refresh](apple-refresh/README.md). Use those Home, Auto, Compare, Safety, Help, and Drive Score captures for the current submission.
+
 Use the connected web diagram as the Devpost cover after its final capture. Files `14` through `16` contain the current consumer navigation, Drive Score, and live MCP interface. Files `03` through `13` document the earlier proof flows and should be replaced where their old Quote, Decide, Protect, or Recover tab labels are visible.
 
 | File | Use | Caption |

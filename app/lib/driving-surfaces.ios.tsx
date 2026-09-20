@@ -8,7 +8,7 @@ const DriveWidget = createWidget<DriveSurfaceState>('DriveContext', (state) => {
   'widget';
   return (
     <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 14 })]}>
-      <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle('#B64032')]}>PIXIE DRIVE SCORE</Text>
+      <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle('#0066CC')]}>Pixie Drive Score</Text>
       <Text modifiers={[font({ size: 19, weight: 'bold' })]}>{state.zone}</Text>
       <Text modifiers={[font({ size: 13 })]}>{state.context}</Text>
       <Text modifiers={[font({ size: 11 }), foregroundStyle('#66777A')]}>{state.score} score · {state.speedKmh} km/h</Text>
@@ -23,7 +23,7 @@ const DriveActivity = createLiveActivity<DriveSurfaceState>('DriveContext', (sta
     banner: (
       <HStack spacing={8} modifiers={[padding({ all: 14 })]}>
         <VStack alignment="leading" spacing={3}>
-          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle('#B64032')]}>Drive score active</Text>
+          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle('#0066CC')]}>Drive score active</Text>
           <Text modifiers={[font({ size: 16, weight: 'bold' })]}>{state.zone}</Text>
           <Text modifiers={[font({ size: 12 })]}>{state.context}</Text>
         </VStack>

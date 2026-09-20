@@ -1,3 +1,4 @@
+import { AppIcon } from '@/components/AppIcon';
 import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
 import { Redirect, router, Stack } from 'expo-router';
@@ -130,7 +131,7 @@ export default function CoverageScreen() {
       <Body style={st.lead}>We filled in a common renter setup. Change anything here, then see each choice on your price receipt.</Body>
 
       <View style={st.fastFill} accessible accessibilityLabel="Fast fill complete. Five details are ready to review.">
-        <View style={st.fastFillMark}><Text style={st.fastFillCheck}>✓</Text></View>
+        <View style={st.fastFillMark}><AppIcon name="check" size={20} color={C.paper} /></View>
         <View style={{ flex: 1 }}>
           <Text style={st.fastFillTitle}>Fast-fill complete</Text>
           <Dim style={{ fontSize: 13 }}>Five details, one review screen</Dim>
@@ -203,27 +204,27 @@ const st = StyleSheet.create({
   lead: { marginTop: 8, color: C.dim },
   fastFill: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, padding: 14, borderRadius: 14, backgroundColor: C.land },
   fastFillMark: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.moss },
-  fastFillCheck: { fontFamily: F.sansBold, fontSize: 17, color: C.paper },
-  fastFillTitle: { fontFamily: F.sansBold, fontSize: 15, color: C.ink },
+  fastFillCheck: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 17, color: C.paper },
+  fastFillTitle: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 15, color: C.ink },
   section: { paddingTop: 22, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: C.rule },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 9, marginBottom: 11 },
-  sectionNumber: { fontFamily: F.monoMedium, fontSize: 11, color: C.ochre },
-  sectionTitle: { fontFamily: F.sansBold, fontSize: 18, color: C.ink },
+  sectionNumber: { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 11, color: C.ochre },
+  sectionTitle: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 18, color: C.ink },
   options: { flexDirection: 'row', gap: 8 },
   option: { flex: 1, minHeight: 64, borderWidth: 1, borderColor: C.rule, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 10, justifyContent: 'center' },
   optionOn: { borderColor: C.ochre, backgroundColor: C.ochreSoft },
   optionPressed: { opacity: 0.72 },
-  optionLabel: { fontFamily: F.sansBold, fontSize: 14, lineHeight: 18, color: C.ink },
-  optionLabelOn: { color: C.rust },
+  optionLabel: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 14, lineHeight: 18, color: C.ink },
+  optionLabelOn: { color: C.ochre },
   optionNote: { fontFamily: F.sans, fontSize: 11, lineHeight: 15, color: C.dim, marginTop: 2 },
   optionNoteOn: { color: C.ink },
   help: { fontSize: 13, lineHeight: 18, marginTop: 9, marginBottom: 12 },
   valueRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  big: { fontFamily: F.monoMedium, fontSize: 34, color: C.ink, fontVariant: ['tabular-nums'] },
-  priceChange: { fontFamily: F.monoMedium, fontSize: 11, color: C.moss },
+  big: { fontFamily: F.sansBold, fontWeight: '600', fontSize: 34, color: C.ink, fontVariant: ['tabular-nums'] },
+  priceChange: { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 11, color: C.moss },
   sliderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   slider: { flex: 1, height: 44 },
   step: { width: 46, height: 46, borderRadius: 12, borderWidth: 1, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  stepText: { fontFamily: F.monoMedium, fontSize: 22, color: C.ink },
+  stepText: { fontFamily: F.monoMedium, fontWeight: '500', fontSize: 22, color: C.ink },
   disabled: { opacity: 0.35 },
 });

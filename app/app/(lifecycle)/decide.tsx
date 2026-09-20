@@ -27,16 +27,16 @@ export default function DecideScreen() {
   }, [autoChoice, autoListing.id]);
 
   const homeOptions = [
-    { title: '$30,000 contents', detail: 'Current baseline', value: 30000 },
-    { title: '$50,000 contents', detail: 'Adds $80 yearly in the documented tenant model', value: 50000 },
+    { title: '$30,000 contents', detail: 'Essential belongings', value: 30000 },
+    { title: '$50,000 contents', detail: 'Adds $80 a year to the illustrative estimate', value: 50000 },
   ];
 
   return (
-    <Screen>
-      <ConsumerHeader title="Compare your options" detail="Try a change before you save it." />
+    <Screen topSafe>
+      <ConsumerHeader title="Compare" detail="Try a change before you save it." />
       <ProductSwitch product={product} onChange={setProduct} />
-      <Title style={st.title}>{product === 'auto' ? 'What fits your driving?' : 'What fits your home?'}</Title>
-      <Body style={st.lead}>Change one choice at a time. Nothing is saved until you select “Use this setup.”</Body>
+      <Title style={st.title}>{product === 'auto' ? 'Your driving setup' : 'Your contents coverage'}</Title>
+      <Body style={st.lead}>Explore an option, then save the one that fits.</Body>
       {product === 'auto' ? (
         <>
           <View accessibilityRole="radiogroup" accessibilityLabel="Auto estimate scenarios">
@@ -58,7 +58,7 @@ export default function DecideScreen() {
             {homeOptions.map((option, index) => <Choice key={option.title} title={option.title} detail={option.detail} selected={homeChoice === index} onPress={() => setHomeChoice(index)} />)}
           </View>
           <Panel>
-            <Kicker>Tenant input preview</Kicker>
+            <Kicker>Coverage amount</Kicker>
             <Text style={st.price}>${homeOptions[homeChoice].value.toLocaleString('en-CA')}</Text>
             <Body style={st.note}>Contents coverage only. The address, deductible, liability, and claims answers stay unchanged.</Body>
             <Button label="Use this coverage" onPress={() => setAnswers({ contentsValue: homeOptions[homeChoice].value })} />
@@ -71,11 +71,11 @@ export default function DecideScreen() {
 }
 
 const st = StyleSheet.create({
-  title: { marginTop: 24 },
+  title: { marginTop: 28, fontSize: 22, lineHeight: 28, letterSpacing: -0.4 },
   lead: { marginTop: 9, marginBottom: 18, color: C.dim },
   kicker: { marginTop: 14 },
-  price: { marginTop: 7, marginBottom: 7, fontFamily: F.monoMedium, fontSize: 34, color: C.ink },
+  price: { marginTop: 7, marginBottom: 7, fontFamily: F.sansBold, fontWeight: '600', fontSize: 36, color: C.ink },
   unit: { fontFamily: F.sans, fontSize: 16, color: C.dim },
   note: { marginBottom: 16, fontSize: 14, color: C.dim },
-  saved: { marginTop: 12, fontFamily: F.sansMedium, color: C.moss },
+  saved: { marginTop: 12, fontFamily: F.sansMedium, fontWeight: '500', color: C.moss },
 });

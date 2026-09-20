@@ -227,7 +227,7 @@ export default function RecoveryPlanScreen() {
             <View key={action} style={st.nextRow}><Text style={st.nextNumber}>0{index + 1}</Text><Body style={st.nextText}>{action}</Body></View>
           ))}
           <Kicker style={st.section}>Included in your record</Kicker>
-          {evidenceLabels.map((label) => <Text key={label} style={st.included}>✓ {label}</Text>)}
+          {evidenceLabels.map((label) => <Text key={label} style={st.included}>{label}</Text>)}
           {notes ? <View style={st.notes}><Kicker>Your notes</Kicker><Body style={{ marginTop: 6 }}>{notes}</Body></View> : null}
           <View style={st.action}><Button label="Save or share this plan" onPress={exportPlan} /></View>
           {exportStatus ? <Text accessibilityLiveRegion="polite" style={st.status}>{exportStatus}</Text> : null}
@@ -245,24 +245,24 @@ const st = StyleSheet.create({
   progressItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 42 },
   progressDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.rule },
   progressDotOn: { backgroundColor: C.ochre },
-  progressText: { fontFamily: F.sansMedium, fontSize: 12, color: C.dim },
-  progressTextOn: { fontFamily: F.sansBold, color: C.ink },
+  progressText: { fontFamily: F.sansMedium, fontWeight: '500', fontSize: 12, color: C.dim },
+  progressTextOn: { fontFamily: F.sansBold, fontWeight: '600', color: C.ink },
   title: { marginTop: 8 },
   lead: { marginTop: 10, color: C.dim },
   section: { marginTop: 24, marginBottom: 8 },
   action: { marginTop: 20 },
   hint: { marginTop: 8, marginBottom: 20, fontSize: 13, lineHeight: 18 },
-  inputLabel: { marginTop: 22, marginBottom: 7, fontFamily: F.sansBold, fontSize: 15, color: C.ink },
+  inputLabel: { marginTop: 22, marginBottom: 7, fontFamily: F.sansBold, fontWeight: '600', fontSize: 15, color: C.ink },
   input: { minHeight: 112, borderWidth: 1, borderColor: C.rule, borderRadius: 14, padding: 13, fontFamily: F.sans, fontSize: 16, lineHeight: 22, color: C.ink, textAlignVertical: 'top', backgroundColor: C.paper },
   counter: { marginTop: 6, fontSize: 12, textAlign: 'right' },
-  reference: { marginTop: 8, fontFamily: F.monoMedium, fontSize: 14, color: '#D8E2E3' },
-  summaryTitle: { marginTop: 18, fontFamily: F.sansBold, fontSize: 24, color: C.paper },
+  reference: { marginTop: 8, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 14, color: '#D8E2E3' },
+  summaryTitle: { marginTop: 18, fontFamily: F.sansBold, fontWeight: '600', fontSize: 24, color: C.paper },
   inverse: { marginTop: 6, color: '#D8E2E3', fontSize: 14 },
   nextRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 11, borderTopWidth: 1, borderTopColor: C.rule },
-  nextNumber: { width: 26, fontFamily: F.monoMedium, fontSize: 11, color: C.ochre },
+  nextNumber: { width: 26, fontFamily: F.monoMedium, fontWeight: '500', fontSize: 11, color: C.ochre },
   nextText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  included: { paddingVertical: 8, fontFamily: F.sansMedium, fontSize: 15, color: C.ink },
+  included: { paddingVertical: 8, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 15, color: C.ink },
   notes: { marginTop: 18, padding: 14, borderWidth: 1, borderColor: C.rule, borderRadius: 14, backgroundColor: C.land },
-  status: { marginTop: 10, fontFamily: F.sansMedium, fontSize: 13, lineHeight: 18, color: C.moss },
+  status: { marginTop: 10, fontFamily: F.sansMedium, fontWeight: '500', fontSize: 13, lineHeight: 18, color: C.moss },
   disclosure: { marginTop: 14, marginBottom: 24, fontSize: 12, lineHeight: 18 },
 });
