@@ -8,6 +8,25 @@ set -a; . ./.env 2>/dev/null; set +a
 
 up() { lsof -ti tcp:"$1" >/dev/null 2>&1; }
 
+# The venue Wi-Fi hands out a different address than home, and the phone app bakes its API URL in
+# at bundle time. Rewrite it from the address this machine holds right now, every start.
+LAN=$(ipconfig getifaddr en0 || ipconfig getifaddr en1)
+if [ -n "${LAN:-}" ]; then
+  PREV=$(grep -m1 '^EXPO_PUBLIC_API_URL=' app/.env 2>/dev/null | cut -d= -f2-)
+  cat > app/.env <<EOF
+# Written by start.sh from this machine's current Wi-Fi address. The phone must be on this network.
+# On cellular, swap in the tunnel URL from .env (PUBLIC_URL).
+EXPO_PUBLIC_API_URL=http://$LAN:8000
+EXPO_PUBLIC_WEB_URL=http://$LAN:3100
+EOF
+  echo "lan   $LAN"
+  # A changed address means the running bundle is stale, so Expo has to be restarted, not reused.
+  if [ "$PREV" != "http://$LAN:8000" ] && up 8081; then
+    echo "      address changed, restarting Expo"
+    lsof -ti tcp:8081 | xargs kill -9 2>/dev/null
+  fi
+fi
+
 if up 8000; then
   echo "api   already up"
 else
@@ -35,12 +54,32 @@ else
 fi
 
 # The public tunnel carries Linq's inbound webhooks and the Sentry uptime check.
+# Some networks refuse to resolve trycloudflare.com even when the tunnel is healthy for everyone
+# else, so ask Cloudflare's own resolver before declaring it down.
+tunnel_answers() {
+  local url="${1:-}" host ip
+  [ -n "$url" ] || return 1
+  curl -fsS -m 10 "$url/health" >/dev/null 2>&1 && return 0
+  host=${url#*//}; host=${host%%/*}
+  ip=$(dig +short "$host" @1.1.1.1 2>/dev/null | head -1)
+  [ -n "$ip" ] || return 1
+  [ "$(curl -s -m 20 -o /dev/null -w '%{http_code}' --resolve "$host:443:$ip" "$url/health")" = "200" ]
+}
+
 if pgrep -f "cloudflared tunnel" >/dev/null 2>&1; then
-  echo "tunnel already up: ${PUBLIC_URL:-unset}"
-  curl -fsS "${PUBLIC_URL:-http://127.0.0.1:0}/health" >/dev/null 2>&1 \
-    || echo "      WARNING: PUBLIC_URL does not answer. Run: python3 scripts/retunnel.py"
+  if tunnel_answers "${PUBLIC_URL:-}"; then
+    echo "tunnel up: ${PUBLIC_URL}"
+  else
+    echo "tunnel STALE: ${PUBLIC_URL:-unset} does not answer. Run: python3 scripts/retunnel.py"
+  fi
 else
   echo "tunnel DOWN. iMessage replies will not arrive. Run: python3 scripts/retunnel.py"
+fi
+
+# The lid closing mid-demo ends the demo. Hold the machine awake until this shell is killed.
+if ! pgrep -qf "caffeinate -disu"; then
+  nohup caffeinate -disu > /dev/null 2>&1 &
+  echo "awake caffeinate running (kill it with: pkill caffeinate)"
 fi
 
 cat <<EOF

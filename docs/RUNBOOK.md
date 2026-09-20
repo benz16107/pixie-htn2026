@@ -3,6 +3,21 @@
 Everything Ben needs to bring Pixie up, keep it up, and recover in front of a judge.
 Written 2026-09-19 against what is actually running on this laptop. Ports and URLs verified.
 
+## 0. One command
+
+    ~/Code/hackathons/htn-2026/atlas/start.sh
+
+Starts whatever is down, leaves what is up alone, rewrites the phone app's API address from the
+Wi-Fi this laptop is on right now (restarting Expo if the address moved), holds the machine awake
+with `caffeinate`, checks the tunnel through Cloudflare's resolver, and prints every URL. Run it
+after any network change and after any reboot.
+
+Everything runs on the laptop, not the server: it is the machine that goes to the judges. That
+means two failure modes to stay ahead of. The lid closing ends the demo, so leave `caffeinate`
+running (`start.sh` does it) and keep the machine plugged in. And the venue's Wi-Fi hands out a
+different address than home, which silently breaks the phone app because Expo bakes the API URL
+into the bundle: re-run `start.sh` after joining the venue network, then reopen Expo Go.
+
 ## 1. What has to be running
 
 | Piece | Port | Start it | Check |
