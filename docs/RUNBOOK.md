@@ -18,8 +18,15 @@ server-rendered pages come back empty.
 If a port is stuck, `lsof -ti tcp:<port> | xargs kill -9`. `pkill -f "next start"` does not match
 the process; use the lsof form.
 
-The tunnel URL changes every time cloudflared restarts. If it does restart, put the new URL in
-`.env` as `PUBLIC_URL` and re-register the Linq subscription, or inbound iMessage replies go nowhere.
+The tunnel URL changes every time cloudflared restarts. `python3 scripts/retunnel.py` starts a new
+one and repoints `.env`, `app/.env` and the Sentry uptime monitor; repointing the Linq webhook in
+Linq's own dashboard is the one manual step. Without it, inbound iMessage replies go nowhere.
+
+**This network does not resolve `trycloudflare.com` hostnames.** A local `curl` to the tunnel fails
+with "could not resolve host" while the tunnel is perfectly healthy for the outside world. Check it
+the way the script does: `dig +short <host> @1.1.1.1`, then `curl --resolve <host>:443:<ip>`. For the
+same reason the phone app points at the laptop's LAN address (`app/.env`), not the tunnel; swap in
+the commented tunnel line only if the phone is on cellular.
 
 ## 2. The five minutes
 
