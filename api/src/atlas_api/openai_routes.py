@@ -76,10 +76,60 @@ def runtime() -> dict[str, Any]:
     }
 
 
+# The two stores behind this route answer two different questions, and a judge has to be able to tell
+# them apart: `desk` is Pixie's own SQLiteSession, which needs no network and no third party, and
+# `backboard` is Backboard's assistant memory, which needs their service and their credits.
+DESK_SOURCE = {"id": "desk", "name": "Pixie's own cross-case recall",
+               "store": "agents.memory.SQLiteSession (api/cache/desk-sessions.sqlite)",
+               "needsNetwork": False,
+               "note": "one number-free line per closed case, written by the desk itself. Works with "
+                       "the Wi-Fi off and with no third-party account."}
+BACKBOARD_SOURCE = {"id": "backboard", "name": "Backboard assistant memory",
+                    "store": "Backboard.io, one assistant per underwriter",
+                    "needsNetwork": True,
+                    "note": "durable across restarts and machines, and the same assistant holds the "
+                            "appetite guideline for citation. Needs BACKBOARD_API_KEY and credits."}
+
+
+def _recalled_rows(memo: memory.CaseMemo, events: list[DeskEvent], session_lines: list[str],
+                   extra: list[tuple[str, str]] = []) -> list[dict[str, Any]]:
+    """One row per earlier case the desk recalled: which case, from which store, and why it came back.
+
+    The ledger is preferred because it is what the run actually saw; the session is read directly for
+    a case that has not been run since the lines were written."""
+    seen: dict[str, dict[str, Any]] = {}
+    pairs = [(line, "backboard" if p.source in ("backboard", "cache") else "desk")
+             for e in events if isinstance((p := e.payload), RecallP) for line in p.lines]
+    pairs += [(line, "desk") for line in session_lines] + list(extra)
+    for line, src in pairs:
+        if line in seen:
+            continue
+        f = memory.parse_line(line)
+        seen[line] = {"caseId": f.get("case", "?"), "insured": f.get("insured", "?"),
+                      "broker": f.get("broker", "?"), "state": f.get("state", ""),
+                      "dataIssues": [i for i in (f.get("data_issues") or "").split(", ") if i],
+                      "why": memory.why_recalled(memo, line), "from": src, "line": line}
+    return list(seen.values())
+
+
+def _summary(cid: str, rows: list[dict[str, Any]]) -> str:
+    """One line an underwriter can read aloud. Built from the rows, not written by a model."""
+    if not rows:
+        return (f"The desk has nothing to recall for SUB-{cid}: no earlier case in this session shares "
+                "its insured, broker or region.")
+    first = "; ".join(f"case {r['caseId']} ({r['insured']}, {r['broker']}): {r['why']}" for r in rows[:2])
+    more = f", and {len(rows) - 2} more" if len(rows) > 2 else ""
+    return f"On SUB-{cid} the desk recalled {len(rows)} earlier case(s) it had worked: {first}{more}."
+
+
 @router.get("/cases/{case_id}/memory")
 async def case_memory(case_id: str, live: bool = False) -> dict[str, Any]:
-    """What the desk remembered for this case. Ledger first (that is what the run actually saw);
-    `live=true` asks Backboard again, which is cached to disk and so still works offline."""
+    """What the desk remembered for this case, in a shape a person can read out at a booth.
+
+    `summary` is the sentence, `recalled` is one row per earlier case with why it came back, `sources`
+    separates Pixie's own recall from Backboard's, and `boundary` is the line memory may not cross.
+    Ledger first (that is what the run actually saw); `live=true` asks Backboard again, which is
+    cached to disk and so still answers offline."""
     cid, case = _case_or_404(case_id)
     assert _store is not None
     events: list[DeskEvent] = _store.tail(cid) if _store.latest_run(cid) else []
@@ -87,19 +137,33 @@ async def case_memory(case_id: str, live: bool = False) -> dict[str, Any]:
                 for e in events if isinstance(e.payload, RecallP)]
     judgements = [e.payload.model_dump(mode="json", exclude={"kind"})
                   for e in events if isinstance(e.payload, JudgementP)]
+    session_lines = await session_recall(session(), limit=8, skip_case=cid)
+    memo = memory.memo_for(_world, cid, case)
+    rec = await memory.recall(memo, cite_guideline=True) if live else None
+    rows = _recalled_rows(memo, events, session_lines,
+                          [(line, "backboard") for line in (rec.lines if rec else [])])
     out: dict[str, Any] = {
         "caseId": cid,
-        "fromLedger": recalled,
-        "judgements": judgements,
-        "backboardEnabled": memory.enabled(),
+        "summary": _summary(cid, rows),
+        "recalled": rows,
         "boundary": memory.BOUNDARY,
+        "sources": {
+            "desk": DESK_SOURCE | {"lines": sum(1 for r in rows if r["from"] == "desk"), "live": True},
+            "backboard": BACKBOARD_SOURCE | {"lines": sum(1 for r in rows if r["from"] == "backboard"),
+                                             "live": memory.enabled(),
+                                             "queried": bool(live) or any(
+                                                 r["from"] == "backboard" for r in rows)},
+        },
+        "judgements": judgements,
         "judgementBoundary": memory.JUDGEMENT_BOUNDARY,
+        "fromLedger": recalled,
+        "session": session_lines,
+        "backboardEnabled": memory.enabled(),
     }
-    out["session"] = await session_recall(session(), limit=8, skip_case=cid)
-    if live:
-        memo = memory.memo_for(_world, cid, case)
-        rec = await memory.recall(memo, cite_guideline=True)
+    if rec is not None:
         out["live"] = rec.wire() | {"query": memo.query()}
+        out["sources"]["backboard"] |= {"source": rec.source, "detail": rec.detail,
+                                        "guideline": bool(rec.guideline)}
     return out
 
 

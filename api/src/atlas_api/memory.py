@@ -92,6 +92,33 @@ class CaseMemo:
                 f"{self.insured}, in {self.state}, on {self.business} property risks?")
 
 
+def parse_line(line: str) -> dict[str, str]:
+    """The inverse of `CaseMemo.line()`, so a remembered line can be shown as fields a person reads."""
+    out: dict[str, str] = {}
+    for bit in (b.strip() for b in line.split(";")):
+        for key in ("data issues", "perils read", "insured", "broker", "state", "case", "type"):
+            if bit.startswith(key + " "):
+                out[key.replace(" ", "_")] = bit[len(key) + 1:]
+                break
+    return out
+
+
+def why_recalled(memo: CaseMemo, line: str) -> str:
+    """Why this earlier case came back, computed by comparing the two remembered lines. No model."""
+    f = parse_line(line)
+    same = []
+    if f.get("insured") and f["insured"] == memo.insured:
+        same.append("same insured")
+    if f.get("broker") and f["broker"] == memo.broker:
+        same.append("same broker")
+    if f.get("state") and f["state"] == memo.state:
+        same.append(f"same state ({memo.state})")
+    shared = {i for i in (f.get("data_issues") or "").split(", ") if i} & set(memo.issues)
+    if shared:
+        same.append("same data issue: " + ", ".join(sorted(shared)))
+    return ", ".join(same) or "an earlier case on this desk"
+
+
 def memo_for(world: Any, case_id: str, case: Any, perils: tuple[str, ...] = ()) -> CaseMemo:
     """The one builder both the desk and the API use, so they remember the same shape of thing."""
     from .case import Known
@@ -271,9 +298,7 @@ async def judge(state: Any, questions: dict[str, Any]) -> tuple[list[Judgement],
         answer = await client.send_message("", llm_provider=SYSTEM_ONE_PROVIDER, model_name=SYSTEM_ONE_MODEL,
                                            system_one={"state": state, "questions": questions})
         payload = _system_one_of(answer)
-        out = [Judgement(question=q, answer=str(a.get("answer", a.get("value", ""))),
-                         probability=_num(a.get("probability")), confidence=_num(a.get("confidence")))
-               for q, a in (payload or {}).items()]
+        out = [_judgement_of(q, a) for q, a in (payload or {}).items()]
         cache.set(key, {"judgements": [j.__dict__ for j in out]})
         log("backboard.system_one", questions=len(questions), answers=len(out))
         return out, SYSTEM_ONE_MODEL
@@ -305,6 +330,25 @@ def broker_questions(open_facts: list[str]) -> dict[str, Any]:
         "chase_first": {"type": "choice", "instructions": "Which still-missing fact should the desk chase first "
                         "after this message?", "criteria": facts},
     }
+
+
+def _judgement_of(question: str, a: Any) -> Judgement:
+    """System One's own answer shapes, confirmed live on 2026-09-20 against `typesafe/jev-1.13.0`:
+    a `choice` answers with `choice` plus a probability per option, a `noul` with `noul` (the
+    probability it is true), a `score` with `score`. All three carry `confidence` except `noul`."""
+    if not isinstance(a, dict):
+        return Judgement(question=question, answer=str(a))
+    conf, kind = _num(a.get("confidence")), a.get("type")
+    if kind == "noul":
+        p = _num(a.get("noul"))
+        return Judgement(question=question, answer="true" if (p or 0) >= 0.5 else "false",
+                         probability=p, confidence=conf)
+    if kind == "choice":
+        choice = str(a.get("choice", ""))
+        return Judgement(question=question, answer=choice,
+                         probability=_num((a.get("probabilities") or {}).get(choice)), confidence=conf)
+    return Judgement(question=question, answer=str(a.get("score", a.get("answer", a.get("value", "")))),
+                     confidence=conf)
 
 
 def _num(v: Any) -> float | None:

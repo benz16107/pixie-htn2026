@@ -800,6 +800,7 @@ def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
     for cid in ids:
         events = store.delete_events(cid, {"action", "action_result"})
         events += store.delete_actor(cid, "human")
+        events += store.delete_ref(cid, "broker_reply")   # the reply's finding + assessment: not action kinds
         outbox = store.delete_outbox(cid)
         apply_desk_run(store, _world, cid)
         override.refresh(store, cid)   # a case with no recorded run keeps its stored view; drop it there too

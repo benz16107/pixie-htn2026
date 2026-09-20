@@ -22,6 +22,7 @@ import json
 import os
 import time
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -33,6 +34,7 @@ from .events import ActionP, ActionResultP, AssessmentP, DeskEvent, FindingP, Sc
 
 COMPOSIO_URL = "https://backend.composio.dev/api/v3.1/tools/execute/{tool}"
 BROKER_INBOX = os.environ.get("ATLAS_BROKER_INBOX", "benz16107+broker@gmail.com")
+BROKER_REPLY_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "broker_reply_138.json"
 
 
 def _money_fact(fact: str) -> bool:
@@ -99,11 +101,15 @@ def compose_request(case: Case, a: Assessment, rules: RulesFile, insured: str, f
             "body": "\n".join(lines)}
 
 
-def append_after_run(store: CaseStore, case_id: str, run_id: str, actor, payload) -> DeskEvent:
-    """Append to the end of a case's lane: t_ms continues after the recorded run instead of restarting at 0."""
+def append_after_run(store: CaseStore, case_id: str, run_id: str, actor, payload,
+                     refs: list[str] | None = None) -> DeskEvent:
+    """Append to the end of a case's lane: t_ms continues after the recorded run instead of restarting at 0.
+
+    `refs` tags the event so `demo_reset` can take it back out again (the broker reply's finding and
+    assessment are not `action` events, so dropping them by kind would not find them)."""
     tail = store.tail(case_id)
     t0 = time.time() - ((tail[-1].t_ms if tail else 0) + 2000) / 1000
-    e = DeskEvent.make(case_id, run_id, actor, payload, t0=t0)
+    e = DeskEvent.make(case_id, run_id, actor, payload, t0=t0, refs=refs)
     store.append(e)
     return e
 
@@ -237,8 +243,17 @@ def _parse_fact_value(fact: str, raw: str) -> Any:
 
 # ---- 1. Close the loop: the broker's reply becomes a fact, live -------------------------------
 
+BROKER_REPLY_REF = "broker_reply"     # tags the events a reply adds, so demo_reset can take them back out
+
+
 def _broker_reply_query(case_no: str) -> str:
-    return f'from:{BROKER_INBOX} subject:"submission {case_no}"'
+    """A message in this case's subject thread that is not the one the desk sent to the broker.
+
+    It was `from:<broker inbox>` until 2026-09-20, when a live check proved that query never matches:
+    the demo broker inbox is a Gmail plus-alias, Gmail's `from:` operator does not ignore the +tag,
+    and a reply carries the plain address. Excluding the desk's own outgoing message by its recipient
+    finds the reply and nothing else in the thread."""
+    return f'subject:"submission {case_no}" -to:{BROKER_INBOX}'
 
 
 def search_broker_replies(case_no: str, max_results: int = 5) -> list[dict[str, Any]]:
@@ -248,6 +263,19 @@ def search_broker_replies(case_no: str, max_results: int = 5) -> list[dict[str, 
     res = composio_execute("GMAIL_FETCH_EMAILS", "gmail",
                            {"query": _broker_reply_query(case_no), "max_results": max_results})
     return (res.get("data") or {}).get("messages", []) or []
+
+
+def _verified_values(findings: list[dict[str, Any]], text: str, facts: list[str]) -> dict[str, str]:
+    """The check that makes the number the broker's and not the model's: a value survives only if the
+    model also returned the exact substring of the email that states it, and only for a fact the desk
+    actually asked about. Live and replay both go through here (AGENTS.md invariant 1)."""
+    return {f["fact"]: f["value"] for f in findings
+            if f.get("value") and f.get("quote") and f["quote"] in text and f["fact"] in facts}
+
+
+def load_broker_reply_fixture(path: Path | None = None) -> dict[str, Any]:
+    """The captured broker reply: a real GMAIL_FETCH_EMAILS payload and the real extraction of it."""
+    return json.loads((path or BROKER_REPLY_FIXTURE).read_text())
 
 
 async def extract_broker_facts(message_text: str, facts: list[str]) -> list[dict[str, Any]]:
@@ -292,7 +320,8 @@ def apply_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: Rules
     key = outbox_key(case_id, "broker_reply", [message_id])
     existing = next((o for o in store.outbox_for(case_id) if o["id"] == key), None)
     if existing:
-        return existing | {"deduped": True}
+        return existing | {"deduped": True, "detail": f"Already applied from message {message_id}. "
+                           "Checking again changes no fact and does not narrow the interval a second time."}
 
     run_id = run_id or store.latest_run(case_id) or "actions"
     parsed = {fact: _parse_fact_value(fact, raw) for fact, raw in values.items()}
@@ -310,7 +339,7 @@ def apply_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: Rules
         updated = updated.with_fact(fact, Known(value, source=source), by="broker")
         append_after_run(store, case_id, run_id, "system", FindingP(
             text=f"Broker reply: {fact.replace('_', ' ')} = {value}", fact=fact, value=value,
-            provenance="known", source=source))
+            provenance="known", source=source), refs=[BROKER_REPLY_REF])
     after = assess(updated, rules)
     from .desk import _decision_kind
     flippers = [f.fact for f in after.decision.flippers] if isinstance(after.decision, Open) else []
@@ -318,7 +347,7 @@ def apply_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: Rules
         text=(f"Broker reply narrowed the interval: {before.lo:.0f}-{before.hi:.0f} -> "
               f"{after.score.lo:.0f}-{after.score.hi:.0f} ({_decision_kind(after)})"),
         score=ScoreP(lo=round(after.score.lo), hi=round(after.score.hi)),
-        decision=_decision_kind(after), flippers=flippers))
+        decision=_decision_kind(after), flippers=flippers), refs=[BROKER_REPLY_REF])
 
     record = {"id": key, "channel": "gmail_poll", "status": "applied", "messageId": message_id,
               "facts": parsed, "before": {"lo": before.lo, "hi": before.hi},
@@ -328,37 +357,88 @@ def apply_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: Rules
     return record
 
 
+def replay_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: RulesFile,
+                        run_id: str | None, facts: list[str]) -> dict[str, Any]:
+    """The same loop over the captured reply, with no network at all: the booth demo with the Wi-Fi off.
+
+    Both halves of the recording are real (`fixtures/broker_reply_138.json`): the Gmail payload as
+    GMAIL_FETCH_EMAILS returned it, and the findings `extract_broker_facts` really produced from it.
+    What runs for real on every replay is the part that matters: the quote check, the fold into the
+    case, the re-score and the interval narrowing. `path: "replay"` rides on the response so a replay
+    can never be read as a live poll.
+    """
+    fx = load_broker_reply_fixture()
+    facts = facts or fx["requestedFacts"]    # nothing asked on this case yet: replay what was asked when it was captured
+    case_id = case.id.removeprefix("SUB-")
+    if fx["case"] != case_id:
+        return {"status": "no_fixture", "path": "replay", "facts": facts,
+                "detail": f"The captured broker reply is for submission {fx['case']}, not {case_id}. "
+                          f"Run the replay on {fx['case']}."}
+    message = fx["message"]
+    message_id, text = message.get("messageId", ""), message.get("messageText") or ""
+    values = _verified_values(fx["extraction"]["findings"], text, facts)
+    out = apply_broker_reply(store, case, a, rules, run_id, message_id, values)
+    return out | {"path": "replay", "facts_requested": facts,
+                  "source": {"fixture": BROKER_REPLY_FIXTURE.name, "capturedAt": fx["capturedAt"],
+                             "extractedBy": fx["extraction"]["model"], "extractedAt": fx["extraction"]["at"]},
+                  "detail": out.get("detail") or
+                  (f"Replay of the reply captured on {fx['capturedAt']} (message {message_id}). Its recorded "
+                   "extraction was re-checked against the message text, then applied. No network was used."
+                   if out["status"] == "applied" else
+                   f"Replay of the reply captured on {fx['capturedAt']}: nothing in it could be quoted as "
+                   f"{', '.join(facts)}, so no fact was applied.")}
+
+
 async def check_broker_reply(store: CaseStore, case: Case, a: Assessment, rules: RulesFile,
-                             run_id: str | None = None) -> dict[str, Any]:
+                             run_id: str | None = None, replay: bool = False) -> dict[str, Any]:
     """The orchestrator: figure out what was asked, poll the broker inbox (live only), extract and
-    verify, apply. `ATLAS_ACTIONS=dry` composes the search query and calls nothing, same as every
-    other action here."""
+    verify, apply. `replay=True` runs the whole loop from the captured reply with no network.
+    `ATLAS_ACTIONS=dry` composes the search query and calls nothing, same as every other action here.
+
+    Every return carries `path`: `live` (Gmail was searched), `replay` (the fixture), or `dry`.
+    """
     import asyncio
 
     case_id = case.id.removeprefix("SUB-")
     req = next((o for o in reversed(store.outbox_for(case_id))
                if o.get("channel") == "gmail" and o.get("facts")), None)
     facts = req["facts"] if req else (
-        [f.fact for f in a.decision.flippers] if isinstance(a.decision, Open) else ["premium"])
+        [f.fact for f in a.decision.flippers] if isinstance(a.decision, Open) else [])
+    if replay:
+        return replay_broker_reply(store, case, a, rules, run_id, facts)
+    facts = facts or ["premium"]
+    asked = ", ".join(f.replace("_", " ") for f in facts)
     mode = os.environ.get("ATLAS_ACTIONS", "dry")
     if mode != "live":
-        return {"status": "dry", "detail": f"ATLAS_ACTIONS=dry: would search {_broker_reply_query(case_id)!r}",
-                "facts": facts}
+        return {"status": "dry", "path": "dry", "facts": facts,
+                "detail": f"ATLAS_ACTIONS=dry: the desk would search the broker inbox for "
+                          f"{_broker_reply_query(case_id)!r} and nothing was sent or read."}
     if not connected("gmail"):
-        return {"status": "not_connected", "detail": "gmail toolkit not connected", "facts": facts}
+        return {"status": "not_connected", "path": "live", "facts": facts,
+                "detail": "Gmail is not connected (COMPOSIO_GMAIL_ACCOUNT is unset), so the desk could "
+                          "not look for a reply. Nothing was applied."}
     try:
         messages = await asyncio.to_thread(search_broker_replies, case_id)
     except Exception as exc:
-        return {"status": "failed", "detail": f"{type(exc).__name__}: {exc}"[:300], "facts": facts}
+        return {"status": "failed", "path": "live", "facts": facts,
+                "detail": f"The Gmail search failed: {type(exc).__name__}: {exc}"[:300]}
     if not messages:
-        return {"status": "no_reply", "detail": "no matching message in the broker inbox yet", "facts": facts}
+        return {"status": "no_reply", "path": "live", "facts": facts,
+                "detail": f"No reply to submission {case_id} has arrived in {BROKER_INBOX} yet. The desk "
+                          f"asked for {asked}; nothing has been applied, and the interval is unchanged."}
 
     message = messages[0]  # newest first
     message_id, text = message.get("messageId", ""), message.get("messageText") or ""
     findings = await extract_broker_facts(text, facts)
-    values = {f["fact"]: f["value"] for f in findings
-             if f.get("value") and f.get("quote") and f["quote"] in text and f["fact"] in facts}
-    return apply_broker_reply(store, case, a, rules, run_id, message_id, values) | {"searched": len(messages)}
+    values = _verified_values(findings, text, facts)
+    out = apply_broker_reply(store, case, a, rules, run_id, message_id, values)
+    if out.get("status") == "no_new_facts":
+        out = out | {"detail": f"The broker replied (message {message_id}), but nothing in it could be "
+                               f"quoted as {asked}, so no fact was applied."}
+    elif not out.get("detail"):
+        out = out | {"detail": f"Live: the reply in {BROKER_INBOX} (message {message_id}) was read, every "
+                               "value re-checked against the quote it came from, then applied."}
+    return out | {"path": "live", "searched": len(messages), "facts_requested": facts}
 
 
 # ---- 2. Book a 15-minute underwriter review when a case is referred ---------------------------

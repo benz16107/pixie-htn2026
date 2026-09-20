@@ -6,6 +6,7 @@ demo claim rests on a payload we wrote ourselves.
 | File | Real or simulated | Captured | What it is |
 |---|---|---|---|
 | `linq_inbound_real.json` | **Real capture** | 2026-09-19 22:13 UTC | Linq `message.received` webhook, Ben's iMessage reply "1" from +17786809189 to the desk number, as it arrived at `POST /webhooks/linq` through the Cloudflare tunnel. Headers and body are verbatim, including the `webhook-signature` we verify against `LINQ_WEBHOOK_SECRET`. Nothing redacted: the body carries no token, and the two phone numbers are Ben's own and the Linq sender number already in `.env`. |
+| `broker_reply_138.json` | **Real capture** | 2026-09-20 02:53 UTC | A broker reply to submission 138, exactly as `GMAIL_FETCH_EMAILS` returned it, plus the findings `extract_broker_facts` really produced from it (model `gpt-5.6-luna`, recorded verbatim). Both halves are real. What is not real is the broker: the demo broker inbox is Ben's own `+broker` alias, and the reply text was written for this capture, as every broker email in this demo is. `?replay=true` re-checks the recorded quote against the message text before applying anything, so a doctored quote is refused on the replay path exactly as it would be live. |
 | `linq_inbound_simulated.json` | Simulated | 2026-09-19 22:08 UTC | A payload we built and signed ourselves with the real signing secret, used to prove signature verification before Ben replied. Kept as the fixture for the "wrong signature is refused" path. Never shown as evidence of a real reply. |
 
 Other real artefacts live outside this directory:

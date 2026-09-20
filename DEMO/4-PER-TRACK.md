@@ -49,13 +49,14 @@ limitation to name before the judge finds it. Full five-minute scripts are in `.
   badge says `[memory]` when it does. Point at the badge.
 
 ## Composio
-- **Open** Gmail, then `/cases/138`
+- **Open** `curl -XPOST 'http://macserver:8000/composio/cases/138/broker-reply/check?replay=true'`,
+  then `/cases/138`
 - **Only we can say** the loop closes. The broker's reply becomes a Known fact with the message id
-  as its source, and the interval narrows on screen.
-- **Number** seven tool slugs across Gmail, Calendar, Sheets and Linear, every call pinned to an
-  explicit connected account
-- **Limit** only Gmail is connected right now; the others answer `not_connected` rather than
-  pretending
+  as its source, and case 138 re-scores from 30-75 open to 92-92 accept.
+- **Number** 138's interval collapses to a point on one $92,400 premium the broker wrote, accepted
+  only because the model could quote it verbatim
+- **Limit** the replay reads a captured email and a recorded extraction, and says `"path":"replay"`
+  so it can never pass as live; only Gmail is connected, the other toolkits answer `not_connected`
 
 ## Linq
 - **Open** your phone
@@ -88,10 +89,13 @@ limitation to name before the judge finds it. Full five-minute scripts are in `.
   opened takes a few seconds
 
 ## Backboard
-- **Open** `/cases/141/memory`
+- **Open** `curl http://macserver:8000/cases/141/memory`, then add `?live=true`
 - **Only we can say** the desk remembers across cases and the boundary is mechanical: memory can
-  change which questions get asked, never a number or a tier.
-- **Number** running 126 then 141 produces a recall naming the near-duplicate, its broker and its
-  data issue
-- **Limit** the cross-case recall you are seeing is ours; Backboard's own memory writes and typed
-  judgements were only unblocked when credits landed, so say which is which
+  change which questions get asked, never a number or a tier. The response carries that sentence.
+- **Number** running 126 then 141 recalls the near-duplicate, naming the insured, the broker and
+  `duplicate_account`, and `sources` says which store each line came from
+- **Limit** live on 2026-09-20 with credits: memory writes, memory search, document upload to
+  INDEXED, and System One typed judgements (`typesafe/jev-1.13.0`). Still not working: the guideline
+  citation. Backboard's chat 401s on the OpenAI key held in the dashboard, and even on a working
+  provider its document search returns no paragraph. The recall on `/cases/141/memory` without
+  `?live=true` is ours, not theirs.

@@ -75,6 +75,38 @@ three cached questions are the safe path; a fresh question is a live model call.
 
 Hexes are concentration by TIV, pins are submissions. Filter by peril.
 
+## Two moments with no screen yet
+
+Both are curl against `http://macserver:8000`. Say that plainly: "this one has no button yet, so I
+am calling the API."
+
+### The broker replies and the case closes itself
+
+| Step | Command |
+|---|---|
+| Replay it (no network, always works) | `curl -XPOST 'http://macserver:8000/composio/cases/138/broker-reply/check?replay=true'` |
+| Or search the real inbox instead | `curl -XPOST http://macserver:8000/composio/cases/138/broker-reply/check` |
+| Put it back for the next judge | `curl -XPOST http://macserver:8000/demo/reset` |
+
+The reply is real: `api/fixtures/broker_reply_138.json` is a broker email exactly as Gmail returned
+it, with the model's reading of it recorded beside it. Every replay re-checks the quote against the
+message, folds the premium in as a Known fact sourced to the message id, and re-scores: 138 goes
+from 30-75 open to 92-92 accept. `path` in the response says which ran, `replay` or `live`, and a
+replay never says live. Checking twice applies nothing twice (`"deduped": true`). With no reply in
+the inbox, the live call says so in a sentence instead of an empty list.
+
+### What the desk remembered
+
+| Step | Command |
+|---|---|
+| Our own cross-case recall | `curl http://macserver:8000/cases/141/memory` |
+| Ask Backboard as well | `curl 'http://macserver:8000/cases/141/memory?live=true'` |
+
+Read `summary` out loud. `recalled` is one row per earlier case with why it came back (same insured,
+same state, same data issue), `from` says which store it came from, and `sources` keeps our own
+SQLite recall (no network, no third party) separate from Backboard's. `boundary` is the line to
+quote: memory may change which questions get asked, never a number and never a tier.
+
 ## The phone
 
 Address → 3 questions → price. Then: photograph a room and Gemini returns an item list; "what's

@@ -23,11 +23,10 @@ predates, see System One below). Dependency: `backboard-sdk==1.5.19` (requires o
 Check it end to end: `cd api && uv run python ../scripts/backboard_check.py`. It prints what each
 call did, verbatim, including refusals.
 
-**Paid calls.** Memory search and assistant creation run on the free tier. Document upload, LLM chat
-(the guideline citation) and System One need credits on the Billing page. With the balance at zero
-this key returns `We paused document upload - your balance is used up`,
-`Insufficient credits for System One`, and a generic 500 on `add_memory`. The desk handles all three
-as advisory failures, so the demo still runs; see "Verified live" below for exactly what was proven.
+**Paid calls.** Memory search and assistant creation run on the free tier. Memory writes, document
+upload, LLM chat (the guideline citation) and System One need credits. Ben added credits on
+2026-09-19, and the re-check on 2026-09-20 shows everything working except the guideline citation;
+see "Verified live" below. The desk treats every failure as advisory, so the demo runs regardless.
 
 ## What it is used for, and the line it may not cross
 
@@ -100,7 +99,7 @@ watcher can `POST /cases/{id}/triage-message` with the message body.
 
 | route | what it returns |
 |---|---|
-| `GET /cases/{id}/memory` | the `recall` events the run actually saw, the session lines, any `judgement` events, and the boundary text. `?live=true` re-queries Backboard (cached to disk). |
+| `GET /cases/{id}/memory` | `summary` (one line to read aloud), `recalled` (one row per earlier case: which case, which insured and broker, why it came back, and `from`: `desk` or `backboard`), `sources` (the two stores kept apart: ours needs no network, theirs needs their service), `boundary`, plus the raw `fromLedger`, `session` and `judgements`. `?live=true` re-queries Backboard (cached to disk) and merges its lines into `recalled`. |
 | `POST /cases/{id}/triage-message` | System One typed answers for an inbound message, plus the facts code knows are missing. |
 | `GET /openai/runtime` | the OpenAI side: per-role settings, guardrail, tracing. See docs/OPENAI.md. |
 
@@ -111,23 +110,31 @@ Every live lookup is cached to `api/cache/backboard/` keyed by the query (AGENTS
 touches Backboard. With no key at all, every call returns empty with
 `source: "off"` and the demo runs unchanged.
 
-## Verified live on 2026-09-19 (key in `.env`, zero credit balance)
+## Verified live on 2026-09-20 (key in `.env`, credits added)
 
 | call | result |
 |---|---|
-| `create_assistant`, `list_assistants` | works |
-| `add_memory` | **worked once** (23:26:49 UTC, memory id `ca5dbddb-...`) and then returned a generic 500 once the balance was gone |
-| `search_memories` | works, returns the stored line with a similarity score (`0.402`) |
-| `get_memory_stats` | works |
-| `upload_document_to_assistant` | worked once: `APPETITE_GUIDELINES.txt` reached status `INDEXED`; later uploads refused with "balance is used up" |
-| `send_message` (guideline citation) | refused: "We paused LLM chat - your balance is used up". The reply comes back as an assistant message with `status: FAILED`, which `_text_of` treats as no citation rather than quoting the billing notice |
-| `send_message` + `system_one` (`typesafe/jev-1.13.0`) | refused: "Insufficient credits for System One" |
-| `list_models_by_provider("typesafe")` | works; this is where the model id and question types were confirmed |
+| `create_assistant`, `list_assistants`, `get_memory_stats` | works |
+| `add_memory` | **works now.** The zero-balance 500 is gone |
+| `search_memories` | works, returns the stored lines |
+| `delete_memory` | works (used to remove the check script's own `case CHECK` line) |
+| `upload_document_to_assistant`, `list_assistant_documents` | works: `APPETITE_GUIDELINES.txt` is `INDEXED` |
+| `send_message` (guideline citation) | **still no citation.** With no provider named it fails on Backboard's own side: `LLM Error: 401 Incorrect API key provided: sk-proj-...`, the OpenAI key their dashboard holds. Naming a provider and model (`anthropic` / `claude-haiku-4-5-20251001`) completes, but then their document search returns nothing and the model answers "I'm unable to locate a specific paragraph". Either way `_text_of` yields "" and the desk shows no citation |
+| `send_message` + `system_one` (`typesafe/jev-1.13.0`) | **works now**, and returns real typed answers |
+| `list_models_by_provider` | works; 12 providers, and this is where the System One model id was confirmed |
 
-**What Ben needs to do:** add credits on the Backboard Billing page (or turn on auto-reload). Then
-re-run `scripts/backboard_check.py`; memory writes, the guideline citation and System One should all
-come back with content, and no code changes are needed. If the guideline citation is still empty
-after credits, check that the document shows `INDEXED` via `list_assistant_documents`.
+**System One's answer shape, read wrong until today.** `judge()` looked for `answer` / `probability`
+keys that do not exist, so every judgement came back with an empty answer. The live shapes are: a
+`choice` question answers with `choice` plus `probabilities` per option, a `noul` with `noul` (the
+probability it is true), a `score` with `score`; `confidence` rides along on the first two.
+`_judgement_of` now reads all three, and `POST /cases/138/triage-message` returns
+`intent=answers_our_question (p 0.90, conf 0.86)`, `looks_like_duplicate=true (p 0.91)`,
+`chase_first=premium`. Test: `test_system_one_answer_shapes_are_read_the_way_typesafe_returns_them`.
+
+**What Ben could still fix:** put a working OpenAI key (or another provider's) into the Backboard
+dashboard if the guideline citation ever matters. Nothing else in Pixie depends on it: the desk
+quotes guideline rules from `rules/property_2025.yaml`, which is the file the engine actually scores
+against.
 
 ## What was not built, and why
 

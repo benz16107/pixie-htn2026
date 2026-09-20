@@ -143,6 +143,11 @@ class CaseStore:
     def delete_actor(self, case_id: str, actor: str) -> int:
         return self._rewrite(case_id, lambda e: e.actor != actor)
 
+    def delete_ref(self, case_id: str, ref: str) -> int:
+        """Demo reset: drop the events an action tagged with this ref. The broker reply posts a
+        `finding` and an `assessment`, neither of which is an `action` kind, so only the tag finds them."""
+        return self._rewrite(case_id, lambda e: ref not in e.refs)
+
     def _rewrite(self, case_id: str, keep_if) -> int:
         events = self.tail(case_id)
         keep = [e for e in events if keep_if(e)]

@@ -25,6 +25,10 @@ from atlas_api.events import DecisionP, DeskEvent
 RULES = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
 
 
+def _no_network(*args, **kwargs):
+    raise AssertionError("the replay path must not touch the network")
+
+
 def test_request_broker_info_is_idempotent_and_lists_only_flippers(tmp_path, monkeypatch):
     monkeypatch.delenv("ATLAS_ACTIONS", raising=False)   # dry: composes, sends nothing
     store = CaseStore.open(tmp_path / "o.sqlite")
@@ -109,6 +113,86 @@ def test_check_broker_reply_live_applies_a_verified_extraction(tmp_path, monkeyp
     out = asyncio.run(check_broker_reply(store, case, a, RULES))
     assert out["status"] == "applied" and out["facts"]["premium"] == 88000.0
     assert out["messageId"] == "m-9"
+
+
+def test_replay_runs_the_whole_loop_from_the_captured_reply_with_no_network(tmp_path, monkeypatch):
+    """The booth path: no Gmail, no model, and the fact still arrives quote-checked and re-scored."""
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")        # live mode must not make replay touch the wire
+    monkeypatch.setattr("atlas_api.actions.search_broker_replies", _no_network)
+    monkeypatch.setattr("atlas_api.actions.extract_broker_facts", _no_network)
+    store = CaseStore.open(tmp_path / "replay.sqlite")
+    case = World.load().case("SUB-138")
+    a = assess(case, RULES)
+
+    out = asyncio.run(check_broker_reply(store, case, a, RULES, replay=True))
+    assert out["path"] == "replay" and out["status"] == "applied"
+    assert out["facts"]["premium"] == 92400.0
+    width = lambda i: i["hi"] - i["lo"]
+    assert width(out["after"]) < width(out["before"])        # the interval actually narrowed
+    assert out["source"]["fixture"] == "broker_reply_138.json"
+    assert [e.kind for e in store.tail("138")] == ["finding", "assessment"]
+    assert store.tail("138")[0].payload.source.startswith("broker email, message ")
+
+
+def test_replay_never_reports_itself_as_live(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")
+    monkeypatch.setattr("atlas_api.actions.search_broker_replies", _no_network)
+    store = CaseStore.open(tmp_path / "replay2.sqlite")
+    case = World.load().case("SUB-138")
+    out = asyncio.run(check_broker_reply(store, case, assess(case, RULES), RULES, replay=True))
+    assert out["path"] != "live" and "No network was used" in out["detail"]
+
+
+def test_replay_refuses_a_case_the_capture_is_not_about(tmp_path):
+    store = CaseStore.open(tmp_path / "replay3.sqlite")
+    case = World.load().case("SUB-141")
+    out = asyncio.run(check_broker_reply(store, case, assess(case, RULES), RULES, replay=True))
+    assert out["status"] == "no_fixture" and "138" in out["detail"] and store.tail("141") == []
+
+
+def test_replay_twice_applies_once_and_does_not_narrow_twice(tmp_path):
+    store = CaseStore.open(tmp_path / "replay4.sqlite")
+    case = World.load().case("SUB-138")
+    a = assess(case, RULES)
+    first = asyncio.run(check_broker_reply(store, case, a, RULES, replay=True))
+    second = asyncio.run(check_broker_reply(store, case, a, RULES, replay=True))
+    assert second["deduped"] and second["after"] == first["after"]
+    assert "Checking again changes no fact" in second["detail"]
+    assert [e.kind for e in store.tail("138")] == ["finding", "assessment"]      # no second pair
+    assert len(store.outbox_for("138")) == 1
+
+
+def test_a_doctored_quote_is_refused_on_the_replay_path_too(tmp_path):
+    """The verbatim-quote check is what makes the number the broker's; replay runs it for real."""
+    from atlas_api.actions import _verified_values, load_broker_reply_fixture
+
+    fx = load_broker_reply_fixture()
+    text = fx["message"]["messageText"]
+    assert _verified_values(fx["extraction"]["findings"], text, ["premium"]) == {"premium": "$92,400"}
+    doctored = [{"fact": "premium", "value": "$920,000", "quote": "the premium is $920,000"}]
+    assert _verified_values(doctored, text, ["premium"]) == {}
+    assert _verified_values(fx["extraction"]["findings"], text, ["year_built"]) == {}   # never asked for
+
+
+def test_no_reply_says_so_in_a_sentence(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")
+    monkeypatch.setenv("COMPOSIO_GMAIL_ACCOUNT", "ca_test")
+    monkeypatch.setattr("atlas_api.actions.search_broker_replies", lambda case_no, max_results=5: [])
+    store = CaseStore.open(tmp_path / "empty.sqlite")
+    case = World.load().case("SUB-138")
+    out = asyncio.run(check_broker_reply(store, case, assess(case, RULES), RULES))
+    assert out["status"] == "no_reply" and out["path"] == "live"
+    assert out["detail"].startswith("No reply to submission 138") and "premium" in out["detail"]
+    assert store.tail("138") == []
+
+
+def test_live_without_a_connected_gmail_says_not_connected(tmp_path, monkeypatch):
+    monkeypatch.setenv("ATLAS_ACTIONS", "live")
+    monkeypatch.delenv("COMPOSIO_GMAIL_ACCOUNT", raising=False)
+    store = CaseStore.open(tmp_path / "nc.sqlite")
+    case = World.load().case("SUB-138")
+    out = asyncio.run(check_broker_reply(store, case, assess(case, RULES), RULES))
+    assert out["status"] == "not_connected" and "COMPOSIO_GMAIL_ACCOUNT" in out["detail"]
 
 
 # ---- A7: book the referral review ---------------------------------------------------------------

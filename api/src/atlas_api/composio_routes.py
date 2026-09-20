@@ -64,12 +64,18 @@ def status() -> dict[str, Any]:
 
 
 @router.post("/cases/{case_id}/broker-reply/check")
-async def broker_reply_check(case_id: str) -> dict[str, Any]:
+async def broker_reply_check(case_id: str, replay: bool = False) -> dict[str, Any]:
     """Poll the broker inbox for a reply to this case's information request; if a requested fact is
     found and verified, fold it in as Known, re-assess, and post the narrowing. Idempotent per
-    (case, message id) -- safe to call on a timer or a button."""
+    (case, message id) -- safe to call on a timer or a button.
+
+    `?replay=true` runs the same loop over the captured reply in `api/fixtures/` with no network, for
+    the booth. The response's `path` says which ran (`live`, `replay` or `dry`); replay never says live.
+    """
     store, world, case, a, rules, insured, data = _resolve(case_id)
-    out = await check_broker_reply(store, case, a, rules)
+    out = await check_broker_reply(store, case, a, rules, replay=replay)
+    if out.get("status") == "no_fixture":
+        raise HTTPException(status_code=409, detail=out["detail"])
     if out.get("status") == "applied":
         from .app import apply_desk_run
         apply_desk_run(store, world, case.id.removeprefix("SUB-"))

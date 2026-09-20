@@ -43,8 +43,11 @@ Pixie would do" even unconnected. To make them send for real:
    Linear isn't the team's tool: `composio link notion`, `COMPOSIO_NOTION_ACCOUNT=<id>`,
    `COMPOSIO_NOTION_PARENT_ID=<a page id issues get created under>`.
 
-Until connected, every one of these routes returns `{"status": "not_connected", "detail": "..."}` --
-never a silent failure, and it's exactly this text (verified live in `test_defects_file_reports_not_connected_when_live`).
+In live mode (`ATLAS_ACTIONS=live`, which `.env` sets) every unconnected toolkit returns
+`{"status": "not_connected", "detail": "..."}` -- never a silent failure, and it's exactly this text
+(verified in `test_defects_file_reports_not_connected_when_live` and, for the broker reply,
+`test_live_without_a_connected_gmail_says_not_connected`). In the code default `ATLAS_ACTIONS=dry`
+the same routes answer `dry` with what they would have sent, because nothing was attempted.
 
 ## The broker-reply watch: trigger vs. poll
 
@@ -54,12 +57,32 @@ trigger means either a public webhook URL (a tunnel only Ben can stand up, same 
 webhook) or `composio listen` staying alive in a background thread for the whole demo. For a
 hackathon, `POST /composio/cases/{id}/broker-reply/check` does the same job as a button or a timer:
 it searches the connected Gmail inbox with `GMAIL_FETCH_EMAILS` scoped to
-`from:<broker> subject:"submission <case>"`, runs a strict structured-output read of the reply (only
+`subject:"submission <case>" -to:<broker inbox>`, runs a strict structured-output read of the reply (only
 the facts that were actually asked for, and only a value the model can quote verbatim from the
 email -- `extract_broker_facts` in `actions.py`), re-verifies the quote against the raw email text,
 and only then writes it as `Known(source="broker email, message <id>")`. Swapping the poll for the
 real trigger later is a one-function change (`check_broker_reply` keeps its contract; only what
 calls it changes from a button to a webhook handler).
+
+**The query was wrong until 2026-09-20.** It was `from:<broker inbox> subject:"submission <case>"`,
+and a live check proved it matches nothing, ever: the demo broker inbox is a Gmail plus-alias
+(`benz16107+broker@gmail.com`), Gmail's `from:` operator does not ignore the `+tag`, and a reply
+carries the plain address. The live path could only ever answer `no_reply`. Excluding the desk's own
+outgoing message by its recipient finds the reply and nothing else in the thread. Verified end to
+end on 2026-09-20 against a real reply: `searched: 1`, premium folded in, interval 30-75 to 92-92.
+
+## Replay: the same loop with the Wi-Fi off
+
+`POST /composio/cases/138/broker-reply/check?replay=true` runs extract-verify-apply over
+`api/fixtures/broker_reply_138.json`, which holds a real broker reply as `GMAIL_FETCH_EMAILS`
+returned it plus the findings `extract_broker_facts` really produced from it. The quote check, the
+fold into the case and the re-score run for real on every replay; only the two steps that need the
+wire are recorded. Every response carries `path`: `replay`, `live` or `dry`, and a replay never says
+`live`. Replaying on any case but 138 is a 409 naming the case the capture belongs to.
+
+`POST /demo/reset` takes an applied reply back out: the reply's `finding` and `assessment` are not
+`action` events, so they are tagged `refs: ["broker_reply"]` and `CaseStore.delete_ref` drops them.
+Before that fix the interval stayed narrowed after a reset and the next judge saw a closed case.
 
 ## What a judge sees
 
@@ -67,9 +90,10 @@ calls it changes from a button to a webhook handler).
    (`dry`/`live`), in one call.
 2. Open a case with a missing premium (e.g. SUB-138), click "request broker info" -- a real Gmail
    send to the demo broker inbox (`benz16107+broker@gmail.com`).
-3. Reply from that inbox with a premium figure, then click "check broker reply" (or wait for the
-   poll) -- the case's own event lane shows a `finding` (Known premium, sourced to the message id)
-   followed by an `assessment` narrowing the interval, live, with no human re-running anything.
+3. Reply from that inbox with a premium figure, then `POST /composio/cases/138/broker-reply/check`
+   (there is no button yet) -- the case's own event lane shows a `finding` (Known premium, sourced
+   to the message id) followed by an `assessment` narrowing the interval, with no human re-running
+   anything. Add `?replay=true` to run the same thing from the captured reply with no network.
 4. Refer a case -- `POST /composio/cases/{id}/review/book` puts a real 15-minute hold on the
    connected calendar (once connected) with the case link in the description, and the event id shows
    up on the case.

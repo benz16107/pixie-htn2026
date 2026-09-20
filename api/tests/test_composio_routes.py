@@ -80,5 +80,35 @@ def test_broker_reply_check_dry_mode(client, monkeypatch):
     assert out["status"] == "dry" and "benz16107+broker@gmail.com" in out["detail"]
 
 
+def test_broker_reply_replay_applies_the_captured_reply_and_reset_undoes_it(client, monkeypatch):
+    """The whole booth moment end to end: replay, the case re-scores, /demo/reset puts it back."""
+    monkeypatch.delenv("ATLAS_ACTIONS", raising=False)
+    from atlas_api.app import get_store
+
+    store: CaseStore = get_store()
+    before = [e.kind for e in store.tail("138")]
+
+    out = client.post("/composio/cases/138/broker-reply/check?replay=true").json()
+    assert out["path"] == "replay" and out["status"] == "applied"
+    assert out["facts"]["premium"] == 92400.0
+    assert [e.kind for e in store.tail("138")] == before + ["finding", "assessment"]
+
+    again = client.post("/composio/cases/138/broker-reply/check?replay=true").json()
+    assert again["deduped"] and again["after"] == out["after"]
+    assert [e.kind for e in store.tail("138")] == before + ["finding", "assessment"]
+
+    client.post("/demo/reset")
+    assert not [e for e in store.tail("138") if "broker_reply" in e.refs]
+    assert not [o for o in store.outbox_for("138") if o["channel"] == "gmail_poll"]
+
+    third = client.post("/composio/cases/138/broker-reply/check?replay=true").json()
+    assert third["status"] == "applied" and not third.get("deduped")   # the moment runs again
+
+
+def test_broker_reply_replay_on_the_wrong_case_is_409(client):
+    resp = client.post("/composio/cases/141/broker-reply/check?replay=true")
+    assert resp.status_code == 409 and "138" in resp.json()["detail"]
+
+
 def test_unknown_case_is_404(client):
     assert client.post("/composio/cases/9999/review/book").status_code == 404
