@@ -4,10 +4,7 @@ import { useKeys } from "../desk/keys";
 
 export type Panel = { id: string; label: string; count?: string; node: React.ReactNode };
 
-/**
- * The bottom deck. Three panels, one number key each, and the key printed on the tab, because
- * a shortcut nobody can see is a shortcut nobody uses.
- */
+/** The bottom deck. One panel at a time; the number keys still select them, unprinted. */
 export function Deck({ panels }: { panels: Panel[] }) {
   const [on, setOn] = useState(panels[0]?.id);
 
@@ -23,7 +20,7 @@ export function Deck({ panels }: { panels: Panel[] }) {
   return (
     <section className="grid min-h-0 grid-rows-[25px_minmax(0,1fr)]" aria-label="Case detail">
       <div role="tablist" aria-label="Case detail" className="flex items-stretch border-b border-rule">
-        {panels.map((p, i) => (
+        {panels.map((p) => (
           <button
             key={p.id}
             role="tab"
@@ -31,13 +28,10 @@ export function Deck({ panels }: { panels: Panel[] }) {
             aria-selected={on === p.id}
             aria-controls={`deckpanel-${p.id}`}
             onClick={() => setOn(p.id)}
-            className={`flex items-center gap-1.5 border-r border-rule px-3 text-[10px] uppercase tracking-[0.12em] transition-colors duration-150 ${
+            className={`flex items-center gap-1.5 border-r border-rule px-3.5 text-[10px] uppercase tracking-[0.12em] transition-colors duration-150 ${
               on === p.id ? "bg-raise text-ochre shadow-[inset_0_-2px_0_var(--color-ochre)]" : "text-dim hover:bg-land hover:text-ink"
             }`}
           >
-            <kbd aria-hidden className={`key ${on === p.id ? "key-on" : ""}`}>
-              {i + 1}
-            </kbd>
             {p.label}
             {p.count && <span className="num normal-case tracking-normal text-faint">{p.count}</span>}
           </button>

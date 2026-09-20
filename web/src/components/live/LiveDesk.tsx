@@ -503,24 +503,8 @@ export function LiveDesk(props: LiveProps) {
         <span className="num">
           {decidedNow} of {deskRows.length} desk cases settled
         </span>
-        <span className="ml-auto flex items-center gap-3">
-        <span className="flex items-center gap-1">
-          <kbd className="key">Space</kbd> run
-        </span>
-        <span className="flex items-center gap-1">
-          <kbd className="key">1</kbd>–<kbd className="key">6</kbd> beats
-        </span>
-        <span className="flex items-center gap-1">
-          <kbd className="key">[</kbd>
-          <kbd className="key">]</kbd> scrub 5s
-        </span>
-        <span className="flex items-center gap-1">
-          <kbd className="key">e</kbd> end
-        </span>
-        <span className="flex items-center gap-1">
-          <kbd className="key">Esc</kbd> close
-        </span>
-        </span>
+        {/* One quiet line, not a keycap rack: the buttons above already say what this screen does. */}
+        <span className="ml-auto truncate">space runs the demo · 1–6 jump to a beat · [ and ] scrub five seconds · e ends · esc closes</span>
       </footer>
       <p className="sr-only">Value at stake {money(deskRows.reduce((n, r) => n + r.valueAtStake, 0))}</p>
     </main>

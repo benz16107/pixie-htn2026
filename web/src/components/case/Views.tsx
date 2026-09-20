@@ -15,8 +15,8 @@ const DecisionSpace = dynamic(() => import("./DecisionSpace"), {
 });
 
 const TABS = [
-  { id: "2d" as const, label: "waterfall", key: "w" },
-  { id: "3d" as const, label: "decision space", key: "s" },
+  { id: "2d" as const, label: "how the score was built" },
+  { id: "3d" as const, label: "every possible score" },
 ];
 
 /**
@@ -66,22 +66,19 @@ export function Views({
               aria-controls={`panel-${t.id}`}
               onClick={() => setTab(t.id)}
               disabled={t.id === "3d" && !surface}
-              className={`-mb-px flex items-center gap-1.5 border-b-2 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-rule ${
+              className={`-mb-px flex items-center border-b-2 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-rule ${
                 tab === t.id ? "border-ochre text-ochre" : "border-transparent text-dim hover:text-ink"
               }`}
             >
-              <kbd aria-hidden className={`key ${tab === t.id ? "key-on" : ""}`}>
-                {t.key}
-              </kbd>
               {t.label}
             </button>
           ))}
         </div>
         <p className="min-w-0 flex-1 truncate text-[10px] text-faint">
           {tab === "2d"
-            ? "Each bar is one guideline factor, a hazard layer or a cap. Hover a bar for its rule and source."
+            ? "Each bar is one guideline rule, a hazard lookup, or a cap: break a hard rule and the score cannot climb past it."
             : surface
-              ? `${surface.axes[0].label} across, ${surface.axes[1].label} into the page, score as height. ${surface.points.toLocaleString()} re-runs in ${surface.ms}ms. Drag to orbit.`
+              ? `${surface.axes[0].label} across, ${surface.axes[1].label} into the page, score as height. ${surface.points.toLocaleString()} real re-runs in ${surface.ms}ms.`
               : "No decision space for this case."}
         </p>
       </div>

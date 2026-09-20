@@ -24,6 +24,7 @@ const PAGE_KEYS: Record<string, [string, string][]> = {
   "/queue": [
     ["j / k", "move the cursor down and up the blotter"],
     ["Enter", "open the case under the cursor"],
+    ["/", "filter the blotter"],
     ["o / A", "open submissions only / everything"],
     ["gg / G", "jump to the first or the last row"],
   ],
@@ -34,9 +35,10 @@ const PAGE_KEYS: Record<string, [string, string][]> = {
     ["r", "restore the guideline as filed on disk"],
   ],
   "/cases": [
-    ["w / s", "waterfall / decision space"],
+    ["w / s", "how the score was built / every possible score"],
     ["o", "adjust the score, bounded and with a reason"],
-    ["1 2 3 4", "facts, bands, lanes, site in the bottom deck"],
+    ["f", "jump to the what-if slider"],
+    ["1 2 3 4", "the panels along the bottom"],
     ["← / →", "drag the what-if by one step"],
     ["u", "back to the blotter"],
   ],
@@ -111,14 +113,11 @@ export function Chrome() {
                 key={d.href}
                 href={d.href}
                 aria-current={on ? "page" : undefined}
-                className={`flex items-center gap-1.5 border-r border-rule px-3 uppercase tracking-[0.1em] transition-colors duration-150 ${
+                className={`flex items-center border-r border-rule px-3.5 uppercase tracking-[0.1em] transition-colors duration-150 ${
                   on ? "bg-raise text-ochre shadow-[inset_0_-2px_0_var(--color-ochre)]" : "text-dim hover:bg-raise hover:text-ink"
                 }`}
               >
                 {d.label}
-                <kbd aria-hidden className={`key ${on ? "key-on" : ""}`}>
-                  {d.key}
-                </kbd>
               </Link>
             );
           })}

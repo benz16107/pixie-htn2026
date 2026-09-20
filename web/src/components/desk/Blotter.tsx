@@ -12,22 +12,19 @@ import { useKeys } from "./keys";
 
 type Extras = { deskVerdict?: string; challengeRisks?: number };
 
-const TILES = (rows: (Row & Extras)[]) => {
-  const desk = rows.filter((r) => r.region !== "toronto");
-  return [
-    { label: "in view", value: String(rows.length), note: "submissions" },
-    { label: "undecided", value: String(rows.filter((r) => r.decision.kind === "open").length), note: "the interval still straddles a threshold" },
-    { label: "desk", value: String(desk.length), note: "property guideline" },
-    { label: "referrals", value: String(rows.length - desk.length), note: "Toronto renters" },
-    { label: "at stake", value: money(rows.reduce((n, r) => n + r.valueAtStake, 0)), note: "total TIV in view" },
-  ];
-};
+/** Three numbers, not five: the split between the two books reads better as a sentence. */
+const TILES = (rows: (Row & Extras)[]) => [
+  { label: "submissions", value: String(rows.length), note: "rows in view" },
+  { label: "still undecided", value: String(rows.filter((r) => r.decision.kind === "open").length), note: "one more fact would settle each of these" },
+  { label: "value at stake", value: money(rows.reduce((n, r) => n + r.valueAtStake, 0)), note: "total insured value in view" },
+];
 
 export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; declines: DeclinesInsight | null; t?: Thresholds }) {
   const router = useRouter();
   const [here, setHere] = useState<Ranked | null>(null);
   const [filter, setFilter] = useState("");
   const onCursor = useCallback((r: Ranked | null) => setHere(r), []);
+  const desk = rows.filter((r) => r.region !== "toronto").length;
 
   useKeys(
     (e) => {
@@ -43,33 +40,30 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
       <header className="flex items-stretch border-b border-edge bg-land">
         <h1 className="sr-only">Submission blotter</h1>
         {TILES(rows).map((t) => (
-          <div key={t.label} className="flex flex-col justify-center border-r border-rule px-3.5" title={t.note}>
+          <div key={t.label} className="flex flex-col justify-center border-r border-rule px-4" title={t.note}>
             <span className="kicker">{t.label}</span>
-            <span className="num text-[17px] font-medium leading-[19px] text-ink">{t.value}</span>
+            <span className="num text-[19px] font-medium leading-[21px] text-ink">{t.value}</span>
           </div>
         ))}
-        <p className="cond hidden max-w-[42ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          Ranked by the midpoint of each score interval, open cases first.
+        <p className="cond hidden max-w-[52ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
+          Ranked by score, the undecided first. {desk} on the commercial property book, {rows.length - desk} Toronto renter referrals.
         </p>
         <div className="ml-auto flex items-stretch border-l border-rule" role="group" aria-label="Which submissions">
           {(
             [
-              ["open", "open", "o"],
-              ["all", "everything", "A"],
+              ["open", "open"],
+              ["all", "everything"],
             ] as const
-          ).map(([v, label, k]) => (
+          ).map(([v, label]) => (
             <Link
               key={v}
               href={`/queue?view=${v}`}
               aria-current={v === view ? "page" : undefined}
-              className={`flex items-center gap-1.5 px-3.5 text-[11px] uppercase tracking-[0.1em] transition-colors duration-150 ${
+              className={`flex items-center px-4 text-[11px] uppercase tracking-[0.1em] transition-colors duration-150 ${
                 v === view ? "bg-raise text-ochre shadow-[inset_0_-2px_0_var(--color-ochre)]" : "text-dim hover:bg-raise hover:text-ink"
               }`}
             >
               {label}
-              <kbd aria-hidden className={`key ${v === view ? "key-on" : ""}`}>
-                {k}
-              </kbd>
             </Link>
           ))}
         </div>
@@ -79,10 +73,11 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
         <div className="min-h-0 border-r border-edge">
           <QueueTable rows={rows} view={view} onCursor={onCursor} filter={filter} setFilter={setFilter} t={t} />
         </div>
-        <aside className="flex min-h-0 flex-col overflow-hidden" aria-label="The row under the cursor">
+        {/* One scroll, not two: at 800px tall a split column cut the preview off mid-sentence. */}
+        <aside className="min-h-0 overflow-y-auto" aria-label="The row under the cursor">
           <Preview r={here} t={t} />
           {declines && (
-            <div className="min-h-0 shrink-0 overflow-auto border-t border-edge">
+            <div className="border-t border-edge">
               <DeclinesPanel d={declines} />
             </div>
           )}
@@ -93,16 +88,14 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
         left={
           <>
             <span className="text-ochre">BLOTTER</span>
-            <span>view: {view === "open" ? "open submissions" : "everything"}</span>
-            {here && <span className="text-ink">cursor: #{here.caseId}</span>}
+            <span>showing {view === "open" ? "open submissions" : "every submission"}</span>
+            {here && (
+              <span className="truncate text-ink">
+                #{here.caseId} {here.insured}
+              </span>
+            )}
           </>
         }
-        keys={[
-          ["j k", "move"],
-          ["Enter", "open"],
-          ["/", "filter"],
-          ["?", "keys"],
-        ]}
       />
     </main>
   );
@@ -121,16 +114,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
   if (!r)
     return (
-      <div className="flex flex-1 items-center justify-center px-6 text-center text-[11px] text-faint">
-        Move the cursor with <kbd className="key mx-1">j</kbd> and <kbd className="key mx-1">k</kbd> to read a row here.
-      </div>
+      <div className="px-6 py-10 text-center text-[11px] text-faint">The row under the cursor opens out here.</div>
     );
   const moved = !!r.deskVerdict && r.deskVerdict.replace(/d$/, "") !== r.decision.kind.replace(/d$/, "");
   const straddle = "straddles" in r.decision ? r.decision.straddles : null;
   const why = whyLine(r);
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto px-3.5 py-2.5">
+    <div className="px-3.5 py-2.5">
       <p className="flex items-baseline gap-2">
         <span className="num text-[11px] text-dim">#{r.caseId}</span>
         <span className="ml-auto">
@@ -146,7 +137,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
       {r.score && r.decision.kind !== "routed" ? (
         <div className="mt-3">
           <p className="flex items-baseline justify-between">
-            <span className="kicker">{r.override ? "Engine interval" : "Score interval"}</span>
+            <span className="kicker">{r.override ? "Engine score" : "Score range"}</span>
             <span className="num text-[20px] font-medium leading-none text-ink">
               {r.score.lo}–{r.score.hi}
             </span>
@@ -155,7 +146,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
             <IntervalBar score={r.score} t={t} />
           </div>
           <BandScale t={t} className="mt-1" />
-          {straddle !== null && <p className="mt-1 text-[11px] text-ochre">The interval straddles {straddle}, so one fact still settles it.</p>}
+          {straddle !== null && <p className="mt-1 text-[11px] text-ochre">The range crosses the line at {straddle}, so one more fact settles it.</p>}
         </div>
       ) : (
         <p className="mt-3 border border-dashed border-edge px-2 py-3 text-center text-[11px] text-faint">
@@ -168,12 +159,12 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
           <span className="num">{money(r.valueAtStake)}</span>
         </Field>
         {r.enrichmentDelta !== null && (
-          <Field label="enrichment">
+          <Field label="outside data">
             <span className="num">
               {r.enrichmentDelta > 0 ? "+" : r.enrichmentDelta < 0 ? "−" : "±"}
               {Math.abs(r.enrichmentDelta)}
             </span>{" "}
-            <span className="text-dim">points from the external layers</span>
+            <span className="text-dim">points from the flood, wildfire and weather lookups</span>
           </Field>
         )}
         <Field label="desk">
@@ -234,9 +225,9 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
 
       <Link
         href={`/cases/${r.caseId}`}
-        className="mt-3 flex items-center justify-center gap-2 border border-edge bg-raise py-1.5 text-[11px] uppercase tracking-[0.12em] text-ink transition-colors duration-150 hover:border-ochre hover:text-ochre"
+        className="mt-3 flex items-center justify-center border border-edge bg-raise py-1.5 text-[11px] uppercase tracking-[0.12em] text-ink transition-colors duration-150 hover:border-ochre hover:text-ochre"
       >
-        open the case <kbd className="key">Enter</kbd>
+        open the case
       </Link>
     </div>
   );

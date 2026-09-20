@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import type { Band } from "@/contract";
 import { api, type CaseWithReceipt } from "@/lib/api";
 import { explainCase, isTenantExplain, precedentFor, sensitivityOf, surfaceOf, type Challenge, type PriceStep } from "@/lib/explain";
 import { bandPhrase, factorValue, whenLabel } from "@/lib/format";
@@ -15,16 +14,11 @@ import { Briefing } from "@/components/case/Briefing";
 import { CaseNav } from "@/components/case/CaseNav";
 import { Deck } from "@/components/case/Deck";
 import { Override } from "@/components/case/Override";
+import { BrokerReply } from "@/components/case/BrokerReply";
+import { Memory } from "@/components/case/Memory";
 import { BandScale, bandTone, DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, THRESHOLDS } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
 import { StatusBar } from "@/components/desk/Kbd";
-
-const BANDS: { band: Band; label: string }[] = [
-  { band: "target", label: "target" },
-  { band: "acceptable", label: "acceptable" },
-  { band: "not_acceptable", label: "not acceptable" },
-];
-const BAND_TONE: Record<Band, string> = { target: "bg-moss", acceptable: "bg-ochre", not_acceptable: "bg-rust" };
 
 /** The guideline's own reading of a fact, shown only when it differs from the fact as displayed. */
 function reads(display: string, asRead?: string) {
@@ -47,7 +41,7 @@ function Rail({ title, note, children }: { title: string; note?: React.ReactNode
 
 export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const { id } = await params;
-  const [c, events, hexes, pins, explain, sens, precedent, surface] = await Promise.all([
+  const [c, events, hexes, pins, explain, sens, precedent, surface, memory] = await Promise.all([
     api.case(id),
     api.events(id),
     api.mapBook("all"),
@@ -56,6 +50,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
     sensitivityOf(id),
     precedentFor(id),
     surfaceOf(id),
+    api.memory(id),
   ]);
   const percentile = await api.percentile(id);
   if (!c) notFound();
@@ -63,7 +58,12 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const pin = pins.find((p) => p.caseId === view.caseId);
   const flippers = view.decision.kind === "open" ? view.decision.flippers : [];
   const place = view.facts.find((f) => f.id === "primary_admin" || f.id === "state")?.display;
-  const premium = sens?.facts.find((f) => f.fact === "premium" && f.movesDecision) ?? sens?.facts.find((f) => f.movesDecision);
+  // The slider is denominated in dollars, so it may only ever be handed a money fact. Once the broker
+  // answers on premium the mover can become something like business type, and a dollar slider under
+  // "what if the submission type were" is nonsense: better to drop the slider than to mislabel it.
+  const MONEY = new Set(["premium", "tiv", "loss_5yr"]);
+  const premium =
+    sens?.facts.find((f) => f.fact === "premium" && f.movesDecision) ?? sens?.facts.find((f) => f.movesDecision && MONEY.has(f.fact));
   // Start the slider where the case actually stands: the estimate the desk is working from.
   const dollars = (explain?.steps.find((s) => s.key === premium?.fact)?.value ?? "").match(/\$[\d,]+/g)?.map((d) => Number(d.replace(/[$,]/g, ""))) ?? [];
   const startAt = dollars.length ? Math.round(dollars.reduce((a, b) => a + b, 0) / dollars.length) : Math.round(((premium?.low.value ?? 0) + (premium?.high.value ?? 0)) / 2);
@@ -71,7 +71,8 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const tenant = isTenantExplain(explain);
   // /guideline can move these two numbers, so the ruler reads the guideline this case was scored by.
   const bands = explain?.thresholds ?? THRESHOLDS;
-  const banded = view.facts.filter((f) => view.factors.some((x) => x.fact === f.id)).length;
+  // Memory only has something to say on a case the desk has worked more than once.
+  const remembered = memory && memory.recalled.length > 0 ? memory : null;
   const counts = {
     known: view.facts.filter((f) => f.provenance === "known").length,
     estimated: view.facts.filter((f) => f.provenance === "estimated").length,
@@ -108,14 +109,14 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         <section className="flex min-h-0 flex-col border-r border-edge px-4 pb-3 pt-2.5" aria-label="How the score was built">
           <div className="flex items-start gap-5">
             <div className="shrink-0">
-              <p className="kicker">{tenant ? "Annual price" : view.override ? "Engine interval" : "Score interval"}</p>
+              <p className="kicker">{tenant ? "Annual price" : view.override ? "Engine score (0–100)" : "Score range (0–100)"}</p>
               <p className={`num text-[32px] font-medium leading-[36px] ${bandTone(view.score, bands)}`}>
                 {tenant ? `$${explain.annual.toFixed(2)}` : view.score ? `${view.score.lo}–${view.score.hi}` : "—"}
               </p>
             </div>
             {view.override && (
               <div className="shrink-0 border-l border-ink/40 pl-4">
-                <p className="kicker text-ink">Underwriter</p>
+                <p className="kicker text-ink">Underwriter&rsquo;s score</p>
                 <p className="num text-[32px] font-medium leading-[36px] text-ink">
                   {view.override.score.lo}–{view.override.score.hi}
                 </p>
@@ -130,13 +131,13 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             {tenant && <p className="cond min-w-0 flex-1 pt-2 text-[12px] leading-snug text-dim">{explain.label}</p>}
           </div>
           <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-dim">
-            {explain?.rulesId && <span className="text-faint">{explain.rulesId}</span>}
-            {explain?.reconciles && <span className="text-moss">✓ the steps reconcile with the score</span>}
+            {explain?.reconciles && <span className="text-moss">✓ the steps add up to the score</span>}
             {percentile && <PercentileLine p={percentile} />}
           </p>
           {view.kind === "commercial" && view.score && (
             <Override caseId={view.caseId} current={view.override} bound={view.override?.bound ?? 5} />
           )}
+          {view.kind === "commercial" && <BrokerReply caseId={view.caseId} />}
 
           {tenant ? (
             <>
@@ -165,30 +166,20 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           )}
         </section>
 
-        {/* THE BOOK. One row per fact: its value, where it came from, and which bands it still allows. */}
-        <aside className="min-h-0 overflow-y-auto border-r border-edge" aria-label="The book: facts, provenance and factor bands">
+        {/* THE FACTS. One row per fact: what it says, how sure the desk is, and where it came from. */}
+        <aside className="min-h-0 overflow-y-auto border-r border-edge" aria-label="Facts on this case, with where each one came from">
           <Rail
-            title="The book"
+            title="What we know"
             note={
               <>
-                <span className="text-moss">{counts.known} known</span> · <span className="text-ochre">{counts.estimated} est</span> ·{" "}
-                <span className="text-rust">{counts.missing} missing</span>
+                <span className="whitespace-nowrap text-moss">{counts.known} known</span> ·{" "}
+                <span className="whitespace-nowrap text-ochre">{counts.estimated} est</span> ·{" "}
+                <span className="whitespace-nowrap text-rust">{counts.missing} missing</span>
               </>
             }
           >
-            {banded > 0 && (
-            <p className="mb-1 flex items-center gap-x-2 gap-y-0.5 text-[9px] leading-[13px] text-faint">
-              <span>bands still open</span>
-              {BANDS.map((b) => (
-                <span key={b.band} className="flex items-center gap-1">
-                  <span aria-hidden className={`inline-block h-1.5 w-3 rounded-[1px] ${BAND_TONE[b.band]}`} />
-                  {b.label}
-                </span>
-              ))}
-            </p>
-            )}
             <table data-brief="facts" className="w-full border-collapse">
-              <caption className="sr-only">Every fact on this case, its provenance, its source, and the guideline bands it still allows.</caption>
+              <caption className="sr-only">Every fact on this case, how sure the desk is of it, and the source it came from.</caption>
               <tbody>
                 {view.facts.map((f) => {
                   const factor = view.factors.find((x) => x.fact === f.id);
@@ -203,19 +194,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
                             {f.display}
                           </span>
                           <ProvenanceBadge p={f.provenance} short />
-                          <span className="flex w-[29px] shrink-0 gap-px">
-                            {factor && BANDS.map((b) => {
-                              const on = factor.possible.includes(b.band);
-                              return (
-                                <span
-                                  key={b.band}
-                                  title={`${b.label}: ${on ? "still possible" : "ruled out"}`}
-                                  aria-label={`${b.label}: ${on ? "still possible" : "ruled out"}`}
-                                  className={`inline-block h-[11px] w-[9px] rounded-[1px] ${on ? BAND_TONE[b.band] : "bg-rule"}`}
-                                />
-                              );
-                            })}
-                          </span>
                         </span>
                         <span className="mt-px block text-[9px] leading-[12px] text-faint">
                           {f.resolver ? `${f.resolver} resolves · ` : ""}
@@ -228,11 +206,6 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
                 })}
               </tbody>
             </table>
-            {banded > 0 && (
-              <p className="mt-1.5 border-t border-rule pt-1 text-[9px] leading-snug text-faint">
-                A missing fact keeps all three bands open, which is what widens the interval above.
-              </p>
-            )}
           </Rail>
         </aside>
 
@@ -301,7 +274,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
               },
               {
                 id: "trail",
-                label: "issues & actions",
+                label: "issues & what we sent",
                 count: `${view.issues.length + view.actions.length}`,
                 node: (
                   <div className="px-3 py-2 text-[11px]">
@@ -332,6 +305,17 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
                   </div>
                 ),
               },
+              // Only on a case the desk has worked before: an empty memory panel says nothing.
+              ...(remembered
+                ? [
+                    {
+                      id: "memory",
+                      label: "what we remembered",
+                      count: `${remembered.recalled.length}`,
+                      node: <Memory m={remembered} />,
+                    },
+                  ]
+                : []),
             ]}
           />
         </div>
@@ -341,24 +325,10 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         left={
           <>
             <span className="text-ochre">CASE #{view.caseId}</span>
-            <span>
-              {counts.known} known · {counts.estimated} estimated · {counts.missing} missing
-            </span>
-            {view.explanationVerified && <span className="text-moss">✓ every number checked</span>}
-            {precedent && (
-              <span>
-                precedent <span className={precedent.backend === "elastic" ? "text-moss" : "text-dim"}>[{precedent.backend}]</span> · {precedent.hits.length} hits
-              </span>
-            )}
+            <span className="truncate">{view.title}</span>
+            {explain?.rulesId && <span className="num text-faint">scored by {explain.rulesId}</span>}
           </>
         }
-        keys={[
-          ["w s", "views"],
-          ["f", "what-if"],
-          ["1 2 3", "deck"],
-          ["u", "blotter"],
-          ["?", "keys"],
-        ]}
       />
     </main>
   );

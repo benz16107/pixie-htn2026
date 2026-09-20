@@ -55,10 +55,12 @@ function TermList({ terms, tone }: { terms: DeclinesInsight["declined"]; tone: s
           <span className="relative flex items-baseline gap-1.5">
             <span className="shrink-0 text-[9px] uppercase tracking-[0.08em] text-faint">{FIELD_LABEL[t.field] ?? t.field}</span>
             <span className="min-w-0 flex-1 truncate text-ink">{t.value}</span>
-            <span className="num shrink-0 text-[10px] text-dim">
+            <span className="num shrink-0 text-[10px] text-dim" title={`${t.doc_count} of the ${t.background_count} on the book with this trait`}>
               {t.doc_count}/{t.background_count}
             </span>
-            <span className="num w-[30px] shrink-0 text-right text-[10px] text-dim">{t.score.toFixed(2)}</span>
+            <span className="num w-[30px] shrink-0 text-right text-[10px] text-dim" title="how far over its usual rate this trait turns up here">
+              {t.score.toFixed(2)}
+            </span>
           </span>
         </li>
       ))}
@@ -75,7 +77,8 @@ export function DeclinesPanel({ d }: { d: DeclinesInsight }) {
         <BackendTag backend={d.backend} />
       </h2>
       <p className="mb-2 text-[11px] leading-snug text-dim">
-        significant_terms over {d.nDeclined} declined and {d.nLossMaking} loss-making of {d.nBook} book docs. Over-represented, not just frequent.
+        What turns up far more often in the {d.nDeclined} we declined and the {d.nLossMaking} that lost money than in the other {d.nBook} on the book.
+        Elasticsearch <span className="num text-faint">significant_terms</span>, so a common trait only counts if it is over-represented here.
       </p>
       <p className="text-[9px] uppercase tracking-[0.1em] text-rust">Declines</p>
       <TermList terms={d.declined} tone="bg-rust" />
