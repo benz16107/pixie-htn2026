@@ -264,6 +264,15 @@ function BlotterRow({ r, on, onPick, onOpen }: { r: Ranked; on: boolean; onPick:
             desk {VERDICT_SHORT[r.deskVerdict!] ?? r.deskVerdict!.replaceAll("_", " ")}
           </span>
         )}
+        {r.override && (
+          <span
+            title={`${r.override.by} moved the interval by ${r.override.points} points: ${r.override.reason}`}
+            className="ml-1.5 whitespace-nowrap rounded-sm border border-ink px-1 text-[9px] leading-[13px] text-ink"
+          >
+            UW {r.override.points > 0 ? "+" : "−"}
+            {Math.abs(r.override.points)}
+          </span>
+        )}
       </td>
       <td className="overflow-hidden px-2">
         <span className="flex gap-1 whitespace-nowrap">

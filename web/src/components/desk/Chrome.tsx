@@ -7,6 +7,7 @@ import { Kbd } from "./Kbd";
 
 const DESTS = [
   { key: "q", href: "/queue", label: "blotter" },
+  { key: "r", href: "/guideline", label: "rules" },
   { key: "m", href: "/map", label: "book" },
   { key: "a", href: "/ask", label: "ask" },
   { key: "b", href: "/backtest", label: "proof" },
@@ -14,7 +15,7 @@ const DESTS = [
 ];
 
 const GLOBAL_KEYS: [string, string][] = [
-  ["g then q / m / a / b / l", "go to blotter, book, ask, proof, live"],
+  ["g then q / r / m / a / b / l", "go to blotter, rules, book, ask, proof, live"],
   ["?", "this sheet"],
   ["Esc", "close anything open"],
 ];
@@ -26,8 +27,15 @@ const PAGE_KEYS: Record<string, [string, string][]> = {
     ["o / A", "open submissions only / everything"],
     ["gg / G", "jump to the first or the last row"],
   ],
+  "/guideline": [
+    ["1 – 5", "load a scenario into the document"],
+    ["a", "apply the pending edits and re-score all 158"],
+    ["d", "discard the pending edits"],
+    ["r", "restore the guideline as filed on disk"],
+  ],
   "/cases": [
     ["w / s", "waterfall / decision space"],
+    ["o", "adjust the score, bounded and with a reason"],
     ["1 2 3 4", "facts, bands, lanes, site in the bottom deck"],
     ["← / →", "drag the what-if by one step"],
     ["u", "back to the blotter"],

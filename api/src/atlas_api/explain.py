@@ -34,31 +34,40 @@ def _money(x: float) -> str:
     return f"${x:,.0f}"
 
 
+def band_text(fact: str, band: str, pred: dict[str, Any]) -> str:
+    """One band of one factor, in words: "target: $75,000 to $100,000". guideline.py renders the
+    editable document from the same strings the waterfall cites."""
+    money = fact in MONEY_FACTS
+
+    def m(x: Any) -> str:
+        return _money(x) if money else str(x)
+
+    if "else" in pred:
+        return f"{band}: anything else"
+    if "between" in pred:
+        lo, hi = pred["between"]
+        return f"{band}: {m(lo)} to {m(hi)}"
+    if "in" in pred:
+        return f"{band}: {', '.join(map(str, pred['in']))}"
+    if "eq" in pred:
+        return f"{band}: {pred['eq']}"
+    if "lte" in pred:
+        return f"{band}: at most {m(pred['lte'])}"
+    if "lt" in pred:
+        return f"{band}: under {m(pred['lt'])}"
+    if "gte" in pred:
+        return f"{band}: at least {m(pred['gte'])}"
+    if "gt" in pred:
+        return f"{band}: after {pred['gt']}"
+    if "share_gt" in pred:
+        share, types = pred["share_gt"]
+        return f"{band}: over {share:.0%} of TIV in {', '.join(types)}"
+    return band
+
+
 def rule_text(rule: Rule) -> str:
     """The guideline line this factor came from, rendered from rules/*.yaml."""
-    money = rule.fact in MONEY_FACTS
-    parts = []
-    for band, pred in rule.bands.items():
-        if "else" in pred:
-            parts.append(f"{band}: anything else")
-        elif "between" in pred:
-            lo, hi = pred["between"]
-            parts.append(f"{band}: {_money(lo) if money else lo} to {_money(hi) if money else hi}")
-        elif "in" in pred:
-            parts.append(f"{band}: {', '.join(map(str, pred['in']))}")
-        elif "eq" in pred:
-            parts.append(f"{band}: {pred['eq']}")
-        elif "lte" in pred:
-            parts.append(f"{band}: at most {_money(pred['lte']) if money else pred['lte']}")
-        elif "lt" in pred:
-            parts.append(f"{band}: under {_money(pred['lt']) if money else pred['lt']}")
-        elif "gte" in pred:
-            parts.append(f"{band}: at least {_money(pred['gte']) if money else pred['gte']}")
-        elif "gt" in pred:
-            parts.append(f"{band}: after {pred['gt']}")
-        elif "share_gt" in pred:
-            share, types = pred["share_gt"]
-            parts.append(f"{band}: over {share:.0%} of TIV in {', '.join(types)}")
+    parts = [band_text(rule.fact, band, pred) for band, pred in rule.bands.items()]
     return "; ".join(parts) + (" (hard fail)" if rule.hard_fail else "")
 
 

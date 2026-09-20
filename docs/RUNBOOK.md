@@ -3,6 +3,47 @@
 Everything Ben needs to bring Pixie up, keep it up, and recover in front of a judge.
 Written 2026-09-19 against what is actually running on this laptop. Ports and URLs verified.
 
+## 0. Where it runs, and what to open
+
+**Everything runs on macserver at home**, not on the laptop. Ben demos from the laptop and the
+phone, both reaching macserver over Tailscale. Nothing needs to move, and nothing needs rewriting
+when the venue's network changes.
+
+| Where | What to open |
+|---|---|
+| Laptop (Tailscale on) | `http://macserver:3100/live`, and the other pages under the same host. If the name does not resolve, `http://100.95.223.110:3100` |
+| Phone (Tailscale on) | Expo Go, `exp://100.95.223.110:8081` |
+| Anything public, no VPN | `https://macserver.tailb51682.ts.net` (the API, through Tailscale Funnel) |
+
+The Funnel address is permanent. It replaced the cloudflared quick tunnel, whose hostname changed
+on every restart and silently broke inbound iMessage. Linq's webhook should point at
+`https://macserver.tailb51682.ts.net/webhooks/linq` and never need touching again.
+
+On macserver itself, `~/Code/hackathons/htn-2026/atlas/start.sh` starts whatever is down, leaves
+what is up alone, holds the machine awake with `caffeinate`, warns if it is on battery, and prints
+every URL.
+
+**What this setup costs.** The demo depends on home power, home internet and macserver staying
+awake. If any of those fail at the venue there is no fallback but the backup video, so record one.
+macserver sleeps on battery, so it must stay plugged in.
+
+## 0b. The backup on GitHub
+
+`git@github.com:benz16107/pixie-htn2026` (private). `main` plus every lane branch is pushed. The
+work still happens on macserver; this is a backup and a way to read the code on the laptop.
+
+    git clone https://github.com/benz16107/pixie-htn2026.git
+
+A clone will not run without three things that are deliberately not in git: `.env` (every API key),
+`var/atlas.sqlite` (the recorded desk runs the demo replays) and `data/federato` (a symlink here to
+the pulled Federato snapshot). Copy them from macserver if the laptop ever has to take over:
+
+    scp macserver:~/Code/hackathons/htn-2026/atlas/.env .
+    scp -r macserver:~/Code/hackathons/htn-2026/atlas/var ./var
+    scp -r macserver:~/Code/hackathons/htn-2026/atlas/cache ./cache
+
+Push after any real change so the backup stays current: `git push origin main`.
+
 ## 1. What has to be running
 
 | Piece | Port | Start it | Check |
@@ -18,8 +59,15 @@ server-rendered pages come back empty.
 If a port is stuck, `lsof -ti tcp:<port> | xargs kill -9`. `pkill -f "next start"` does not match
 the process; use the lsof form.
 
-The tunnel URL changes every time cloudflared restarts. If it does restart, put the new URL in
-`.env` as `PUBLIC_URL` and re-register the Linq subscription, or inbound iMessage replies go nowhere.
+The tunnel URL changes every time cloudflared restarts. `python3 scripts/retunnel.py` starts a new
+one and repoints `.env`, `app/.env` and the Sentry uptime monitor; repointing the Linq webhook in
+Linq's own dashboard is the one manual step. Without it, inbound iMessage replies go nowhere.
+
+**This network does not resolve `trycloudflare.com` hostnames.** A local `curl` to the tunnel fails
+with "could not resolve host" while the tunnel is perfectly healthy for the outside world. Check it
+the way the script does: `dig +short <host> @1.1.1.1`, then `curl --resolve <host>:443:<ip>`. For the
+same reason the phone app points at the laptop's LAN address (`app/.env`), not the tunnel; swap in
+the commented tunnel line only if the phone is on cellular.
 
 ## 2. The five minutes
 

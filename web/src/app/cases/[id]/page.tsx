@@ -14,6 +14,7 @@ import { Challenger, PrecedentPanel } from "@/components/case/Sidebar";
 import { Briefing } from "@/components/case/Briefing";
 import { CaseNav } from "@/components/case/CaseNav";
 import { Deck } from "@/components/case/Deck";
+import { Override } from "@/components/case/Override";
 import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
 import { StatusBar } from "@/components/desk/Kbd";
@@ -112,11 +113,19 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
         <section className="flex min-h-0 flex-col border-r border-edge px-4 pb-3 pt-2.5" aria-label="How the score was built">
           <div className="flex items-start gap-5">
             <div className="shrink-0">
-              <p className="kicker">{tenant ? "Annual price" : "Score interval"}</p>
+              <p className="kicker">{tenant ? "Annual price" : view.override ? "Engine interval" : "Score interval"}</p>
               <p className={`num text-[32px] font-medium leading-[36px] ${scoreTone(view.score)}`}>
                 {tenant ? `$${explain.annual.toFixed(2)}` : view.score ? `${view.score.lo}–${view.score.hi}` : "—"}
               </p>
             </div>
+            {view.override && (
+              <div className="shrink-0 border-l border-ink/40 pl-4">
+                <p className="kicker text-ink">Underwriter</p>
+                <p className="num text-[32px] font-medium leading-[36px] text-ink">
+                  {view.override.score.lo}–{view.override.score.hi}
+                </p>
+              </div>
+            )}
             {!tenant && (
               <div className="min-w-0 flex-1 pt-1">
                 <IntervalBar score={view.score} />
@@ -134,6 +143,9 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             {explain?.reconciles && <span className="text-moss">✓ the steps reconcile with the score</span>}
             {percentile && <PercentileLine p={percentile} />}
           </p>
+          {view.kind === "commercial" && view.score && (
+            <Override caseId={view.caseId} current={view.override} bound={view.override?.bound ?? 5} />
+          )}
 
           {tenant ? (
             <>

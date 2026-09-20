@@ -68,10 +68,25 @@ def start_tunnel() -> str:
 
 
 def health_ok(url: str) -> bool:
+    """Ask the tunnel for /health. Some venue resolvers do not answer for trycloudflare.com
+    hostnames even though the tunnel is fine for the rest of the world, so a name that will not
+    resolve locally falls back to Cloudflare's own resolver before giving up."""
     try:
         with urllib.request.urlopen(f"{url}/health", timeout=20) as r:
             return r.status == 200
     except Exception as exc:
+        host = url.split("//", 1)[-1].split("/", 1)[0]
+        ip = subprocess.run(["dig", "+short", host, "@1.1.1.1"], capture_output=True, text=True).stdout.split()
+        if not ip:
+            print(f"  {url}/health did not answer: {exc}")
+            return False
+        probe = subprocess.run(["curl", "-s", "-m", "25", "-o", "/dev/null", "-w", "%{http_code}",
+                                "--resolve", f"{host}:443:{ip[0]}", f"{url}/health"],
+                               capture_output=True, text=True).stdout.strip()
+        if probe == "200":
+            print(f"  {url}/health answers from outside (200). This machine's DNS does not resolve "
+                  f"{host}; the tunnel itself is fine.")
+            return True
         print(f"  {url}/health did not answer: {exc}")
         return False
 

@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from . import composio_routes
+from . import guideline
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
 from . import insights_routes
@@ -93,19 +94,30 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     from .precedent import open_precedent_index
     insights_routes.init(world, open_precedent_index(world))
     openai_routes.init(world, _store)
-    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    rescore_book()
+    yield
+
+
+def rescore_book() -> None:
+    """Score every submission against the *active* guideline and rewrite its stored views.
+
+    Startup runs it once. Editing the guideline (PUT /guideline) runs it again: 158 submissions,
+    pure engine, no model and no network, so a guideline change lands in well under a second.
+    """
+    store, world, rules = get_store(), _world, guideline.active()
     for sub in world.submissions.values():
         case = world.case(f"SUB-{sub['id']}")
         a = assess(case, rules)
-        insured = world.insureds.get(sub["insured"], {})
-        insured_name = insured.get("name", "?")
-        _store.put_case(str(sub["id"]), {
+        insured_name = world.insureds.get(sub["insured"], {}).get("name", "?")
+        store.put_case(str(sub["id"]), {
             "queue": queue_row(sub["id"], sub["status"], case, a, insured_name),
             "case": case_view(sub["id"], case, a, insured_name),
         })
-        if _store.latest_run(str(sub["id"])):
-            apply_desk_run(_store, world, str(sub["id"]))
-    yield
+        if store.latest_run(str(sub["id"])):
+            apply_desk_run(store, world, str(sub["id"]))   # folds the recorded run back over it
+        else:
+            from . import override
+            override.refresh(store, str(sub["id"]))        # the human's points ride the new interval
 
 
 app = FastAPI(title="Pixie API", lifespan=_lifespan)
@@ -249,6 +261,15 @@ def health() -> dict[str, Any]:
     return {"ok": True}
 
 
+def rank(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The queue's order: best score first, then most value at stake. Routed rows have no interval,
+    so they rank below every scored case. Shared with the guideline diff, which reports how far a
+    case moved in exactly this order."""
+    return sorted(rows, key=lambda r: (0 if r["score"] else 1,
+                                        -((r["score"]["lo"] + r["score"]["hi"]) / 2 if r["score"] else 0),
+                                        -r["valueAtStake"]))
+
+
 @app.get("/queue")
 def queue(view: Literal["open", "all", "consumer"] = "open") -> list[dict[str, Any]]:
     """Commercial submissions, plus the consumer referrals the desk is asked to review.
@@ -267,11 +288,7 @@ def queue(view: Literal["open", "all", "consumer"] = "open") -> list[dict[str, A
         r.setdefault("label", "Consumer referral")
     if view == "consumer":
         return sorted(tenant, key=lambda r: r["caseId"])
-    rows = commercial if view == "all" else [r for r in commercial if r["status"] in OPEN_STATUSES]
-    # routed rows have no interval; they rank below every scored case, by value at stake
-    rows.sort(key=lambda r: (0 if r["score"] else 1,
-                              -((r["score"]["lo"] + r["score"]["hi"]) / 2 if r["score"] else 0),
-                              -r["valueAtStake"]))
+    rows = rank(commercial if view == "all" else [r for r in commercial if r["status"] in OPEN_STATUSES])
     referrals = [r for r in tenant if r["decision"]["kind"] == "refer"]
     return rows + sorted(referrals, key=lambda r: -r["valueAtStake"])
 
@@ -297,7 +314,7 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     f = CaseFile.fold(events)
     if f.decision is None:
         return
-    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    rules = guideline.active()
     case = world.case(f"SUB-{case_id}")
     for name, value in f.facts.items():
         case = case.with_fact(name, value, by="desk")
@@ -346,9 +363,13 @@ def apply_desk_run(store: CaseStore, world: World, case_id: str) -> None:
     row = data["queue"]
     row.update(score=view["score"], decision=view["decision"], deskVerdict=f.decision.verdict,
                challengeRisks=len((view.get("challenge") or {}).get("risks") or []),
-               deepDived=any(e.actor not in ("system", "lead") for e in events),
+               # a guideline edit is a human event, but it is not a deep dive: the desk did not
+               # investigate this case, the carrier changed its appetite underneath it
+               deepDived=any(e.actor not in ("system", "lead") and e.kind != "guideline" for e in events),
                enrichmentDelta=0 if view["score"] is None else round(a.score.mid - bare.score.mid))
     store.put_case(case_id, {"queue": row, "case": view})
+    from . import override
+    override.refresh(store, case_id)   # the human's points ride along with the engine's new interval
 
 
 class _FixedImpact:
@@ -495,7 +516,7 @@ def _case_and_assessment(case_id: str):
     if run:
         for name, value in CaseFile.fold(store.tail(case_id, run_id=run)).facts.items():
             case = case.with_fact(name, value, by="desk")
-    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    rules = guideline.active()
     return case, assess(case, rules), rules
 
 
@@ -675,17 +696,113 @@ def run_totals(run_id: str) -> dict[str, Any]:
                        "done": all(r["done"] for r in rows)}}
 
 
+# ---------- the live guideline (Control Tower): read it, edit it, watch the book move -------------
+
+def _book() -> dict[str, dict[str, Any]]:
+    """Every commercial case's stored view, keyed by case id: the input to a guideline diff."""
+    out = {}
+    for c in get_store().list_cases():
+        cid = c["queue"]["caseId"]
+        if cid.isdigit() and int(cid) in _world.submissions:
+            out[cid] = c
+    return out
+
+
+def _open_order() -> list[str]:
+    rows = [c["queue"] for c in _book().values() if c["queue"]["status"] in OPEN_STATUSES]
+    return [r["caseId"] for r in rank(rows)]
+
+
+def _swap(change: list[str], by: str, hash_before: str = "") -> dict[str, Any]:
+    """Re-score the whole book against the guideline that is now active and report what moved.
+
+    The swap itself already happened (guideline.apply_doc / guideline.reset): this is the part the
+    demo is for. Deterministic, no model: the same engine that scored the book at startup scores it
+    again, and the diff is a comparison of two sets of computed views.
+    """
+    import time as _time
+    from .actions import append_after_run
+    from .events import GuidelineP, ScoreP
+
+    store = get_store()
+    before, rank_before = _book(), _open_order()
+    t0 = _time.perf_counter()
+    rescore_book()
+    after, rank_after = _book(), _open_order()
+    d = guideline.diff(before, after, rank_before, rank_after)
+    d["ms"] = round((_time.perf_counter() - t0) * 1000, 1)
+    d["change"] = change
+    d["hashBefore"] = hash_before
+
+    # AGENTS.md 3: the change is an event on every case it moved, under the human who made it.
+    hash_after = guideline.digest()
+    for c in d["cases"]:
+        cid = c["caseId"]
+        sc = lambda s: ScoreP(lo=s["lo"], hi=s["hi"]) if s else None      # noqa: E731
+        append_after_run(store, cid, store.latest_run(cid) or "guideline", "human", GuidelineP(
+            text=f"Guideline edited ({'; '.join(change) or 'restored'}): {c['tierBefore']} becomes {c['tierAfter']}",
+            guideline_id=guideline.active().id, hash_before=hash_before, hash_after=hash_after,
+            change=change, by=by, decision_before=c["tierBefore"], decision_after=c["tierAfter"],
+            score_before=sc(c["scoreBefore"]), score_after=sc(c["scoreAfter"]), factors=c["factors"]))
+        publish("guideline", {"caseId": cid, "from": c["tierBefore"], "to": c["tierAfter"]})
+    from .telemetry import log
+    log("guideline.applied", change="; ".join(change), changed=d["changed"],
+        tier_changes=d["tierChanges"], ms=d["ms"], hash=hash_after)
+    return {"guideline": guideline.doc(), "diff": d}
+
+
+@app.get("/guideline")
+def get_guideline() -> dict[str, Any]:
+    """The active guideline, as a document: thresholds, the hard-fail cap, the points table and every
+    factor with its bands, plus the one-click demo scenarios."""
+    return guideline.doc()
+
+
+@app.put("/guideline")
+def put_guideline(doc: dict[str, Any]) -> dict[str, Any]:
+    """Validate an edited guideline, swap it in atomically, re-score the book, return what moved.
+
+    A rejected document changes nothing: validation runs over the whole document before the swap.
+    """
+    was = guideline.active_raw()
+    hash_before = guideline.digest()
+    try:
+        guideline.apply_doc(doc)
+    except guideline.GuidelineError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    change = guideline.describe(was, guideline.active_raw())
+    return _swap(change, by=str(doc.get("by") or "underwriting leader"), hash_before=hash_before)
+
+
+@app.post("/guideline/reset")
+def reset_guideline() -> dict[str, Any]:
+    """Back to rules/property_2025.yaml as it is on disk, and re-score. Idempotent."""
+    was = guideline.active_raw()
+    hash_before = guideline.digest()
+    guideline.reset()
+    return _swap(guideline.describe(was, guideline.active_raw()), by="demo reset", hash_before=hash_before)
+
+
 def demo_reset(case_ids: list[str] | None = None) -> dict[str, Any]:
     """T14: drop the action events, outbox rows and human decisions, keep the recorded desk run and
     restore the stored view from it. Running it twice leaves the same state."""
     store = get_store()
-    ids = case_ids or [c["queue"]["caseId"] for c in store.list_cases() if store.latest_run(c["queue"]["caseId"])]
+    from . import override
+
+    was = guideline.active_raw()
+    guideline.reset()
+    change = guideline.describe(was, guideline.active_raw())
+    if change:
+        _swap(change, by="demo reset", hash_before=guideline.digest(was))
+    ids = case_ids or [c["queue"]["caseId"] for c in store.list_cases()
+                        if store.latest_run(c["queue"]["caseId"]) or c["queue"].get("override")]
     cleared = {}
     for cid in ids:
         events = store.delete_events(cid, {"action", "action_result"})
         events += store.delete_actor(cid, "human")
         outbox = store.delete_outbox(cid)
         apply_desk_run(store, _world, cid)
+        override.refresh(store, cid)   # a case with no recorded run keeps its stored view; drop it there too
         if events or outbox:
             cleared[cid] = {"events": events, "outbox": outbox}
     store.cache_set("linq:last_digest", [])
@@ -716,7 +833,7 @@ def _enriched(case_id: str):
         case = case.with_fact(name, value, by="desk")
     port = next((e.payload for e in events if isinstance(e.payload, FindingP)
                  and e.payload.fact == "portfolio.concentration"), None)
-    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    rules = guideline.active()
     pack = layers.LayersPack(folded.hazard_multipliers) if folded.hazard_multipliers else None
     impact = _FixedImpact(port.score_delta, port) if port else None
     return case, assess(case, rules, pack, impact), folded.hazard_multipliers, impact, events, rules
@@ -741,8 +858,14 @@ def case_explain(case_id: str) -> dict[str, Any]:
         return tenant_waterfall(tenant, toronto_percentiles(cell, scores))
     if get_store().get_case(case_id) is None:
         raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    from . import override
+
     case, a, _hz, _impact, events, rules = _enriched(case_id)
-    return explain_payload(case, a, rules, events)
+    payload = explain_payload(case, a, rules, events)
+    step = override.waterfall_step(get_store(), case_id)   # after reconciles(): the engine's steps still sum
+    if step:
+        payload["steps"].append(step)
+    return payload
 
 
 class WhatIfRequest(BaseModel):
@@ -762,6 +885,51 @@ def case_whatif(case_id: str, req: WhatIfRequest) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"no case {case_id}")
     case, _a, hazard, impact, _events, rules = _enriched(case_id)
     return whatif(case, rules, req.overrides, hazard, impact)
+
+
+class OverrideRequest(BaseModel):
+    points: float                      # signed, in score points; refused past override.MAX_OVERRIDE_POINTS
+    reason: str
+
+
+@app.post("/cases/{case_id}/override")
+def case_override(case_id: str, req: OverrideRequest) -> dict[str, Any]:
+    """The underwriter's bounded nudge of the engine's interval (docs/OVERRIDE.md).
+
+    The what-if slider moves an *input*; this moves the *output*, by at most a few points, with a
+    reason, into the same event ledger every other decision uses. The engine's own interval and
+    decision are untouched: GET /cases/{id} returns both, `score` the engine's and
+    `override.score` the human's.
+    """
+    from . import override
+
+    case_id = case_id.removeprefix("SUB-")
+    store = get_store()
+    if store.get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    try:
+        block = override.apply(store, case_id, req.points, req.reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    publish("override", {"caseId": case_id, "override": block})
+    from .telemetry import log
+    log("case.override", case_id=case_id, points=req.points,
+        decision=block["decision"]["kind"], was=block["engineDecision"]["kind"])
+    return {"caseId": case_id, "override": block}
+
+
+@app.delete("/cases/{case_id}/override")
+def case_override_clear(case_id: str) -> dict[str, Any]:
+    """Undo, for the mis-click during a demo. Idempotent: removed=0 when there was nothing to undo."""
+    from . import override
+
+    case_id = case_id.removeprefix("SUB-")
+    store = get_store()
+    if store.get_case(case_id) is None:
+        raise HTTPException(status_code=404, detail=f"no case {case_id}")
+    removed = override.clear(store, case_id)
+    publish("override", {"caseId": case_id, "override": None})
+    return {"caseId": case_id, "removed": removed, "override": None}
 
 
 @app.get("/cases/{case_id}/sensitivity")

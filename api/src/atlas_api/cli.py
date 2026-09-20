@@ -30,7 +30,8 @@ def _reason_lines(a) -> tuple[str, str]:
 
 
 def triage() -> None:
-    rules = RulesFile.load(DEFAULT_RULES_DIR / "property_2025.yaml")
+    from . import guideline
+    rules = guideline.active()
     world = World.load()
 
     rows = []
