@@ -21,7 +21,7 @@ rules file.
 ```mermaid
 flowchart LR
   broker["Broker sends a<br/>property submission"]
-  renter["Renter answers<br/>6 questions on a phone"]
+  renter["Renter answers<br/>3 questions on a phone"]
   web["<b>Product 1: underwriter desk</b><br/>Next.js web<br/>queue · case · live · map · ask"]
   expo["<b>Product 2: renter app</b><br/>Expo<br/>questions · quote · map · photos"]
   facts["<b>Federato data layer</b><br/>every fact carries its source:<br/>known, estimated or missing"]

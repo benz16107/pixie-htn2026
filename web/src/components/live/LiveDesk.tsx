@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CaseView, DeskEvent, Hex } from "@/contract";
 import { Swimlanes } from "../Swimlanes";
 import { CasePanel, Chatter, QueueRail, SweepBoard } from "./Panels";
+import { RecordButton } from "./RecordButton";
 import { StationLine } from "./StationLine";
 import { Phone, type DigestState } from "./Phone";
 import { useRun, type Speed } from "./useRun";
@@ -307,6 +308,7 @@ export function LiveDesk(props: LiveProps) {
           <button onClick={() => run.start(mode === "focus" && selected ? [selected] : ["138"], "live")} className={btn} title="Ask the desk to think for real. Costs model calls.">
             Run live
           </button>
+          <RecordButton />
           <button
             onClick={runDemo}
             className="rounded-sm border border-ink bg-ink px-3 py-1 font-semibold text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:scale-[0.98]"

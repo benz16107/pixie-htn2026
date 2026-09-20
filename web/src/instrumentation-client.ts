@@ -4,8 +4,8 @@ import * as Sentry from "@sentry/nextjs";
 // masking on, the canvas capture for the map/deck.gl screen, and the feedback widget so a judge
 // can file "this looks wrong" during the demo. Session replay stays at 0 background sample rate --
 // the free plan's 50 replays/month is the tightest quota here -- and records only when an error
-// fires, or when a judge presses "record this" (Sentry.getReplay()?.start(), wired from the /live
-// screen).
+// fires, or when a judge presses "Record this" on the /live top bar
+// (components/live/RecordButton.tsx calls Sentry.getReplay()?.start()).
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1.0,
