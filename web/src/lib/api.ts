@@ -70,19 +70,14 @@ export type GuidelineResult = { guideline: GuidelineDoc; diff: GuidelineDiff };
 // What the desk remembered (GET /cases/{id}/memory). Advisory only: see `boundary`.
 export type MemoryRow = {
   caseId: string; insured: string; broker: string; state: string;
-  dataIssues: string[]; why: string; from: "desk" | "backboard"; line: string;
+  dataIssues: string[]; why: string; line: string;
 };
 export type MemorySource = {
-  id: string; name: string; store: string; needsNetwork: boolean; note: string;
-  lines: number; live: boolean; queried?: boolean;
-};
-export type MemoryJudgement = {
-  source: string; about: string; text?: string;
-  answers: { question: string; answer: string; probability: number | null; confidence: number | null }[];
+  name: string; store: string; needsNetwork: false; lines: number;
 };
 export type DeskMemory = {
   caseId: string; summary: string; recalled: MemoryRow[]; boundary: string;
-  sources: Record<string, MemorySource>; judgements: MemoryJudgement[]; judgementBoundary: string;
+  source: MemorySource;
 };
 
 // On the server we call the API directly; in the browser we go through the same-origin proxy,

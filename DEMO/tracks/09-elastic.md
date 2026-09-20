@@ -1,43 +1,44 @@
 # Elastic: five-minute demo
 
-[All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md)
+[All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md) · [Implementation notes](../../docs/ELASTIC.md)
 
-## Context and angle
+## The pitch
 
-Focus on retrieval and aggregation over the insurance book. The service is doing work that the model cannot reliably reproduce from prose: nearest precedent, geographic exposure and cohort comparisons.
+"Before we write another risk, Elastic retrieves similar decisions and calculates how much active exposure is already concentrated nearby."
 
-Opening: "Before we write another risk, we retrieve similar decisions and compute how much exposure we already have nearby."
+Elastic is the strongest secondary integration because it supports both main products and several different query types.
 
-## Prepare
+## What we use from Elastic
 
-Open `/cases/138`, `/queue`, `/map` and `/api/atlas/cases/138/precedent`. Confirm the current backend is `elastic`. A memory result is a fallback demonstration. Keep the index/query definitions ready in docs/ELASTIC.md.
+- Five indices covering precedent, active portfolio exposure, decline analysis, and Toronto location data.
+- Lexical BM25 and semantic retrieval combined with reciprocal rank fusion for similar cases.
+- A configured semantic reranker for the supported precedent path.
+- `significant_terms` to compare declined or loss-making cohorts with the whole book.
+- Percentile queries that place a submission's value and premium in context.
+- Geospatial filtering and aggregation for nearby active insured value and Toronto risk cells.
 
-## Timed script
+## Why it fits Pixie
+
+The agent can ask a question, but it should not invent the comparable cases or add nearby exposure itself. Elastic retrieves the evidence and performs the aggregation. Pixie's engine consumes the labelled result, and the UI shows which backend answered.
+
+## Five-minute flow
 
 | Time | Show and say |
 |---|---|
-| 0:00-0:35 | State the two questions: what happened on comparable risks, and how concentrated are we near this location? |
-| 0:35-1:50 | On the case sidebar, show precedent hits and actual outcomes. Point at the Elastic badge and explain the hybrid retrieval query. |
-| 1:50-2:55 | Open Portfolio. Hover a cell and select a peril. Explain the H3 aggregate and nearby active-policy TIV. Show the matching case pins. |
-| 2:55-4:15 | Show the queue insights and case percentile. Explain significant_terms versus raw frequency, then explain how numerical aggregation remains outside the LLM. |
-| 4:15-5:00 | Show the response backend and query evidence. Close on a sourced underwriting context, with a local fallback that identifies itself. |
+| 0:00-0:35 | Open case 138. Ask two questions: what happened on comparable risks, and how concentrated are we near this site? |
+| 0:35-1:45 | Show the precedent hits and outcomes in the case sidebar. Point to the `elastic` badge and explain lexical plus semantic retrieval. |
+| 1:45-3:00 | Open `/map`. Rotate the 3D exposure view and filter one peril. Explain that H3 groups the book and tower height is the Elastic-backed active TIV total. |
+| 3:00-4:00 | Show the case percentile or the prepared decline-insight response. Explain why `significant_terms` is different from a raw count. |
+| 4:00-5:00 | Open the prepared API response or query definition. Close on retrieval, filters, geospatial sums, and cohort statistics in one service. |
 
-## Service detail to know
+## Know these details
 
-The precedent index uses lexical BM25 and semantic retrieval combined with reciprocal rank fusion. Reranker configuration exists, but do not claim every nested reranking path was proven live. Geographic queries use distance filtering; portfolio code excludes the current insured and sums active-policy TIV. H3 cells group exposure. significant_terms compares declined/loss-making cohorts with the book; percentile queries place the case in context. ES|QL and Agent Builder tool definitions are supporting work, not necessary to cram into five minutes.
+`precedent.py` owns the hybrid retrieval. `portfolio.py` excludes the current insured before summing nearby active exposure. `insights_routes.py` exposes percentiles and decline terms. The local fallback has the same response shape and always labels itself `memory`.
 
-## Evidence
-
-[Elastic implementation](../../docs/ELASTIC.md), `api/src/atlas_api/precedent.py`, `portfolio.py`, `insights_routes.py`, `scripts/load_precedent.py`. Endpoints: `/api/atlas/cases/138/precedent`, `/api/atlas/cases/138/percentile`, `/api/atlas/insights/declines`.
-
-## Limitation to say
+## Say this limitation
 
 "The historical sample is small. Similarity and significant terms do not establish causal risk. If the badge says memory, this request did not use Elastic."
 
 ## If it fails
 
-Continue with the labelled local backend and show the real saved Elastic response/query. The map tiles can fail independently of the aggregation.
-
-## Likely question
-
-Why Elastic instead of a vector database? "This workload combines text relevance with filters, geospatial sums and cohort statistics. We need more than nearest-text retrieval."
+Continue with the labelled local result and show the saved real Elastic query and response. Map tiles can fail independently; the concentration list and geographic fallback still show the computed data.

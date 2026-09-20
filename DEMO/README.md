@@ -11,4 +11,4 @@ Use this folder at the booth. Start with [the five-minute rehearsal](1-START-HER
 
 Five minutes is enough for one problem, one provider-specific operation, one result, and one honest limitation. Do not tour the whole product.
 
-The prepared stories are Federato, Intact, Rox, OpenAI and Codex, Sentry, Elastic, Expo, and Backboard. The Huawei card is conditional because Pixie does not use openJiuwen.
+The prepared stories are Federato, Intact, Rox, Sentry, Elastic, and Expo. Federato and Intact are the two main product demos. The other cards reuse those products and focus on one sponsor-specific operation.

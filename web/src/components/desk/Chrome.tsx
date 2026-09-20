@@ -6,6 +6,7 @@ import { ResetDemo } from "./ResetDemo";
 
 const FEDERATO_DESTS = [
   { href: "/queue", label: "submissions", title: "Cases that need an underwriting decision" },
+  { href: "/map", label: "portfolio", title: "Geographic concentration and active insured value" },
   { href: "/guideline", label: "rulebook", title: "The active property guideline and proposed edits" },
   { href: "/backtest", label: "validation", title: "How the rulebook compares with historical outcomes" },
 ];

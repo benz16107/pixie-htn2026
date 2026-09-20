@@ -25,6 +25,6 @@ export const F = {
 export const money = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toFixed(2)}`;
 
 // Contents-value bounds for the question-two slider.
-export const CONTENTS_MIN = 5000;
+export const CONTENTS_MIN = 10000;
 export const CONTENTS_MAX = 100000;
 export const CONTENTS_STEP = 5000;

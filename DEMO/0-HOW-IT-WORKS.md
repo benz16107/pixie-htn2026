@@ -12,7 +12,7 @@ The guideline editor changes the written rules and shows the resulting portfolio
 
 ## Renter quote
 
-The Expo app collects an address, map location, and three underwriting answers. The server applies the renter rules and returns an itemized annual quote in cents. Every receipt line names its source. The displayed price is explicitly illustrative.
+The Expo app collects an address, pre-fills five coverage choices, and lets the renter review them on one screen. The neighbourhood map is optional. The server applies the renter rules and returns an itemized annual estimate in cents. Every receipt line names its source. The displayed price is explicitly illustrative.
 
 If the answer needs judgment, the quote is saved as a case that the underwriter can open in the desk. The receipt does not change during the handoff.
 
@@ -21,10 +21,8 @@ If the answer needs judgment, the quote is saved as a case that the underwriter 
 | Provider | Actual role | What to point at |
 | --- | --- | --- |
 | Federato | Submission schema, records, and source fields | Provenance on case 138 and Ask query attempts |
-| OpenAI | Specialist agents, typed tools, challenge, and explanation | Event lanes and number guardrail |
 | Elastic | Similar-case retrieval and nearby portfolio exposure | Provider badge, precedent, and map |
 | Sentry | Traces, logs, and unsupported-number alerts | One decision trace |
 | Expo | Native renter quote interaction | Phone flow, receipt, PDF, and referral |
-| Backboard | Underwriter memory and labelled model judgments | Memory panel and source label |
 
 Replay, cache, fixture, local, and memory results are all labelled. Say which path is on screen.

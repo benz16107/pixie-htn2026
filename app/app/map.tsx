@@ -29,8 +29,8 @@ export default function MapScreen() {
     <Screen
       footer={
         <>
-          <Button label="Continue to 3 questions" onPress={() => router.push('/questions/1')} />
-          <Button kind="link" label="Skip the map" hint="The same facts are listed in words below the map" onPress={() => router.push('/questions/1')} />
+          <Button label="Review my coverage" onPress={() => router.push('/questions/1')} />
+          <Button kind="link" label="Continue without the map" hint="The estimate still lists every source in words" onPress={() => router.push('/questions/1')} />
         </>
       }
     >

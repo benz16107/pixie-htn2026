@@ -220,18 +220,20 @@ class GuardrailP(_P):
 
 class RecallP(_P):
     kind: Literal["recall"] = "recall"
-    source: Literal["session", "backboard", "cache", "off", "error"]
+    source: str
     lines: list[str] = []
-    guideline: str = ""                        # the appetite paragraph Backboard's doc search cited
+    guideline: str = ""                        # kept so old recorded runs still deserialize
     advisory: bool = True                      # recall never supplies a number or a decision tier
 
 
 class JudgementP(_P):
+    """Legacy recorded event shape. Current runs do not emit this payload."""
+
     kind: Literal["judgement"] = "judgement"
-    source: str                                # "backboard/system-one:jev-1.13.0"
-    answers: list[dict[str, Any]] = []         # [{question, answer, probability, confidence}]
-    model_number: bool = True                  # these numbers are the model's, never the engine's
-    about: str = ""                            # what was judged, e.g. "inbound broker message"
+    source: str
+    answers: list[dict[str, Any]] = []
+    model_number: bool = True
+    about: str = ""
 
 
 class ToolCallP(_P):

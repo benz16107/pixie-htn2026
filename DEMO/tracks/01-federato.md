@@ -1,43 +1,50 @@
 # Federato: five-minute demo
 
-[All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md)
+[All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md) · [Underwriting background](../6-FEDERATO-BRIEF.md)
 
-## Context and angle
+## The pitch
 
-Federato is the underwriting-software audience. Focus on appetite, incomplete submissions and a controlled change to the guideline. The supplied dataset has no broker behaviour signal for a credible winnability model. Do not pitch the tenant app here unless asked about reuse.
+"A missing field should widen the decision, not quietly pass. Pixie shows the range, the source of every value, and the one fact that would settle the case."
 
-Opening: "Before automating a decision, we show which missing fact could change it."
+Federato is one of the two main product demos. Stay in the commercial underwriter experience. The story is incomplete submissions, portfolio context, and a rule change an underwriter can inspect.
 
-## Prepare
+## What we built for this track
 
-Open `/cases/138`, `/guideline` and `/backtest`. Reset the demo first. Check the current premium provenance. Keep the filed guideline and one scenario ready.
+- A submission queue that puts unresolved cases first and explains what each one needs.
+- A case view with known, estimated, and missing facts, each tied to its source field.
+- A score interval that tests every plausible rule band when a field is missing.
+- A what-if control that previews a confirmed answer without changing the filed submission.
+- A 3D portfolio map where tower height is active total insured value in an H3 cell.
+- An editable guideline with a measured whole-book diff and a reset.
+- A small backtest that keeps sample size and known misses visible.
 
-## Timed script
+## What comes from Federato
+
+Pixie reads the supplied Federato snapshot and schema, follows the actual joins between submissions, insureds, policies, locations, and losses, and keeps those source paths attached to the case. The adapter also supports checked queries for the Ask page. Pixie does not claim to call a hosted Federato production API.
+
+## Why it fits Pixie
+
+The risk engine cannot make an honest decision until the source data is hydrated correctly. Federato supplies the insurance-shaped records. Pixie adds uncertainty handling, rule execution, geographic portfolio context, and the review interface around them.
+
+## Five-minute flow
 
 | Time | Show and say |
 |---|---|
-| 0:00-0:40 | Open case 138. Explain insured, broker, premium and TIV in one sentence. Point to the missing or estimated premium. |
-| 0:40-1:40 | Show Score breakdown. Trace one fact to its source and one rule to its band. Explain why the interval crosses the decision boundary. |
-| 1:40-2:35 | Move the premium slider into a filed acceptable band. Read the new result, then reset the slider. Explain that this asks for a confirmed hypothetical input. |
-| 2:35-4:10 | Open Guideline. Select one preset, inspect its edits, apply it and read the measured case/rank diff. Open an affected case if time permits. Reset the guideline after showing the result. |
-| 4:10-5:00 | Show the backtest headline and one known miss. Close: "A carrier can challenge the input, rule and result in the same workflow." |
+| 0:00-0:35 | Open `/queue`. Point to the single unresolved submission and the reason it needs attention. |
+| 0:35-1:45 | Open case 138. Trace one fact to its Federato source, then show the 30-75 interval crossing the referral line. |
+| 1:45-2:25 | Move the premium what-if. Say that it previews a confirmed answer and never overwrites the case. |
+| 2:25-3:20 | Open `/map`. Rotate the 3D exposure view, filter one peril, and explain that tower height is active insured value. |
+| 3:20-4:25 | Open `/guideline`, apply one rehearsed scenario, and read the measured case and queue changes. Reset it. |
+| 4:25-5:00 | Show the backtest sample size and one known miss. Close on the source, rule, and result being inspectable together. |
 
-## Service detail to know
+## Know these details
 
-The snapshot adapter preserves query and join provenance. Known, estimated and missing facts produce different possible bands. `guideline.py` validates edits before a whole-book rescore. The queue, waterfall and what-if use the same active rule. A bounded human override is separately labelled and requires a reason. Non-property lines route to another desk.
+`federato.py` performs schema-aware loading and preserves provenance. `engine.py` computes score intervals. `portfolio.py` groups active exposure into H3 cells. `guideline.py` validates edits before rescoring the book. The map visualizes computed portfolio totals; the model does not create them.
 
-## Evidence
+## Say this limitation
 
-Website: `/cases/138`, `/guideline`, `/backtest`. Code: `api/src/atlas_api/federato.py`, `engine.py`, `guideline.py`. Tests: `test_guideline.py`, especially the shared-reader consistency test. Background: [Federato brief](../6-FEDERATO-BRIEF.md).
-
-## Limitation to say
-
-"This is your synthetic snapshot and a transcription of the supplied appetite rule. The backtest measures disagreement, not loss prevention. We do not model winnability."
+"This uses Federato's supplied synthetic snapshot and our transcription of the supplied appetite rule. The backtest measures disagreement on a small sample. It does not prove loss prevention or model winnability."
 
 ## If it fails
 
-Use the current case waterfall and saved backtest. A rule-editor outage does not justify pretending a preset description is a measured diff.
-
-## Likely question
-
-Why not one LLM? "A rule edit needs a reproducible effect across the book. Code supplies that; models investigate the missing evidence."
+Use case 138 and the saved backtest. If WebGL fails, the map keeps a geographic exposure fallback and the ranked concentration list. Do not describe a scenario label as a measured result unless the diff loaded.

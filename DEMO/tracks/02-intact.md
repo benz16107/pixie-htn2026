@@ -2,42 +2,49 @@
 
 [All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md)
 
-## Context and angle
+## The pitch
 
-The audience is consumer insurance. Start with the renter and show how a difficult quote reaches a human. This is a demo tariff, not an Intact underwriting or pricing integration.
+"A renter confirms five prefilled choices on one screen, sees exactly why the price changed, and reaches an advisor with the same receipt when the case needs judgment."
 
-Opening: "A renter gets an itemised quote, and a case we should not auto-price reaches an underwriter with the same receipt."
+Intact is the second main product demo. Use the phone for the customer story and the Intact web mode for the operations handoff.
 
-## Prepare
+## What we built for this track
 
-Open Expo Go on the address screen and `/intact` on the laptop. Use 180 Queen St W, Toronto. Keep `/intact/quotes` ready with one ready estimate and one basement referral. Rehearse the exact referral inputs and confirm the displayed decision before the judge.
+- A three-stage renter journey: Address, Coverage, Estimate.
+- A fast path that skips the optional map and opens one prefilled coverage review.
+- Editable unit level, contents, deductible, liability, and five-year claims history.
+- Visible price effects beside each choice before the customer requests an estimate.
+- An itemized receipt whose lines expand to show their source and multiplier.
+- A PDF/share action for ready estimates and an exact advisor-case handoff for referrals.
+- An Intact operations view with the original applicant answers and receipt preserved.
 
-## Timed script
+## What comes from the Intact challenge
+
+The product is designed around faster access to renter insurance and a safe handoff when automation should stop. Pixie does not use an Intact customer API or an Intact tariff. The displayed price is a labelled prototype estimate.
+
+## Why it fits Pixie
+
+The commercial desk already keeps facts, sources, and rules separate. The renter app reuses that trusted core with its own Toronto data and renter rules. The interface, questions, and price model remain separate from Federato.
+
+## Five-minute flow
 
 | Time | Show and say |
 |---|---|
-| 0:00-0:30 | Start on `/intact`. Point to the separate Intact mode and say the renter journey has its own interface and rules. |
-| 0:30-1:35 | Move to the phone. Enter the prepared address, inspect the Toronto block and answer the three coverage steps. Skip photo inventory for this track. |
-| 1:35-2:45 | Open the quote receipt. Read the amount on screen and the largest receipt lines. Point out the source under one place factor and the exact-sum label. |
-| 2:45-4:15 | Open the rehearsed basement referral, then refresh `/intact/quotes`. Open its Intact case page and show that the advisor receives the same receipt and applicant facts. |
-| 4:15-5:00 | Use the top-left switch once to reveal the Federato handoff. Explain that interfaces and rules stay separate while provenance and rule execution share one engine. |
+| 0:00-0:30 | Start on `/intact`. Explain that this is a separate renter operations product over the same rule and provenance engine. |
+| 0:30-1:20 | On the phone, select 180 Queen St W and choose **Review my coverage**. Point out that the neighbourhood map is optional. |
+| 1:20-2:15 | Review the five prefilled choices on one screen. Change contents or deductible and read the price effect beside it. |
+| 2:15-3:10 | Price the coverage. Expand one receipt line, show its source, then use **Save and share my receipt**. |
+| 3:10-4:10 | Start the prepared basement example. Show the referral reason and open the exact advisor handoff. |
+| 4:10-5:00 | Open the same case in `/intact/quotes`. Show that the address, answers, price receipt, and referral reason survived the handoff. |
 
-## Service detail to know
+## Know these details
 
-The Toronto data pack supplies local risk inputs. `tenant.py` applies separate tenant rules and computes the receipt in cents. The API persists the quote so the Expo app and Intact dashboard open the same case. `/intact/quotes` contains renter quotes only. A referral can continue into the Federato desk without changing the original receipt.
+`tenant.py` computes the price in cents and applies the referral rules. Two or more claims in five years, or the prepared basement flood-study case, goes to an advisor. The Toronto pack supplies the location data. The API stores the quote once so the Expo app and web desk read the same case.
 
-## Evidence
+## Say this limitation
 
-Code: `api/src/atlas_api/tenant.py`, `packs/toronto/`, `app/app/quote.tsx`. Tests: `test_tenant.py` and `test_queue_is_region_aware` in `test_app.py`. Read the receipt currently on the device.
-
-## Limitation to say
-
-"The rates are prototype rates. We have not validated them actuarially, assessed fairness, or issued a policy."
+"The rates are prototype rates. This is not an Intact price or offer, and we have not completed actuarial validation, fairness assessment, or policy issuance."
 
 ## If it fails
 
-Show the saved phone receipt and its corresponding `/intact/cases/TQ-…` page. If the phone is in fixture mode, label it as a sample and do not claim it just created a server referral.
-
-## Likely question
-
-Why combine renter and commercial insurance? "The shared part is provenance, rule execution and referral handling. Their factors and tariffs are different."
+Use one of the three bundled addresses and state that it is a saved sample. Open the matching `/intact/cases/TQ-...` page. Do not claim the sample just created a new server case.

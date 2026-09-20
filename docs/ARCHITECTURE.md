@@ -8,8 +8,7 @@ flowchart LR
   E --> W[Federato web desk]
   E --> M[Expo renter quote]
   E --> D[Agent desk]
-  D --> O[OpenAI Agents SDK]
-  D --> B[Backboard memory]
+  D --> O[Agent runtime]
   E --> X[Elastic precedent and concentration]
   D --> S[Sentry traces and logs]
 ```

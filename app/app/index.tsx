@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Body, Button, Choice, Dim, Kicker, Screen, Title } from '@/components/ui';
+import { Body, Button, Choice, Dim, Kicker, Progress, Screen, Title } from '@/components/ui';
 import { EXAMPLES, type Place } from '@/lib/api';
 import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
@@ -74,29 +74,30 @@ export default function AddressScreen() {
       scrollRef={scrollRef}
       footer={
         <>
-          <Button label="Continue to the map" onPress={() => go(true)} disabled={busy} />
+          <Button label="Review my coverage" hint="Takes you to one screen with useful choices already filled in" onPress={() => go(false)} disabled={busy} />
           <Button
             kind="link"
-            label="Skip the map, answer in a list"
-            hint="Goes straight to the three questions. The quote is the same."
-            onPress={() => go(false)}
+            label="See the neighbourhood risk map first"
+            hint="Shows the local break-in data used by the estimate"
+            onPress={() => go(true)}
           />
         </>
       }
     >
+      <Progress current={1} total={3} labels={['Address', 'Coverage', 'Estimate']} />
       <View style={{ paddingTop: 12, paddingBottom: 20 }}>
         <Kicker>Tenant insurance · Toronto</Kicker>
-        <Title style={{ marginTop: 8 }}>Know the price before you buy.</Title>
+        <Title style={{ marginTop: 8 }}>A renter estimate in one review.</Title>
         <Body style={{ marginTop: 10 }}>
-          Pixie turns your address and three answers into an itemised estimate. You see what changed the price, which source supplied it, and when a person needs to review it.
+          Pick your address, confirm five prefilled details, and get an itemised estimate. You can see what changed the price and send the same receipt to an advisor.
         </Body>
       </View>
 
       <View style={st.coverage} accessible accessibilityLabel="The quote covers your place, your things, and your liability">
         <View style={st.coverageHead}><Text style={st.coverageTitle}>Your renter quote</Text><Text style={st.coverageTime}>ABOUT 2 MIN</Text></View>
-        {['Your place', 'Your things', 'Your liability'].map((label, i) => (
+        {['Find your address', 'Confirm your coverage', 'Get a sourced estimate'].map((label, i) => (
           <View key={label} style={st.coverageLine}>
-            <Text style={st.coverageIndex}>0{i + 1}</Text><Text style={st.coverageName}>{label}</Text><Text style={st.coverageState}>{i === 0 ? 'Address' : i === 1 ? 'One amount' : 'Two choices'}</Text>
+            <Text style={st.coverageIndex}>0{i + 1}</Text><Text style={st.coverageName}>{label}</Text><Text style={st.coverageState}>{i === 0 ? 'Now' : i === 1 ? 'One screen' : 'Receipt'}</Text>
           </View>
         ))}
       </View>

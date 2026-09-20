@@ -5,11 +5,10 @@
     cd api && uv run python ../eval/model_eval.py --tiers gpt-5.6-luna  # one tier
     cd api && uv run python ../eval/model_eval.py --engine-only         # no model calls at all
 
-Local on purpose. OpenAI's Evals API goes read-only on 2026-10-31 and shuts down on 2026-11-30
-(docs/research/openai-backboard.md), so building the comparison on it would mean demoing a product
-that is gone two months after the hackathon. Everything the Evals API would have given us is here:
-the ground truth already exists in `answer_key.yaml`, hand-scored from APPETITE_GUIDELINES.txt
-independently of the engine, and the desk already produces one verdict per case.
+Local on purpose. The comparison runs offline for every saved candidate file and does not depend on
+a provider dashboard during judging. The ground truth already exists in `answer_key.yaml`,
+hand-scored from APPETITE_GUIDELINES.txt independently of the engine, and the desk already produces
+one verdict per case.
 
 What the table means. The engine row is the deterministic baseline: `assess()` with no model in the
 loop. Each model row runs the full six-agent desk with both the lead and the specialist roles pinned

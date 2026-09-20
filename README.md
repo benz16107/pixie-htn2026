@@ -15,7 +15,7 @@ The web app has a product switch:
 - Federato opens the commercial queue, case analysis, guideline editor, portfolio map, Ask, and backtest.
 - Intact opens the renter operations view and sends the presenter to the Expo app for the quote flow.
 
-The Expo flow is address, map, three questions, and a quote receipt. It supports local speech, PDF export, sharing, haptics, reduced motion, and the referral handoff.
+The Expo flow is Address, Coverage, and Estimate. The customer can skip the optional map, review five prefilled choices on one screen, inspect the itemized receipt, save a PDF, share it, or open the advisor handoff.
 
 ## Run it
 
@@ -36,7 +36,7 @@ Replay is the default for the commercial live desk. It streams a recorded run wi
 5. Region data lives in `packs/`; the engine contains no city-specific rules.
 6. Secrets remain in gitignored environment files.
 
-Model outputs are labelled. Backboard probabilities and agent prose are not presented as confirmed facts or commercial scores. `verify_numbers()` checks numbers in agent explanations against tool outputs and falls back to a deterministic explanation when the check fails.
+Model outputs are labelled. Agent prose is not presented as a confirmed fact or commercial score. `verify_numbers()` checks numbers in agent explanations against tool outputs and falls back to a deterministic explanation when the check fails.
 
 ## Repository map
 
@@ -51,4 +51,4 @@ Model outputs are labelled. Backboard probabilities and agent prose are not pres
 | `DEMO/` | Current booth script and per-track cards |
 | `docs/` | Architecture, runbook, evidence, and limitations |
 
-The active sponsor stories are Federato, Intact, Rox, OpenAI and Codex, Sentry, Elastic, Expo, and Backboard. The Huawei card is conditional because Pixie demonstrates a compatible collaboration pattern but does not use openJiuwen.
+The active sponsor stories are Federato, Intact, Rox, Sentry, Elastic, and Expo. Expo is the mobile implementation of the Intact product rather than a separate product experience.

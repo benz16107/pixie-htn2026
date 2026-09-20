@@ -15,10 +15,9 @@ The same engine also powers a renter quote. The Expo app collects an address and
 - A FastAPI risk engine with provenance, missing-value intervals, live guidelines, what-if analysis, sensitivity, bounded overrides, and a reproducible backtest.
 - A Federato commercial interface for the queue, case review, portfolio map, natural-language Ask, guideline changes, and agent replay.
 - An Intact renter operations interface and an Expo app with a native map, haptics, reduced motion, on-device speech, PDF export, sharing, and referral handoff.
-- An OpenAI Agents SDK desk with specialist roles, addressed questions, typed conflicts, a challenger, budgets, and a numerical-claim guardrail.
+- An agent desk with specialist roles, addressed questions, typed conflicts, a challenger, budgets, and a numerical-claim guardrail.
 - Elastic retrieval for precedent and concentration, with provider labels and a matching local fallback.
 - Sentry traces and structured logs around each underwriting decision, including an alert when model prose contains an unsupported number.
-- Backboard memory scoped to the underwriter, with provider-labelled judgments that can prioritize work but cannot set a score or price.
 
 ## What we learned
 
@@ -28,4 +27,4 @@ The renter prices and the commercial bands are demonstrations, not carrier-appro
 
 ## Stack
 
-Python, FastAPI, Pydantic, SQLite, OpenAI Agents SDK, Backboard, Elasticsearch, Sentry, Next.js, React, TypeScript, Expo Router, React Native, and Toronto open data.
+Python, FastAPI, Pydantic, SQLite, an agent runtime, Elasticsearch, Sentry, Next.js, React, TypeScript, Expo Router, React Native, and Toronto open data.

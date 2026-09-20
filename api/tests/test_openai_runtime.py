@@ -130,7 +130,6 @@ def test_the_session_recalls_earlier_cases_and_skips_this_one(tmp_path):
 def test_recall_reaches_the_plan_prompt_but_never_the_fact_list(tmp_path, monkeypatch):
     """The boundary: recall shapes the questions, and a number in it still fails verify_numbers."""
     desk, store, run = _run(tmp_path)
-    monkeypatch.setenv("ATLAS_OFFLINE", "1")            # no Backboard call from a test
     monkeypatch.setattr("atlas_api.openai_runtime.SESSION_DB", tmp_path / "s.sqlite")
     desk._sess = None
 
@@ -168,25 +167,12 @@ def test_the_memory_route_names_the_case_the_broker_and_why_it_came_back(tmp_pat
 
     row = mem["recalled"][0]
     assert row["caseId"] == "126" and row["broker"] == memo.broker and row["insured"] == memo.insured
-    assert row["from"] == "desk" and "duplicate_account" in row["dataIssues"]
+    assert "duplicate_account" in row["dataIssues"]
     assert "same insured" in row["why"] and "TX" in row["why"]
     assert "case 126" in mem["summary"] and memo.insured in mem["summary"]
-    assert mem["sources"]["desk"]["lines"] == 1 and mem["sources"]["backboard"]["lines"] == 0
+    assert mem["source"]["lines"] == 1 and mem["source"]["needsNetwork"] is False
     assert "never supplies a number" in mem["boundary"]
     assert "$" not in mem["summary"]            # the boundary holds: no number reaches the sentence
-
-
-def test_system_one_answer_shapes_are_read_the_way_typesafe_returns_them():
-    """Verified live against typesafe/jev-1.13.0 on 2026-09-20; parsed here with no network."""
-    from atlas_api.memory import _judgement_of
-
-    choice = _judgement_of("intent", {"type": "choice", "choice": "answers_our_question",
-                                      "confidence": 0.79,
-                                      "probabilities": {"answers_our_question": 0.85, "other": 0.09}})
-    assert (choice.answer, choice.probability, choice.confidence) == ("answers_our_question", 0.85, 0.79)
-    noul = _judgement_of("looks_like_duplicate", {"type": "noul", "noul": 0.87})
-    assert (noul.answer, noul.probability) == ("true", 0.87)
-    assert _judgement_of("looks_like_duplicate", {"type": "noul", "noul": 0.12}).answer == "false"
 
 
 @pytest.mark.parametrize("case_id", ["126", "138"])
@@ -200,31 +186,21 @@ def test_the_remembered_line_carries_no_money_and_no_verdict(tmp_path, case_id):
 
 # ---------- the routes a judge and the web read ---------------------------------------------------
 
-def test_runtime_and_memory_routes(tmp_path, monkeypatch):
+def test_local_memory_route(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 
     monkeypatch.setenv("ATLAS_DB", str(tmp_path / "api.sqlite"))
-    monkeypatch.setenv("ATLAS_OFFLINE", "1")
     monkeypatch.setattr("atlas_api.openai_runtime.SESSION_DB", tmp_path / "s.sqlite")
     from atlas_api.app import app
 
     with TestClient(app) as client:
-        runtime = client.get("/openai/runtime").json()
-        assert runtime["guardrail"]["name"] == "verify_numbers"
-        assert runtime["tracing"]["workflowName"] == "pixie-case-{case_id}"
-        assert len(runtime["roles"]) == len(ROLE_SETTINGS)
-
         mem = client.get("/cases/138/memory").json()
         assert mem["caseId"] == "138" and mem["session"] == [] and mem["fromLedger"] == []
         assert "never supplies a number" in mem["boundary"]
         assert client.get("/cases/9999/memory").status_code == 404
 
-        # the shape a person reads: a sentence, rows with a reason, and the two stores kept apart
+        # The read shape is a sentence, matching rows, and an explicit local source.
         assert mem["recalled"] == [] and mem["summary"].startswith("The desk has nothing to recall")
-        assert mem["sources"]["desk"]["needsNetwork"] is False        # our own recall, no third party
-        assert mem["sources"]["backboard"]["needsNetwork"] is True    # theirs, and offline here
-        assert mem["sources"]["backboard"]["live"] is False
-
-        triage = client.post("/cases/138/triage-message", json={"message": "any news?"}).json()
-        assert triage["answers"] == [] and "premium" in triage["missingFacts"]   # offline: no judgement
-        assert "neither may become a price" in triage["boundary"]
+        assert mem["source"]["needsNetwork"] is False
+        assert client.get("/openai/runtime").status_code == 404
+        assert client.post("/cases/138/triage-message", json={"message": "any news?"}).status_code == 404

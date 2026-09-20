@@ -18,7 +18,7 @@ That is deliberate. A questionable acceptance costs more than a referral. Pixie 
 
 ## "This is a collection of sponsor integrations"
 
-Each remaining provider has a user-facing job. Federato supplies the submission and source data. OpenAI runs the investigation. Elastic answers precedent and concentration questions. Sentry records the decision and number guardrail. Expo delivers the renter workflow. Backboard stores underwriter context. The product still works when optional providers are unavailable because each fallback is explicit and labelled.
+Each remaining provider has a user-facing job. Federato supplies the submission and source data. Elastic answers precedent and concentration questions. Sentry records the decision and number guardrail. Expo delivers the renter workflow. The product still works when optional providers are unavailable because each fallback is explicit and labelled.
 
 ## What would falsify the product
 

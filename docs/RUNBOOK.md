@@ -24,7 +24,7 @@ Serve the production Next.js build during judging. A development server can intr
 2. Confirm the product switch moves between the Federato and Intact experiences.
 3. On the phone, finish one prepared renter quote and leave the receipt open.
 4. Keep replay selected on the live desk unless the judge explicitly wants a live model run.
-5. Open the relevant provider console before a Sentry, Elastic, or Backboard pitch.
+5. Open the relevant provider console before a Sentry or Elastic pitch.
 
 ## Verify
 

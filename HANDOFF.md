@@ -6,10 +6,10 @@ Updated 2026-09-20 after the product and track cleanup.
 
 Pixie has two intentionally separate front ends over one risk engine:
 
-- Federato is the commercial underwriter desk. Its main path is queue, case 138, guideline scenario, and backtest.
-- Intact is the renter operations view. Its main path is Intact overview, Expo quote, and optional referral into the underwriter desk.
+- Federato is the commercial underwriter desk. Its main path is queue, case 138, 3D portfolio, guideline scenario, and backtest.
+- Intact is the renter operations view. Its main path is Intact overview, the three-stage Expo quote, and an optional referral into the underwriter desk.
 
-The top-left product switch changes the complete web experience. The Expo app uses Intact styling and no longer contains a photo-inventory branch.
+The top-left product switch changes the complete web experience. The Expo app uses Intact styling and a three-stage Address, Coverage, Estimate flow. The neighbourhood map is optional.
 
 ## Start and verify
 
@@ -34,7 +34,7 @@ Use [docs/RUNBOOK.md](docs/RUNBOOK.md) for recovery steps and [DEMO/README.md](D
 | `api/src/atlas_api/guideline.py` | Active editable commercial guideline |
 | `api/src/atlas_api/desk.py` | Six agent roles, replay, budget, and number verification |
 | `api/src/atlas_api/tenant.py` | Toronto renter quote and itemized receipt |
-| `api/src/atlas_api/memory.py` | Backboard memory and labelled model judgments |
+| `api/src/atlas_api/memory.py` | Number-free local recall across cases |
 | `api/src/atlas_api/precedent.py` | Elastic precedent retrieval with memory fallback |
 | `api/src/atlas_api/portfolio.py` | Concentration calculations |
 | `api/src/atlas_api/app.py` | HTTP routes and response builders |
@@ -53,4 +53,4 @@ Use [docs/RUNBOOK.md](docs/RUNBOOK.md) for recovery steps and [DEMO/README.md](D
 
 ## Active demo tracks
 
-Federato, Intact, Rox, OpenAI and Codex, Sentry, Elastic, Expo, and Backboard have dedicated stories. Huawei remains a conditional explanation of the collaboration design. The removed sponsor integrations have no API routes, UI controls, dependencies, fixtures, or current documentation.
+Federato, Intact, Rox, Sentry, Elastic, and Expo have dedicated stories. OpenAI, Huawei, and Backboard are not judging tracks. The agent runtime remains an internal part of the Federato workflow.

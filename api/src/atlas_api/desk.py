@@ -456,11 +456,11 @@ class Desk:
         return memory.memo_for(self.world, r.case_id, r.case, perils)
 
     async def _recall(self, runs: dict[str, _CaseRun]) -> list[str]:
-        """Recall for the planning turn only. Two stores answer two questions: the per-underwriter
-        `SQLiteSession` is this desk's own log of what it has seen (SDK-native, no network), and
-        Backboard's assistant memory is the durable one that survives a restart and knows the broker
-        across runs. Neither line is passed to `r.fact()`, so a number that exists only in memory
-        still fails verify_numbers if a model repeats it."""
+        """Recall local session context for the planning turn only.
+
+        No recalled line is passed to `r.fact()`, so a number found only in memory still fails
+        verify_numbers if a model repeats it.
+        """
         lines: list[str] = []
         for cid, r in runs.items():
             memo = self._memo(r)
@@ -469,20 +469,13 @@ class Desk:
                 r.post("lead", RecallP(text=f"Recall: {len(seen)} earlier case(s) this desk has seen",
                                        source="session", lines=seen))
                 lines += seen
-            rec = await memory.recall(memo)
-            if rec.lines or rec.guideline:
-                r.post("lead", RecallP(
-                    text=f"Backboard remembers {len(rec.lines)} line(s) about this broker and region",
-                    source=rec.source, lines=rec.lines, guideline=rec.guideline))
-                lines += rec.lines
         return sorted(set(lines))[:10]
 
     async def _remember(self, r: _CaseRun) -> None:
-        """One line per closed case into both memories, built from identity and data issues only."""
+        """Write one number-free line per closed case to the local desk session."""
         try:
             memo = self._memo(r)
             await session_remember(self._session(), memo.line())
-            await memory.remember(memo)
         except Exception as exc:
             r.post("system", NoteP(text=f"Memory write skipped: {type(exc).__name__}"))
 

@@ -21,5 +21,4 @@ Atlas is a multi-agent underwriting desk (Federato challenge) plus a consumer qu
 - `data/federato`, `docs/federato`: symlinks to the pulled Federato data and docs.
 
 ## Evidence logs (sponsor judging)
-- `CODEX.md`: every task Codex did, with the PR/commit link (OpenAI prize).
-- `INCIDENTS.md`: every time Sentry data changed a decision, with a link (Sentry prize). Only real incidents.
+- `INCIDENTS.md`: every time Sentry data changed a decision, with a link. Only real incidents.

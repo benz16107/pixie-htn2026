@@ -26,7 +26,7 @@ from . import guideline
 from .case import Case, Estimated, Known, Missing, OPEN_STATUSES, Value, World
 from .case_store import CaseStore
 from . import insights_routes
-from . import openai_routes
+from . import memory_routes
 from .engine import (
     DEFAULT_RULES_DIR,
     Assessment,
@@ -89,7 +89,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     _index = open_index(world)
     from .precedent import open_precedent_index
     insights_routes.init(world, open_precedent_index(world))
-    openai_routes.init(world, _store)
+    memory_routes.init(world, _store)
     rescore_book()
     yield
 
@@ -130,7 +130,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(insights_routes.router)
-app.include_router(openai_routes.router)  # A1: OpenAI runtime settings, Backboard memory and judgements
+app.include_router(memory_routes.router)
 
 
 # ---------- view builders: domain (Case, Assessment) -> contract.ts shapes -------------------------

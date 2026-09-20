@@ -1,43 +1,46 @@
 # Expo: five-minute demo
 
-[All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md)
+[All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md) · [Implementation notes](../../docs/EXPO.md)
 
-## Context and angle
+## The pitch
 
-This judge should see the native interaction work. The app is an Expo Go prototype with a shared API, not a released native build. Use the phone for most of the five minutes.
+"Expo lets the renter move from an address to an explained, shareable estimate in three stages, with native help for location, speech, haptics, and PDF sharing."
 
-Opening: "The renter can get and share an explained quote from the phone, and a referral arrives in the same desk the underwriter uses."
+Expo is the mobile implementation of the Intact product. Keep most of this demo on the phone and show native interaction rather than a package list.
 
-## Prepare
+## What we use from Expo
 
-Open Expo Go on a real device with a reachable EXPO_PUBLIC_API_URL. Check camera permission, the prepared address, PDF sharing and Reduce Motion before judging. Keep a completed quote ready. Keep `/intact/quotes` open for the final referral handoff.
+- Expo Router for the Address, Coverage, Estimate flow and edit loops.
+- Expo Location for current-location fill and geocoding.
+- Haptics for choice and decision feedback.
+- Speech for an on-device spoken quote summary built only from receipt numbers.
+- Print and Sharing for an itemized PDF receipt and the native share sheet.
+- Web Browser for the exact web receipt and advisor-case handoff.
+- Reanimated with the system Reduce Motion setting, safe-area handling, and React Native accessibility roles.
 
-## Timed script
+## Why it fits Pixie
+
+The API owns insurance arithmetic. Expo turns the same quote into a fast customer task and uses device capabilities only where they help the renter complete or keep it. The Intact web view receives the same stored case when human review is needed.
+
+## Five-minute flow
 
 | Time | Show and say |
 |---|---|
-| 0:00-0:30 | Introduce the renter task and show the app already open. |
-| 0:30-1:35 | Enter the prepared address, inspect the map and answer the coverage questions. Show a native interaction rather than describing a list of packages. |
-| 1:35-2:35 | Open photo inventory if its provider is warmed. Show the image-picker permission and editable result. Otherwise demonstrate manual contents entry and explain the optional camera route. |
-| 2:35-3:45 | Show the itemised quote, bottom-sheet/inline receipt and PDF print/share action. Let the judge see the actual native sheet. |
-| 3:45-5:00 | Show Reduce Motion behaviour you rehearsed, then the same referred case in `/intact/quotes`. Close on a consumer-native app, a separate operations surface and one shared API. |
+| 0:00-0:35 | Open the app on the Address stage. Show the three-stage progress and the prepared Toronto addresses. |
+| 0:35-1:25 | Use the address or current-location action. Take the fast path to Coverage and explain that the map is optional. |
+| 1:25-2:20 | Change contents or deductible on the single review screen. Let the judge see haptic choice feedback and the price effect. |
+| 2:20-3:30 | Open the Estimate. Expand a receipt line, play the spoken summary, then create and share the PDF. |
+| 3:30-4:25 | Run the prepared basement referral and press **Open the advisor handoff**. |
+| 4:25-5:00 | Show the same case in the Intact web view. Close on one API, a native customer flow, and a preserved handoff. |
 
-## Service detail to know
+## Know these details
 
-Expo Router owns navigation. The code uses location, image picker, haptics, print/share and audio capabilities, with device-specific maps and a web fallback. Reanimated/reduced-motion paths are present, and the receipt remains readable inline. Sentry wraps the app, but Expo Go has native-module limits. A native/EAS release would require another delivery step.
+The app has no camera or photo-inventory flow. The real customer path is address, optional map, one coverage review, estimate, receipt, speech, PDF/share, and referral. The receipt remains readable in the app even if sharing is unavailable.
 
-## Evidence
+## Say this limitation
 
-Code: `app/app/`, `app/components/`, `app/package.json`, `app/app/_layout.tsx`. Inspect the device behaviour before claiming accessibility or permission flows. The audit in this folder tested the website, not a physical phone.
-
-## Limitation to say
-
-"This runs in Expo Go. We have not shipped to the App Store or verified native crash reporting and mobile session replay. Reduced-motion branches exist; a full accessibility audit is still future work."
+"This runs in Expo Go. We have not shipped an App Store build, and Expo Go does not prove native Sentry crash reporting or mobile replay. The insurance rates are still prototype rates."
 
 ## If it fails
 
-Use the prepared phone recording. A browser fallback can demonstrate the API and quote, but is not evidence of camera, haptics or native share-sheet behaviour.
-
-## Likely question
-
-What is native here? "Location and image selection, haptics, audio and print/share are the app-specific interactions. The business rules remain on the shared API."
+Use a bundled address and state that it is a saved sample. A web render can prove the React Native flow and API shape, but it is not proof of haptics, native speech, or the share sheet.

@@ -22,7 +22,7 @@ const LIMITS = [
   'The base price and the contents, deductible and liability steps are invented constants, labelled as such on the receipt.',
   'Police place each break-in at the nearest intersection, so the finest honest grid is about one block.',
   'Toronto only. Two or more claims in five years, or a unit in a floodline, goes to an advisor rather than getting a price.',
-  'Nothing is stored against your name: a quote keeps the address, your three answers and the receipt so an underwriter can open it.',
+  'Nothing is stored against your name: a quote keeps the address, your coverage choices and the receipt so an advisor can open it.',
 ];
 
 export default function About() {

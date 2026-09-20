@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextProps, type ViewStyle } from 'react-native';
 import Animated, { cubicBezier } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,10 +13,21 @@ export const Dim = (p: TextProps) => <Text {...p} style={[s.body, s.dim, p.style
 export const Kicker = (p: TextProps) => <Text {...p} style={[s.kicker, p.style]} />;
 export const Mono = (p: TextProps) => <Text {...p} style={[s.mono, p.style]} />;
 
-export function Progress({ current, total }: { current: number; total: number }) {
+export function Progress({ current, total, labels }: { current: number; total: number; labels?: string[] }) {
   return (
-    <View accessible accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: total, now: current }} style={s.progressTrack}>
-      <View style={[s.progressValue, { width: `${(current / total) * 100}%` }]} />
+    <View style={s.progressWrap}>
+      <View accessible accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: total, now: current }} style={s.progressTrack}>
+        <View style={[s.progressValue, { width: `${(current / total) * 100}%` }]} />
+      </View>
+      {labels?.length ? (
+        <View style={s.progressLabels} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          {labels.map((label, i) => (
+            <Text key={label} style={[s.progressLabel, i + 1 === current && s.progressLabelOn]}>
+              {label}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -124,9 +135,16 @@ export function Contours({ height = 180 }: { height?: number }) {
 export function Screen({ children, footer, scrollRef }: { children: ReactNode; footer?: ReactNode; scrollRef?: RefObject<ScrollView | null> }) {
   const inset = useSafeAreaInsets();
   const [footerH, setFooterH] = useState(0);
+  const internalScrollRef = useRef<ScrollView>(null);
+  const activeScrollRef = scrollRef ?? internalScrollRef;
+
+  useEffect(() => {
+    activeScrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activeScrollRef]);
+
   return (
     <View style={{ flex: 1, backgroundColor: C.paper }}>
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={activeScrollRef} contentContainerStyle={{ paddingBottom: 32 + (footer ? footerH : 0) }} keyboardShouldPersistTaps="handled">
         <View style={s.screenInner}>{children}</View>
       </ScrollView>
       {footer ? (
@@ -160,8 +178,12 @@ export const s = StyleSheet.create({
   choiceTitle: { fontFamily: F.sansBold, fontSize: 17, color: C.ink, marginBottom: 2 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: C.dim, marginTop: 2 },
   radioOn: { borderColor: C.ochre, borderWidth: 6 },
-  progressTrack: { width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: C.rule, marginBottom: 20 },
+  progressWrap: { marginBottom: 20 },
+  progressTrack: { width: '100%', height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: C.rule },
   progressValue: { height: '100%', borderRadius: 2, backgroundColor: C.ochre },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7 },
+  progressLabel: { fontFamily: F.sansMedium, fontSize: 11, color: C.dim },
+  progressLabelOn: { color: C.ink, fontFamily: F.sansBold },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: 1, borderTopColor: C.rule, backgroundColor: C.paper, paddingTop: 12, gap: 6 },
   footerInner: { width: '100%', maxWidth: 660, alignSelf: 'center', paddingHorizontal: 20, gap: 6 },
 });

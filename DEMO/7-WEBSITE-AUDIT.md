@@ -11,6 +11,6 @@ Removed sponsor tracks no longer appear as tabs, buttons, API routes, mobile bra
 Remaining rehearsal work:
 
 1. Test the physical phone's API URL, map permission, PDF share, haptics, and reduced-motion path.
-2. Open a real Sentry trace, an Elastic result, and a Backboard response before their respective judging slots.
+2. Open a real Sentry trace and an Elastic result before their respective judging slots.
 3. Reset guideline and override state between rehearsals.
 4. Keep the demonstration to one supporting case section per track.

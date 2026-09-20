@@ -2,42 +2,47 @@
 
 [All tracks](../4-PER-TRACK.md) · [Recovery](../5-IF-IT-BREAKS.md)
 
-## Context and angle
+## The pitch
 
-Use the business-data investigation angle in the supplied track notes: agents that can work through imperfect enterprise records. There is no Rox SDK integration to claim. Check the actual judging brief before describing this as a required-service entry.
+"Pixie finds the record defect before it gives the underwriter a confident answer, then shows the exact rows that caused the warning."
 
-Opening: "The desk finds the record defect before it gives the underwriter a confident answer."
+Use the messy-enterprise-data angle in the supplied track notes. Confirm that the final track rules accept a product demonstration because Pixie does not use a Rox SDK.
 
-## Prepare
+## What we built for this track
 
-Open cases 126 and 141 side by side, plus `/ask`. Read their named insured, broker and issue labels. Prepare one canned query; do not improvise a complex query as the opening.
+- Missing-value handling that widens a decision instead of treating a blank as zero.
+- Duplicate-account detection across related submissions.
+- Checks for stale, inconsistent, and conflicting records.
+- Schema-aware query linting with a visible retry path for unsupported queries.
+- Local cross-case recall that notices an earlier related case without supplying a score or price.
+- A source trail that lets a judge inspect the conflicting records.
 
-## Timed script
+## What part matches Rox
+
+The track is about an agent working through imperfect business data, resolving sources, and handling uncertainty. Cases 126 and 141 are the strongest proof: the same underlying account appears in two submissions, and Pixie names the duplicate issue before making the underwriter interpret the results.
+
+## Why it fits Pixie
+
+Insurance decisions often join submissions, organizations, locations, policies, and losses. A polished summary is dangerous if those joins are wrong. Pixie makes data quality part of the decision rather than a hidden preprocessing step.
+
+## Five-minute flow
 
 | Time | Show and say |
 |---|---|
-| 0:00-0:40 | Show the two submissions. Explain why a duplicate insured submitted through different brokers can create operational confusion. |
-| 0:40-1:50 | Point to the actual duplicate-account and provenance evidence. Distinguish a detected issue from an upstream correction. |
-| 1:50-3:00 | Run the prepared Ask query. Show query text, returned rows and the live/cached label. Explain that code executes the query against the available data. |
-| 3:00-4:15 | Return to the second case, open Memory and event evidence. Show how a prior case changes the next investigation, with source labels. |
-| 4:15-5:00 | Close: "The useful output is a traceable issue and a next action, not another plausible summary." Name the repair limitation. |
+| 0:00-0:40 | Open cases 126 and 141. Show the repeated insured and the two case ids. |
+| 0:40-1:40 | Point to the duplicate-account issue and the source fields that support it. Say that Pixie detects the defect but does not rewrite the source system. |
+| 1:40-2:40 | Show the local recall panel on the later case. Explain why the earlier case matched and repeat that recall is advisory only. |
+| 2:40-3:50 | Open `/ask` and run one prepared query. Show the checked query, retry information if present, returned rows, and backend label. |
+| 3:50-5:00 | Return to the case decision. Close on a traceable issue and a specific next action rather than a confident summary over bad data. |
 
-## Service detail to know
+## Know these details
 
-`federato.py` normalises fields, enforces joins and lints the supported query subset. `ask.py` caches by question and exposes how the result was obtained. Numeric formatting preserves IDs and years. Desk memory contains case identity and issue information; it cannot supply a risk price.
+`federato.py` normalizes fields, validates joins, and lints the supported query subset. `ask.py` caches by question and exposes how it obtained the result. `memory.py` stores number-free identity and issue labels in Pixie's local session. None of that memory enters the engine's fact list.
 
-## Evidence
+## Say this limitation
 
-Code: `api/src/atlas_api/federato.py`, `ask.py`, `openai_runtime.py`. UI: `/cases/126`, `/cases/141`, `/ask`. Use the visible issue count, not the old claim of 16 out of 22 rows.
-
-## Limitation to say
-
-"We detect and explain these defects. We do not repair Federato upstream, and this is not a Rox product integration."
+"Pixie detects a defined set of defects and explains them. It does not repair Federato upstream, and this build does not integrate a Rox SDK."
 
 ## If it fails
 
-Show the source rows and the recorded query. State cached status. Skip the defect-ticket action if its toolkit is not connected.
-
-## Likely question
-
-How do you know the defects are real? "They arise from consistency checks over the supplied snapshot. We can point to the conflicting records rather than a model assertion."
+Use the two case pages and their stored source rows. Skip Ask if the query service is unavailable. The duplicate evidence is the demo; a generated explanation is optional.

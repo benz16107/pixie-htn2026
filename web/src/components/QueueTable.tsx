@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DecisionChip, IntervalBar, IssueTag, money, THRESHOLDS, type Thresholds } from "./bits";
+import { DecisionChip, IntervalBar, money, THRESHOLDS, type Thresholds } from "./bits";
 import { useKeys } from "./desk/keys";
 import type { Row } from "@/lib/live";
 
@@ -17,33 +17,15 @@ type Extras = { deskVerdict?: string; challengeRisks?: number };
 export type Ranked = Row & Extras & { rank: number };
 
 const COLS: { key?: Key; label: string; w: string; align?: "right" }[] = [
-  { key: "rank", label: "#", w: "w-[34px]" },
-  { label: "case", w: "w-[58px]" },
-  { key: "insured", label: "insured", w: "w-[216px]" },
-  { label: "line", w: "w-[74px]" },
-  { label: "st", w: "w-[30px]" },
-  { key: "value", label: "at stake", w: "w-[76px]", align: "right" },
-  { key: "score", label: "score 0–100", w: "w-[186px]" },
-  { label: "call", w: "w-[164px]" },
-  { label: "flags", w: "w-[102px]" },
-  { label: "what it turns on", w: "" },
+  { key: "insured", label: "submission", w: "w-[31%]" },
+  { key: "value", label: "exposure", w: "w-[14%]", align: "right" },
+  { key: "score", label: "risk range", w: "w-[23%]" },
+  { label: "decision", w: "w-[14%]" },
+  { label: "needs attention", w: "w-[18%]" },
 ];
 
-/** The desk's own verdict, short enough to sit beside the rules' call without moving the grid. */
-const VERDICT_SHORT: Record<string, string> = {
-  request_info: "ask broker",
-  refer_with_subjectivity: "refer+subj",
-  decline_with_invitation: "decline+invite",
-  refer: "refer",
-  decline: "decline",
-  accept: "accept",
-  approve: "approve",
-  route: "route",
-  routed: "route",
-};
-
 /**
- * The blotter. One row per submission, ten columns, a cursor you drive with j and k, and a
+ * The queue. One row per submission, five columns, a cursor you drive with j and k, and a
  * preview that follows the cursor so the whole book reads without a single click.
  */
 export function QueueTable({
@@ -112,10 +94,7 @@ export function QueueTable({
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-      <div className="flex h-[26px] shrink-0 items-center gap-2 border-b border-rule px-2 text-[11px]">
-        <span aria-hidden className="text-faint">
-          /
-        </span>
+      <div className="flex h-[42px] shrink-0 items-center gap-2 border-b border-rule px-4 text-[12px]">
         <input
           ref={search}
           value={filter}
@@ -126,9 +105,9 @@ export function QueueTable({
               e.currentTarget.blur();
             }
           }}
-          placeholder="filter by insured, case, line, state or call"
-          aria-label="Filter the blotter"
-          className="min-w-0 flex-1 bg-transparent text-ink placeholder:text-faint focus:outline-none"
+          placeholder="Search insured, case, location, or decision"
+          aria-label="Filter submissions"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink placeholder:text-faint focus:outline-none"
         />
         <span className="num shrink-0 text-faint">
           {sorted.length}/{ranked.length} rows
@@ -136,7 +115,7 @@ export function QueueTable({
       </div>
 
       <div ref={box} className="relative min-h-0 flex-1 overflow-auto">
-        <table className="w-full table-fixed border-collapse text-[11px]">
+        <table className="w-full table-fixed border-collapse text-[12px]">
           <caption className="sr-only">
             Submission blotter, ranked by score interval. Column headers sort. Press j and k to move the cursor, Enter to open a case.
           </caption>
@@ -147,7 +126,7 @@ export function QueueTable({
                   key={c.label}
                   scope="col"
                   aria-sort={c.key && sort.key === c.key ? (sort.dir === 1 ? "ascending" : "descending") : undefined}
-                  className={`h-[24px] whitespace-nowrap px-2 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.w}`}
+                  className={`h-[36px] whitespace-nowrap px-4 font-normal ${c.align === "right" ? "text-right" : "text-left"} ${c.w}`}
                 >
                   {c.key ? (
                     <button onClick={() => toggle(c.key!)} className="kicker rounded-sm hover:text-ochre">
@@ -219,30 +198,24 @@ function BlotterRow({ r, on, t, onPick, onOpen }: { r: Ranked; on: boolean; t: T
       onFocus={onPick}
       onClick={onPick}
       onDoubleClick={onOpen}
-      className={`h-[25px] cursor-default border-b border-rule/70 ${on ? "cursor-row" : "hover:bg-land"}`}
+      className={`h-[62px] cursor-default border-b border-rule/70 ${on ? "cursor-row" : "hover:bg-land"}`}
     >
-      <td className="num px-2 text-faint">{String(r.rank).padStart(2, "0")}</td>
-      <td className="num truncate px-2 text-dim">{r.caseId}</td>
-      <td className="truncate px-2">
-        <Link href={`/cases/${r.caseId}`} className="cond text-[13px] font-medium text-ink underline-offset-2 hover:text-ochre hover:underline">
+      <td className="truncate px-4">
+        <Link href={`/cases/${r.caseId}`} className="cond block truncate text-[15px] font-semibold text-ink underline-offset-2 hover:text-ochre hover:underline">
           {r.insured}
         </Link>
-        {r.deepDived && (
-          <span title="the desk ran a deep dive on this case" className="ml-1.5 text-[9px] uppercase tracking-[0.08em] text-ochre">
-            deep
-          </span>
-        )}
+        <span className="mt-1 block truncate text-[10px] uppercase tracking-[0.08em] text-dim">
+          #{r.caseId} · {r.line} · {r.state}{r.deepDived ? " · deep review" : ""}
+        </span>
       </td>
-      <td className="truncate px-2 text-dim">{r.line}</td>
-      <td className="px-2 text-dim">{r.state}</td>
-      <td className="num px-2 text-right">{money(r.valueAtStake)}</td>
-      <td className="px-2">
+      <td className="num px-4 text-right text-[13px]">{money(r.valueAtStake)}</td>
+      <td className="px-4">
         {has ? (
           <span className="flex items-center gap-2">
             <span className="flex-1">
               <IntervalBar score={r.score} compact t={t} />
             </span>
-            <span className="num w-[40px] shrink-0 text-right text-[11px]">
+            <span className="num w-[48px] shrink-0 text-right text-[12px]">
               {r.score!.lo}–{r.score!.hi}
             </span>
           </span>
@@ -254,37 +227,19 @@ function BlotterRow({ r, on, t, onPick, onOpen }: { r: Ranked; on: boolean; t: T
           </span>
         )}
       </td>
-      <td className="truncate px-2">
+      <td className="truncate px-4">
         <DecisionChip decision={r.decision} />
-        {moved && (
-          <span title={`the rules said ${r.decision.kind}; the desk went with ${r.deskVerdict!.replaceAll("_", " ")}`} className="ml-1.5 text-[9px] text-ochre">
-            desk {VERDICT_SHORT[r.deskVerdict!] ?? r.deskVerdict!.replaceAll("_", " ")}
+        {moved && <span className="ml-1.5 text-[9px] uppercase tracking-[0.06em] text-ochre">desk changed</span>}
+      </td>
+      <td className="px-4" title={whyTitle}>
+        <span className={`line-clamp-2 text-[12px] leading-snug ${r.decision.kind === "routed" ? "text-faint" : "text-dim"}`}>{why || "No follow-up required"}</span>
+        {(issues.length > 0 || r.override || r.challengeRisks) && (
+          <span className="mt-1 block text-[9px] uppercase tracking-[0.07em] text-faint">
+            {issues.length ? `${issues.reduce((sum, issue) => sum + issue.n, 0)} data flag${issues.length === 1 ? "" : "s"}` : ""}
+            {r.override ? `${issues.length ? " · " : ""}underwriter adjusted` : ""}
+            {r.challengeRisks ? `${issues.length || r.override ? " · " : ""}${r.challengeRisks} challenge risk${r.challengeRisks === 1 ? "" : "s"}` : ""}
           </span>
         )}
-      </td>
-      <td className="overflow-hidden px-2">
-        <span className="flex gap-1 whitespace-nowrap">
-          {r.override && (
-            <span
-              title={`${r.override.by} moved the engine's interval by ${r.override.points} points: ${r.override.reason}`}
-              className="rounded-sm border border-ink px-1 text-[9px] leading-[13px] text-ink"
-            >
-              UW{r.override.points > 0 ? "+" : "−"}
-              {Math.abs(r.override.points)}
-            </span>
-          )}
-          {!!r.challengeRisks && (
-            <span title={`${r.challengeRisks} risks raised by the Challenger`} className="rounded-sm border border-rust/60 px-1 text-[9px] leading-[13px] text-rust">
-              {r.challengeRisks}R
-            </span>
-          )}
-          {issues.map((i) => (
-            <IssueTag key={i.kind} kind={i.kind} severity={i.severity} count={i.n} />
-          ))}
-        </span>
-      </td>
-      <td className={`truncate px-2 text-[11px] ${r.decision.kind === "routed" ? "text-faint" : "text-dim"}`} title={whyTitle}>
-        {why}
       </td>
     </tr>
   );

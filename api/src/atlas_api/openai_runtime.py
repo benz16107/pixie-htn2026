@@ -16,7 +16,7 @@ Four things live here so `desk.py` stays about underwriting:
 4. `session(...)`: a per-underwriter `SQLiteSession` holding one line per closed case. Strictly
    advisory: the desk writes number-free lines, reads them into the Lead's planning prompt only, and
    never adds them to the run's fact list -- so a number that exists only in memory cannot survive
-   verify_numbers. See docs/OPENAI.md.
+   verify_numbers.
 """
 
 from __future__ import annotations

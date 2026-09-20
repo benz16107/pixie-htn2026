@@ -2,12 +2,9 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { DeclinesInsight } from "@/lib/api";
 import type { Row } from "@/lib/live";
-import { DeclinesPanel } from "../BookInsights";
 import { BandScale, DecisionChip, IntervalBar, IssueTag, money, THRESHOLDS, type Thresholds } from "../bits";
 import { QueueTable, whyLine, type Ranked } from "../QueueTable";
-import { StatusBar } from "./Kbd";
 import { useKeys } from "./keys";
 
 type Extras = { deskVerdict?: string; challengeRisks?: number };
@@ -19,7 +16,7 @@ const TILES = (rows: (Row & Extras)[]) => [
   { label: "value at stake", value: money(rows.reduce((n, r) => n + r.valueAtStake, 0)), note: "total insured value in view" },
 ];
 
-export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; declines: DeclinesInsight | null; t?: Thresholds }) {
+export function Blotter({ rows, view, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; t?: Thresholds }) {
   const router = useRouter();
   const [here, setHere] = useState<Ranked | null>(null);
   const [filter, setFilter] = useState("");
@@ -35,22 +32,22 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
   );
 
   return (
-    <main className="queue-page grid h-[calc(100vh-30px)] grid-rows-[46px_minmax(0,1fr)_26px] overflow-hidden">
-      <header className="flex items-stretch border-b border-edge bg-land">
-        <h1 className="sr-only">Submission blotter</h1>
-        {TILES(rows).map((t) => (
-          <div key={t.label} className="flex flex-col justify-center border-r border-rule px-4" title={t.note}>
-            <span className="kicker">{t.label}</span>
-            <span className="num text-[19px] font-medium leading-[21px] text-ink">{t.value}</span>
-          </div>
-        ))}
-        <p className="cond hidden max-w-[52ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          Ranked by score, with the undecided first. Renter quotes live in the separate Intact mode.
-        </p>
-        <Link href="/cases/138" className="flex shrink-0 items-center border-l border-rule px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-ochre hover:bg-raise">
-          Start with case 138 →
-        </Link>
-        <div className="ml-auto flex items-stretch border-l border-rule" role="group" aria-label="Which submissions">
+    <main className="queue-page grid h-[calc(100vh-30px)] grid-rows-[96px_minmax(0,1fr)] overflow-hidden">
+      <header className="flex items-center gap-6 border-b border-edge bg-land px-5">
+        <div className="min-w-[260px] flex-1">
+          <p className="kicker text-ochre">Commercial submissions</p>
+          <h1 className="cond mt-1 text-[26px] font-semibold leading-none tracking-[-0.02em] text-ink">Decide what needs attention</h1>
+          <p className="cond mt-2 text-[13px] leading-snug text-dim">Open cases come first. Select one row to see why it is waiting.</p>
+        </div>
+        <div className="hidden items-center border-l border-rule lg:flex">
+          {TILES(rows).map((tile) => (
+            <div key={tile.label} className="min-w-[116px] px-4" title={tile.note}>
+              <span className="num block text-[21px] font-medium leading-none text-ink">{tile.value}</span>
+              <span className="kicker mt-1 block">{tile.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex h-10 items-stretch border border-edge" role="group" aria-label="Which submissions">
           {(
             [
               ["open", "needs review"],
@@ -61,44 +58,28 @@ export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row &
               key={v}
               href={`/queue?view=${v}`}
               aria-current={v === view ? "page" : undefined}
-              className={`flex items-center px-4 text-[11px] uppercase tracking-[0.1em] transition-colors duration-150 ${
-                v === view ? "bg-raise text-ochre shadow-[inset_0_-2px_0_var(--color-ochre)]" : "text-dim hover:bg-raise hover:text-ink"
+              className={`flex items-center px-3 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 ${
+                v === view ? "bg-ink text-paper" : "text-dim hover:bg-raise hover:text-ink"
               }`}
             >
               {label}
             </Link>
           ))}
         </div>
+        <Link href="/cases/138" className="flex h-10 shrink-0 items-center bg-ochre px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-paper hover:bg-[#d9912e]">
+          Review case 138 →
+        </Link>
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_356px]">
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-h-0 border-r border-edge">
           <QueueTable rows={rows} view={view} onCursor={onCursor} filter={filter} setFilter={setFilter} t={t} />
         </div>
         {/* One scroll, not two: at 800px tall a split column cut the preview off mid-sentence. */}
         <aside className="min-h-0 overflow-y-auto" aria-label="The row under the cursor">
           <Preview r={here} t={t} />
-          {declines && (
-            <div className="border-t border-edge">
-              <DeclinesPanel d={declines} />
-            </div>
-          )}
         </aside>
       </div>
-
-      <StatusBar
-        left={
-          <>
-            <span className="text-ochre">BLOTTER</span>
-            <span>showing {view === "open" ? "submissions that need review" : "all submissions"}</span>
-            {here && (
-              <span className="truncate text-ink">
-                #{here.caseId} {here.insured}
-              </span>
-            )}
-          </>
-        }
-      />
     </main>
   );
 }
@@ -123,15 +104,15 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
   const why = whyLine(r);
 
   return (
-    <div className="px-3.5 py-2.5">
+    <div className="px-5 py-5">
       <p className="flex items-baseline gap-2">
         <span className="num text-[11px] text-dim">#{r.caseId}</span>
         <span className="ml-auto">
           <DecisionChip decision={r.decision} large />
         </span>
       </p>
-      <h2 className="cond mt-0.5 text-[20px] font-semibold leading-[1.15] text-ink">{r.insured}</h2>
-      <p className="mt-0.5 text-[11px] text-dim">
+      <h2 className="cond mt-1 text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">{r.insured}</h2>
+      <p className="mt-1 text-[12px] text-dim">
         {r.line} · {r.state} · {r.status}
         {r.label ? ` · ${r.label.toLowerCase()}` : ""}
       </p>
@@ -207,7 +188,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
       {why && (
         <div className="mt-3">
           <p className="kicker">What it turns on</p>
-          <p className="cond mt-0.5 text-[13px] leading-snug">{why}</p>
+          <p className="cond mt-1 text-[15px] leading-snug">{why}</p>
         </div>
       )}
 
@@ -227,7 +208,7 @@ function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
 
       <Link
         href={`/cases/${r.caseId}`}
-        className="mt-3 flex items-center justify-center border border-edge bg-raise py-1.5 text-[11px] uppercase tracking-[0.12em] text-ink transition-colors duration-150 hover:border-ochre hover:text-ochre"
+        className="mt-5 flex min-h-11 items-center justify-center bg-ochre px-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-paper transition-colors duration-150 hover:bg-[#d9912e]"
       >
         open the case
       </Link>
