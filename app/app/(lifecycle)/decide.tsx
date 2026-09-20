@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Panel, PhaseIntro, ProductSwitch, SourceMark } from '@/components/consumer';
-import { Body, Button, Choice, Kicker, Screen } from '@/components/ui';
+import { ConsumerHeader, Panel, ProductSwitch, SourceMark } from '@/components/consumer';
+import { Body, Button, Choice, Kicker, Screen, Title } from '@/components/ui';
 import { quoteAuto, type AutoEstimateResult, type AutoProfile } from '@/lib/consumer';
 import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
@@ -33,10 +33,10 @@ export default function DecideScreen() {
 
   return (
     <Screen>
+      <ConsumerHeader title="Compare your options" detail="Try a change before you save it." />
       <ProductSwitch product={product} onChange={setProduct} />
-      <PhaseIntro number={2} phase="Decide" title="See the trade-off before you choose.">
-        Change one real input and compare its effect. Your selection carries into the next steps.
-      </PhaseIntro>
+      <Title style={st.title}>{product === 'auto' ? 'What fits your driving?' : 'What fits your home?'}</Title>
+      <Body style={st.lead}>Change one choice at a time. Nothing is saved until you select “Use this setup.”</Body>
       {product === 'auto' ? (
         <>
           <View accessibilityRole="radiogroup" accessibilityLabel="Auto estimate scenarios">
@@ -47,7 +47,7 @@ export default function DecideScreen() {
               <SourceMark live={autoResult.source === 'shared-api'} />
               <Kicker style={st.kicker}>Illustrative result</Kicker>
               <Text accessibilityLiveRegion="polite" style={st.price}>${autoResult.estimate.monthly}<Text style={st.unit}> / month</Text></Text>
-              <Body style={st.note}>About ${autoResult.estimate.ownershipMonthly}/month with the bundled vehicle payment.</Body>
+              <Body style={st.note}>About ${autoResult.estimate.ownershipMonthly}/month with the example vehicle payment.</Body>
               <Button label="Use this setup" onPress={() => setAutoProfile(AUTO_SCENARIOS[autoChoice].patch)} />
             </Panel>
           ) : null}
@@ -71,6 +71,8 @@ export default function DecideScreen() {
 }
 
 const st = StyleSheet.create({
+  title: { marginTop: 24 },
+  lead: { marginTop: 9, marginBottom: 18, color: C.dim },
   kicker: { marginTop: 14 },
   price: { marginTop: 7, marginBottom: 7, fontFamily: F.monoMedium, fontSize: 34, color: C.ink },
   unit: { fontFamily: F.sans, fontSize: 16, color: C.dim },

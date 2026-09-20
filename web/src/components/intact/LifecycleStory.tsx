@@ -131,13 +131,14 @@ export function LifecycleStory({ initialStage, expoUrl }: { initialStage: Lifecy
 
       <section className={styles.graph} aria-label="Pixie connected insurance system graph">
         <div className={styles.systemGrid} aria-label="Connected systems">
-          {SYSTEMS.map((system) => (
-            <div className={styles.systemNode} data-active={STAGES.find((stage) => stage.key === activeStage)?.systems.includes(system.key)} key={system.key}>
-              <span>{system.code}</span>
-              <strong>{system.title}</strong>
-              <small>{system.detail}</small>
-            </div>
-          ))}
+          {SYSTEMS.map((system) => {
+            const content = <><span>{system.code}</span><strong>{system.title}</strong><small>{system.key === "mcp" ? "9 tools · open live demo ↗" : system.detail}</small></>;
+            return system.key === "mcp" ? (
+              <Link className={styles.systemNode} data-active={STAGES.find((stage) => stage.key === activeStage)?.systems.includes(system.key)} href="/intact/agent" key={system.key}>{content}</Link>
+            ) : (
+              <div className={styles.systemNode} data-active={STAGES.find((stage) => stage.key === activeStage)?.systems.includes(system.key)} key={system.key}>{content}</div>
+            );
+          })}
         </div>
 
         <div className={styles.connectionField} aria-hidden>

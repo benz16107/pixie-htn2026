@@ -4,74 +4,65 @@
 
 ## The pitch
 
-"Most quote apps stop when the customer buys. Pixie stays useful through Quote, Decide, Protect, and Recover, with the facts and source trail visible at every step."
+"Pixie gives customers one clear place to get insurance, understand a choice, reduce risk, and recover after an incident. The web diagram explains the system. The Expo app proves the customer experience. The MCP server lets an AI agent use the same narrow, sourced insurance tools."
 
-The Intact web page is the visual overview. The Expo app is the working customer product. Lead with Auto because its vehicle comparison, driving context, native widget, and recovery flow form the strongest visual sequence. Use Home to prove the complete priced tenant path and advisor referral.
+This submission is judged from the Devpost page. The first image and first 15 seconds must explain the whole product without narration.
 
-## What the judge should understand
+## The story to tell
 
-| Stage | Customer value | Working proof |
-| --- | --- | --- |
-| Quote | See the car payment and insurance estimate before choosing a vehicle, or price a Toronto tenant scenario | Three-vehicle Auto comparison and itemized tenant estimate |
-| Decide | Test one choice without changing confirmed facts | Auto distance, parking, and deductible scenarios; tenant contents coverage |
-| Protect | Keep useful records and understand opt-in driving context | Home inventory, prevention checklist, drive screen, iOS widget, and Live Activity |
-| Recover | Organize the next actions without uploading evidence | Required safety confirmation, incident record, local reference, and recovery-plan PDF |
+The web page shows four connected insurance jobs: Quote, Decide, Protect, and Recover. Each job connects directly to its Home proof, Auto proof, deterministic service, and MCP role. Clicking a node opens its evidence.
 
-The challenge asks for a modern way to get car insurance, tenant insurance, or both through AI. Judges need to see a working input, recommendation or estimate, next step, usable interface, accessibility, and clear documentation. Pixie addresses the brief without claiming a carrier-approved price.
+The phone uses consumer language instead. Its tabs are Home, Compare, Safety, and Help. Home and Auto share the same app but show different tools. This keeps the pitch architecture out of the customer's way.
 
-## Why this approach
+| Customer need | Working proof |
+| --- | --- |
+| Get covered | Toronto tenant estimate and three-car Auto comparison |
+| Understand the choice | Itemized receipt and one-change-at-a-time comparisons |
+| Reduce risk | Room inventory, prevention tasks, and foreground Drive Score |
+| Get help | Safety-first incident record and local recovery-plan PDF |
+| Ask through an agent | Live MCP tenant estimate, car comparison, and drive explanation |
 
-The quote starts the relationship rather than ending it. Customers can compare a purchase, understand one trade-off, take prevention steps, and prepare evidence after an incident in the same product.
+## Why the Drive Score is different
 
-The pricing and coaching formulas are deterministic. AI agents can use narrow MCP tools to compare cars, estimate scenarios, prepare a draft, read a limited policy summary, assess drive context, or prepare recovery. They cannot fetch a full customer profile, invent a price, submit an application, or send a recovery request.
+The phone measures speed and hard braking during an explicit foreground session. The service evaluates road context separately. Driving near a school or dense intersection can lower the context score because the route needs more attention. That does not label the driver as unsafe. The final coaching score shows both parts, stores no coordinates, and stays outside pricing.
 
-## Recommended screenshot sequence
+## Live MCP demo
 
-Capture these after resetting the app to the stated stage. Use short captions because judges may only scan the gallery.
+Open `/intact/agent`. Use **Tenant estimate** first.
 
-| Order | Capture | Caption |
-| ---: | --- | --- |
-| 1 | `/intact`, Auto selected, stage rail and proof visible | **Quote is one part of the relationship.** Pixie keeps Quote, Decide, Protect, and Recover in one customer journey. |
-| 2 | Expo Auto comparison with three vehicles | **See insurance before choosing the car.** The same driver profile makes the vehicle difference legible. |
-| 3 | Expo Decide after selecting a different scenario | **A what-if stays hypothetical.** Pixie changes one input and preserves the confirmed baseline. |
-| 4 | Drive context with factor list and source disclosure | **Behavior and route context stay separate.** Coaching is explained, opt-in, and excluded from pricing. |
-| 5 | iOS widget and Live Activity in one composed image | **Drive context at a glance.** Native Expo surfaces carry the active coaching state outside the app. |
-| 6 | Recovery record checklist, then the ready plan | **Safety, record, plan.** Pixie creates a local summary the customer can save or share and submits nothing automatically. |
-| 7 | Tenant receipt or referral page | **The Home route has a working tenant estimate.** The original itemized receipt survives an advisor referral. |
+1. Change the address or contents amount.
+2. Point to the selected tool and the exact arguments.
+3. Click **Run live agent request**.
+4. Show the itemized result and its sources.
+5. Switch to **Explain a drive** to show the behavior score beside the road-context score.
 
-The first and fifth images are the strongest cover candidates. Use the first if the gallery accepts only one landscape cover.
+Say: "The model can choose a tool and explain the answer. The MCP server validates the input. Deterministic code owns the price and score."
 
-## 2 minute 35 second video
+The repository contains `.mcp.json`, so project-aware agents can start the stdio server. Other MCP clients can use `http://macserver:8010/mcp` while the HTTP process is running. The server exposes nine tools and needs no API key.
+
+## Devpost gallery
+
+1. Connected web diagram with Quote, Decide, Protect, Recover, MCP, Expo, and proof nodes visible.
+2. Consumer phone Home screen.
+3. Three-car comparison.
+4. Active Drive Score and the widget or Live Activity.
+5. Live MCP request with a sourced tenant result.
+6. Tenant receipt or ready recovery plan.
+
+## Two-minute, forty-second video
 
 | Time | Action | Script |
 | ---: | --- | --- |
-| 0:00 to 0:15 | On `/intact`, select Auto and point across the stage rail. | "Pixie treats insurance as four connected jobs: get a quote, understand the choice, reduce preventable loss, and recover with better evidence." |
-| 0:15 to 0:42 | Open Expo Quote. Compare the Corolla, CX-5, and IONIQ 5. | "I am shopping for a car. Pixie keeps one synthetic driver scenario fixed and puts the vehicle payment beside an illustrative insurance estimate before I buy." |
-| 0:42 to 1:00 | Open Decide and select the lower-distance scenario. | "This changes one assumption. It is visibly hypothetical and does not rewrite my saved profile." |
-| 1:00 to 1:32 | Open Protect and start drive context. Advance to a second zone and show the factors. | "During a drive, Pixie separates behavior from coarse route context. The factors are visible, no coordinates are stored, and the result cannot change my premium." |
-| 1:32 to 1:45 | Show the iOS widget and Live Activity. | "The native development build publishes that active context through Expo's widget and Live Activity support." |
-| 1:45 to 2:10 | Open Recover. Choose Collision, confirm people are safe, mark two record sections, and build the plan. | "Recovery starts with safety. I mark what I have recorded, add notes, and build a local plan with a reference and next actions. Pixie never uploads my evidence." |
-| 2:10 to 2:26 | Switch to Home and show the tenant receipt or contents what-if. | "Home uses the same lifecycle with a working Toronto tenant estimate, an itemized receipt, and advisor review when the rules require it." |
-| 2:26 to 2:35 | Return to the four-stage web view. | "The models guide the experience. Deterministic code owns the numbers, and every estimate keeps its limits visible." |
+| 0:00 to 0:18 | Show the connected web diagram. | "Getting insurance is one moment in a longer relationship. Pixie connects quoting, decisions, prevention, and recovery to one phone app and one set of controlled tools." |
+| 0:18 to 0:42 | Show the phone Home and Auto comparison. | "The phone speaks in customer tasks. I can estimate tenant coverage or compare the cost of a car and its insurance before I buy." |
+| 0:42 to 1:15 | Run the Drive Score sample. | "During an opt-in drive, Pixie measures speed changes and hard braking. It evaluates coarse road context separately, explains both scores, and stores no route." |
+| 1:15 to 1:30 | Show widget and Live Activity proof. | "Expo keeps the active score visible on the Home Screen, Lock Screen, and Dynamic Island in the native development build." |
+| 1:30 to 2:05 | Open the live MCP page and run the tenant request. | "An AI agent can ask for the same estimate through MCP. You can see the tool, every argument, the deterministic answer, and the source behind each line." |
+| 2:05 to 2:27 | Show Help and create a recovery plan. | "After an incident, Pixie starts with safety, organizes the record locally, and lets the customer decide whether to share it." |
+| 2:27 to 2:40 | Return to the diagram. | "Models choose and explain. Typed tools calculate. Customers can see what happened and what to do next." |
 
-## Details to know
+## Required disclosure
 
-- `tenant.py` computes tenant estimates in integer cents and applies referral rules.
-- `consumer.py` computes Auto estimates and comparisons from the bundled synthetic table.
-- `driving.py` keeps behavior and route context separate, then publishes the documented coaching composite.
-- The driving endpoint receives coordinates rounded to three decimal places, returns no coordinates, and stores nothing.
-- The recovery screen requires a safety confirmation, records which information the customer has, and prepares a local PDF plan. It does not upload or inspect evidence or file a claim.
-- The MCP server imports the same calculation functions instead of reimplementing them.
+"Pixie currently prices tenant insurance, not homeowner insurance. Vehicle listings, Auto prices, and route contexts are illustrative. Drive Score is coaching only and cannot change a premium. Native widgets and Live Activities require an iOS development build. Pixie does not submit an insurance application or claim."
 
-## Required disclosures
-
-Say or show this before the video ends:
-
-"Home pricing currently supports tenant insurance only. Auto prices, listings, and route zones are synthetic demonstration inputs. Drive context is coaching-only and cannot change a quote or premium. The widget and Live Activity require an iOS development build. Recovery creates a local record but uploads and submits nothing. These are illustrative Pixie estimates, not Intact prices or offers of insurance."
-
-## Capture fallbacks
-
-- If the phone loses the API, keep recording with the labelled bundled Auto and driving fallbacks.
-- If the native extension is unavailable, show the foreground drive screen. Omit the widget screenshot and do not say Expo Go ran a Live Activity.
-- If tenant geocoding fails, use a bundled Toronto address.
-- If PDF sharing is unavailable, end on the ready recovery plan. State that the record remains local and no claim was submitted.
+If the API is unavailable, use the labelled illustrative estimates. If Apple signing is unavailable, show the foreground Drive Score and the in-app native-surface previews. If geocoding fails, use one of the provided Toronto addresses.

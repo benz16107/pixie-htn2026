@@ -1,8 +1,21 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Dim, Kicker, Title } from '@/components/ui';
+import { Dim, Kicker } from '@/components/ui';
 import type { ConsumerProduct } from '@/lib/consumer';
 import { C, F } from '@/lib/theme';
+
+export function ConsumerHeader({ title = 'Good afternoon', detail = 'Here is what is ready for you.' }: { title?: string; detail?: string }) {
+  return (
+    <View style={st.header}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={st.wordmark}>PIXIE</Text>
+        <Text style={st.headerTitle}>{title}</Text>
+        <Text style={st.headerDetail}>{detail}</Text>
+      </View>
+      <View accessible accessibilityLabel="Profile for Alex" style={st.avatar}><Text style={st.avatarText}>AZ</Text></View>
+    </View>
+  );
+}
 
 export function ProductSwitch({ product, onChange }: { product: ConsumerProduct; onChange: (product: ConsumerProduct) => void }) {
   return (
@@ -19,20 +32,10 @@ export function ProductSwitch({ product, onChange }: { product: ConsumerProduct;
             style={({ pressed }) => [st.switchOption, selected && st.switchOptionOn, pressed && st.pressed]}
           >
             <Text style={[st.switchText, selected && st.switchTextOn]}>{value === 'home' ? 'HOME' : 'AUTO'}</Text>
-            <Text style={[st.switchNote, selected && st.switchNoteOn]}>{value === 'home' ? 'Home & tenant' : 'Vehicles'}</Text>
+            <Text style={[st.switchNote, selected && st.switchNoteOn]}>{value === 'home' ? 'My place' : 'My vehicle'}</Text>
           </Pressable>
         );
       })}
-    </View>
-  );
-}
-
-export function PhaseIntro({ number, phase, title, children }: { number: number; phase: string; title: string; children: ReactNode }) {
-  return (
-    <View style={st.intro}>
-      <Kicker>{String(number).padStart(2, '0')} OF 04 · {phase}</Kicker>
-      <Title style={st.title}>{title}</Title>
-      <Body style={st.lead}>{children}</Body>
     </View>
   );
 }
@@ -43,8 +46,8 @@ export function Panel({ children, tone = 'plain' }: { children: ReactNode; tone?
 
 export function SourceMark({ live }: { live: boolean }) {
   return (
-    <Text accessibilityLabel={live ? 'Estimate from shared service' : 'Estimate from bundled demo inputs'} style={[st.source, live && st.sourceLive]}>
-      {live ? 'SHARED SERVICE' : 'BUNDLED DEMO'}
+    <Text accessibilityLabel={live ? 'Estimate calculated by the connected service' : 'Illustrative estimate calculated on this device'} style={[st.source, live && st.sourceLive]}>
+      {live ? 'CONNECTED ESTIMATE' : 'ILLUSTRATIVE ESTIMATE'}
     </Text>
   );
 }
@@ -99,16 +102,22 @@ export function ChecklistItem({ title, detail, checked, onPress }: { title: stri
   );
 }
 
-export function MiniStat({ value, label }: { value: string; label: string }) {
+export function MiniStat({ value, label, inverse = false }: { value: string; label: string; inverse?: boolean }) {
   return (
     <View style={st.stat}>
-      <Text style={st.statValue}>{value}</Text>
-      <Kicker>{label}</Kicker>
+      <Text style={[st.statValue, inverse && st.statValueInverse]}>{value}</Text>
+      <Kicker style={inverse ? st.statLabelInverse : undefined}>{label}</Kicker>
     </View>
   );
 }
 
 const st = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 18 },
+  wordmark: { fontFamily: F.monoMedium, fontSize: 11, letterSpacing: 2.2, color: C.ochre },
+  headerTitle: { marginTop: 7, fontFamily: F.sansBold, fontSize: 25, lineHeight: 29, color: C.ink, letterSpacing: -0.35 },
+  headerDetail: { marginTop: 3, fontFamily: F.sans, fontSize: 13, lineHeight: 18, color: C.dim },
+  avatar: { width: 43, height: 43, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: C.ink },
+  avatarText: { color: C.paper, fontFamily: F.sansBold, fontSize: 13, letterSpacing: 0.5 },
   switch: { flexDirection: 'row', borderWidth: 1, borderColor: C.rule, borderRadius: 15, padding: 4, backgroundColor: C.land, gap: 4 },
   switchOption: { flex: 1, minHeight: 54, borderRadius: 11, paddingHorizontal: 14, justifyContent: 'center' },
   switchOptionOn: { backgroundColor: C.ink },
@@ -117,9 +126,6 @@ const st = StyleSheet.create({
   switchNote: { marginTop: 2, fontFamily: F.sans, fontSize: 11, color: C.dim },
   switchNoteOn: { color: '#BFD0D2' },
   pressed: { opacity: 0.72 },
-  intro: { paddingTop: 24, paddingBottom: 20 },
-  title: { marginTop: 8, fontSize: 34, lineHeight: 37 },
-  lead: { marginTop: 10, color: C.dim },
   panel: { borderWidth: 1, borderColor: C.rule, borderRadius: 16, padding: 16, backgroundColor: C.paper },
   panelInk: { backgroundColor: C.ink, borderColor: C.ink },
   panelWarm: { backgroundColor: C.ochreSoft, borderColor: '#E4BBB5' },
@@ -138,4 +144,6 @@ const st = StyleSheet.create({
   checkmark: { fontFamily: F.sansBold, fontSize: 15, color: C.paper },
   stat: { flex: 1, minWidth: 100, paddingVertical: 10 },
   statValue: { fontFamily: F.monoMedium, fontSize: 22, color: C.ink, marginBottom: 5 },
+  statValueInverse: { color: C.paper },
+  statLabelInverse: { color: '#AFC1C4' },
 });

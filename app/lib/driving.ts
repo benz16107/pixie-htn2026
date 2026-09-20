@@ -18,6 +18,29 @@ export interface DriveAssessment {
 
 export type DriveAssessmentResult = { assessment: DriveAssessment; source: 'shared-api' | 'bundled-demo' };
 
+export type DriveSessionSummary = {
+  score: number;
+  behaviorScore: number;
+  routeContextScore: number;
+  band: DriveAssessment['band'];
+  distanceKm: number;
+  durationSeconds: number;
+  currentSpeedKmh: number;
+  maxSpeedKmh: number;
+  speedingEvents: number;
+  hardBrakeEvents: number;
+  area: string;
+  updatedAt: number;
+  source: DriveAssessmentResult['source'];
+};
+
+export type DriveAssessmentInput = {
+  points?: Array<{ lat: number; lng: number }>;
+  distanceKm?: number;
+  speedingEvents?: number;
+  hardBrakeEvents?: number;
+};
+
 const API = process.env.EXPO_PUBLIC_API_URL;
 const SYNTHETIC_ROUTE = {
   points: [
@@ -61,11 +84,42 @@ function valid(value: unknown): value is DriveAssessment {
   return typeof item.assessmentId === 'string' && typeof item.score === 'number' && typeof item.behaviorScore === 'number' && typeof item.routeContextScore === 'number' && !!item.composite && Array.isArray(item.factors) && Array.isArray(item.routeFactors) && item.affectsPremium === false;
 }
 
-export async function assessDrive(points = SYNTHETIC_ROUTE.points, distanceKm = SYNTHETIC_ROUTE.distanceKm): Promise<DriveAssessmentResult> {
+function fallbackAssessment(input: Required<DriveAssessmentInput>): DriveAssessment {
+  const speedingPenalty = Math.min(35, input.speedingEvents * 8);
+  const brakePenalty = Math.min(30, input.hardBrakeEvents * 7);
+  const behaviorScore = Math.max(0, 100 - speedingPenalty - brakePenalty);
+  const routeContextScore = FALLBACK.routeContextScore;
+  const score = Math.round(behaviorScore * 0.75 + routeContextScore * 0.25);
+  return {
+    ...FALLBACK,
+    assessmentId: `DRV-LOCAL-${Date.now().toString().slice(-6)}`,
+    score,
+    behaviorScore,
+    band: score >= 85 ? 'steady' : score >= 65 ? 'watch' : 'focus',
+    composite: {
+      ...FALLBACK.composite,
+      behaviorContribution: Number((behaviorScore * 0.75).toFixed(2)),
+      routeContextContribution: Number((routeContextScore * 0.25).toFixed(2)),
+    },
+    factors: [
+      { ...FALLBACK.factors[0], observed: input.speedingEvents, effectPoints: -speedingPenalty, source: 'Foreground GPS speed samples and bundled demo formula' },
+      { ...FALLBACK.factors[1], observed: input.hardBrakeEvents, effectPoints: -brakePenalty, source: 'Foreground GPS speed changes and bundled demo formula' },
+    ],
+    label: 'Coaching preview from this foreground session. This does not change a quote or premium.',
+  };
+}
+
+export async function assessDrive(input: DriveAssessmentInput = {}): Promise<DriveAssessmentResult> {
+  const payload: Required<DriveAssessmentInput> = {
+    points: input.points && input.points.length >= 2 ? input.points.slice(-50) : SYNTHETIC_ROUTE.points,
+    distanceKm: Math.max(0.5, input.distanceKm ?? SYNTHETIC_ROUTE.distanceKm),
+    speedingEvents: input.speedingEvents ?? SYNTHETIC_ROUTE.speedingEvents,
+    hardBrakeEvents: input.hardBrakeEvents ?? SYNTHETIC_ROUTE.hardBrakeEvents,
+  };
   if (API) {
     try {
       const response = await fetch(`${API}/driving/context`, {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...SYNTHETIC_ROUTE, points, distanceKm }), signal: AbortSignal.timeout(6000),
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(6000),
       });
       if (response.ok) {
         const payload: unknown = await response.json();
@@ -73,5 +127,5 @@ export async function assessDrive(points = SYNTHETIC_ROUTE.points, distanceKm = 
       }
     } catch {}
   }
-  return { assessment: FALLBACK, source: 'bundled-demo' };
+  return { assessment: fallbackAssessment(payload), source: 'bundled-demo' };
 }

@@ -61,8 +61,8 @@ function RootLayout() {
           headerTitle: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.ochre }} />
-              <Text style={{ fontFamily: F.sansBold, fontSize: 15, color: C.ink, letterSpacing: 1.1 }}>INTACT</Text>
-              <Text style={{ fontFamily: F.sansMedium, fontSize: 11, color: C.dim }}>PIXIE DEMO</Text>
+              <Text style={{ fontFamily: F.sansBold, fontSize: 15, color: C.ink, letterSpacing: 1.1 }}>PIXIE</Text>
+              <Text style={{ fontFamily: F.sansMedium, fontSize: 11, color: C.dim }}>INSURANCE</Text>
             </View>
           ),
           headerRight: () => (

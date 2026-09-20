@@ -25,7 +25,7 @@ export default function AutoCompareScreen() {
     <Screen footer={<Button label={`Use ${autoListing.make} ${autoListing.model}`} onPress={() => router.dismissTo('/decide')} />}>
       <Kicker>Auto · listing comparison</Kicker>
       <Title style={st.title}>See the car cost and cover together.</Title>
-      <Body style={st.lead}>Choose a bundled synthetic listing. Pixie tries the shared demo service first and keeps an offline estimate ready.</Body>
+      <Body style={st.lead}>Choose an example listing to compare the monthly car cost with an illustrative insurance estimate.</Body>
 
       <View accessibilityRole="radiogroup" accessibilityLabel="Vehicle listings">
         {AUTO_LISTINGS.map((vehicle) => {
@@ -43,7 +43,7 @@ export default function AutoCompareScreen() {
               style={({ pressed }) => [st.card, selected && st.cardOn, pressed && { opacity: 0.75 }]}
             >
               <View style={st.cardHead}>
-                <View style={{ flex: 1, minWidth: 0 }}><Kicker>{vehicle.year} · SYNTHETIC LISTING</Kicker><Text style={st.name}>{vehicle.make} {vehicle.model}</Text></View>
+                <View style={{ flex: 1, minWidth: 0 }}><Kicker>{vehicle.year} · EXAMPLE LISTING</Kicker><Text style={st.name}>{vehicle.make} {vehicle.model}</Text></View>
                 <View style={[st.radio, selected && st.radioOn]} />
               </View>
               <Text style={st.listPrice}>${vehicle.listingPrice.toLocaleString('en-CA')}</Text>
@@ -61,7 +61,7 @@ export default function AutoCompareScreen() {
           );
         })}
       </View>
-      <Body style={st.disclosure}>Illustrative Pixie estimates use bundled synthetic inputs. They are not Intact quotes or offers. Payments assume a demo 60-month comparison and exclude interest.</Body>
+      <Body style={st.disclosure}>Vehicle listings, payments, and Pixie insurance estimates are illustrative. They are not Intact quotes or offers. Payments assume 60 months and exclude interest.</Body>
     </Screen>
   );
 }

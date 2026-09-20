@@ -1,132 +1,288 @@
 import Constants from 'expo-constants';
 import * as Location from 'expo-location';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DrivingNativeAction } from '@/components/DrivingNativeAction';
-import { Panel, SourceMark } from '@/components/consumer';
+import { ConsumerHeader, MiniStat, Panel } from '@/components/consumer';
 import { Body, Button, Kicker, Screen, Title } from '@/components/ui';
 import { endDriveSurfaces, syncDriveSurfaces } from '@/lib/driving-surfaces';
-import { assessDrive, type DriveAssessmentResult } from '@/lib/driving';
+import { assessDrive, type DriveAssessmentResult, type DriveSessionSummary } from '@/lib/driving';
+import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
 
 const ZONES = [
-  { id: 'residential', name: 'Parkdale streets', context: 'Lower speed, mixed local traffic', factor: 'Road class · local' },
-  { id: 'expressway', name: 'Gardiner corridor', context: 'Higher speed, controlled access', factor: 'Road class · expressway' },
-  { id: 'downtown', name: 'Downtown core', context: 'Lower speed, dense intersections', factor: 'Road class · urban' },
+  { id: 'residential', name: 'Parkdale streets', context: 'Schools and local intersections nearby', speedLimit: 40 },
+  { id: 'expressway', name: 'Gardiner corridor', context: 'Controlled access and fewer conflict points', speedLimit: 90 },
+  { id: 'downtown', name: 'Downtown core', context: 'Dense crossings, buildings, and pedestrians', speedLimit: 40 },
 ] as const;
 
+type Zone = (typeof ZONES)[number];
+type Point = { lat: number; lng: number };
+type Metrics = { distanceKm: number; durationSeconds: number; currentSpeedKmh: number; maxSpeedKmh: number; speedingEvents: number; hardBrakeEvents: number };
+
+const EMPTY_METRICS: Metrics = { distanceKm: 0, durationSeconds: 0, currentSpeedKmh: 0, maxSpeedKmh: 0, speedingEvents: 0, hardBrakeEvents: 0 };
+
+function distanceKm(a: Point, b: Point) {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const q = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(q), Math.sqrt(1 - q));
+}
+
+function timeLabel(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function scoreLabel(score: number) {
+  if (score >= 85) return 'Steady';
+  if (score >= 65) return 'Keep watching';
+  return 'Needs attention';
+}
+
 export default function DrivingContextScreen() {
-  const [zone, setZone] = useState<(typeof ZONES)[number]>(ZONES[0]);
+  const { setDriveSummary } = useQuote();
+  const [zone, setZone] = useState<Zone>(ZONES[0]);
   const [active, setActive] = useState(false);
-  const [locationState, setLocationState] = useState<'idle' | 'working' | 'used' | 'denied'>('idle');
+  const [sampleMode, setSampleMode] = useState(false);
+  const [permission, setPermission] = useState<'idle' | 'working' | 'denied'>('idle');
   const [assessment, setAssessment] = useState<DriveAssessmentResult | null>(null);
+  const [metrics, setMetrics] = useState<Metrics>(EMPTY_METRICS);
+  const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const pointsRef = useRef<Point[]>([]);
+  const metricsRef = useRef<Metrics>(EMPTY_METRICS);
+  const lastRef = useRef<{ point: Point; speedKmh: number; time: number } | null>(null);
+  const startedAtRef = useRef(0);
+  const sampleCountRef = useRef(0);
+  const speedingRef = useRef(false);
+  const zoneRef = useRef<Zone>(zone);
   const nativeBuild = Platform.OS !== 'web' && Constants.appOwnership !== 'expo';
   const nativeIos = Platform.OS === 'ios' && nativeBuild;
 
-  const toggleDrive = async () => {
-    if (active) {
-      await endDriveSurfaces();
-      setActive(false);
+  useEffect(() => { zoneRef.current = zone; }, [zone]);
+  useEffect(() => () => {
+    subscriptionRef.current?.remove();
+    void endDriveSurfaces();
+  }, []);
+
+  const publish = (next: DriveAssessmentResult, nextMetrics: Metrics, area: string = zoneRef.current.name) => {
+    setAssessment(next);
+    const summary: DriveSessionSummary = {
+      score: next.assessment.score,
+      behaviorScore: next.assessment.behaviorScore,
+      routeContextScore: next.assessment.routeContextScore,
+      band: next.assessment.band,
+      ...nextMetrics,
+      area,
+      updatedAt: Date.now(),
+      source: next.source,
+    };
+    setDriveSummary(summary);
+    syncDriveSurfaces({ zone: area, context: next.assessment.routeFactors[0]?.label ?? zoneRef.current.context, score: summary.score, speedKmh: summary.currentSpeedKmh, active: true });
+  };
+
+  const assessCurrent = async (nextMetrics = metricsRef.current, area?: string) => {
+    const next = await assessDrive({
+      points: pointsRef.current,
+      distanceKm: nextMetrics.distanceKm,
+      speedingEvents: nextMetrics.speedingEvents,
+      hardBrakeEvents: nextMetrics.hardBrakeEvents,
+    });
+    publish(next, nextMetrics, area);
+    return next;
+  };
+
+  const handleLocation = (location: Location.LocationObject) => {
+    const rawPoint = { lat: location.coords.latitude, lng: location.coords.longitude };
+    const point = { lat: Number(rawPoint.lat.toFixed(3)), lng: Number(rawPoint.lng.toFixed(3)) };
+    const previous = lastRef.current;
+    const now = location.timestamp || Date.now();
+    const deltaKm = previous ? distanceKm(previous.point, rawPoint) : 0;
+    const elapsedSeconds = previous ? Math.max(1, (now - previous.time) / 1000) : 1;
+    const reportedSpeed = location.coords.speed != null && location.coords.speed >= 0 ? location.coords.speed * 3.6 : null;
+    const calculatedSpeed = deltaKm / elapsedSeconds * 3600;
+    const currentSpeedKmh = Math.max(0, Math.round(reportedSpeed ?? calculatedSpeed));
+    const overThreshold = currentSpeedKmh > zoneRef.current.speedLimit + 5;
+    const speedingEvents = metricsRef.current.speedingEvents + (overThreshold && !speedingRef.current ? 1 : 0);
+    speedingRef.current = overThreshold;
+    const hardBrake = previous && elapsedSeconds <= 5 && previous.speedKmh >= 25 && previous.speedKmh - currentSpeedKmh >= 12;
+    const nextMetrics: Metrics = {
+      distanceKm: Number((metricsRef.current.distanceKm + Math.min(deltaKm, 0.5)).toFixed(3)),
+      durationSeconds: Math.max(0, Math.round((now - startedAtRef.current) / 1000)),
+      currentSpeedKmh,
+      maxSpeedKmh: Math.max(metricsRef.current.maxSpeedKmh, currentSpeedKmh),
+      speedingEvents,
+      hardBrakeEvents: metricsRef.current.hardBrakeEvents + (hardBrake ? 1 : 0),
+    };
+    pointsRef.current = [...pointsRef.current, point].slice(-50);
+    metricsRef.current = nextMetrics;
+    lastRef.current = { point: rawPoint, speedKmh: currentSpeedKmh, time: now };
+    sampleCountRef.current += 1;
+    setMetrics(nextMetrics);
+    if (sampleCountRef.current === 2 || sampleCountRef.current % 5 === 0) void assessCurrent(nextMetrics, 'Current drive');
+  };
+
+  const startLiveDrive = async () => {
+    setPermission('working');
+    const foreground = await Location.requestForegroundPermissionsAsync();
+    if (foreground.status !== 'granted') {
+      setPermission('denied');
       return;
     }
-    syncDriveSurfaces({ zone: zone.name, context: zone.context, factor: zone.factor, active: true });
+    pointsRef.current = [];
+    metricsRef.current = EMPTY_METRICS;
+    lastRef.current = null;
+    sampleCountRef.current = 0;
+    speedingRef.current = false;
+    startedAtRef.current = Date.now();
+    setMetrics(EMPTY_METRICS);
+    setAssessment(null);
+    setSampleMode(false);
     setActive(true);
-    const next = await assessDrive();
-    setAssessment(next);
-    syncDriveSurfaces({ zone: zone.name, context: zone.context, factor: `${next.assessment.score} coaching`, active: true });
+    setPermission('idle');
+    syncDriveSurfaces({ zone: 'Starting drive', context: 'Waiting for the first GPS sample', score: 100, speedKmh: 0, active: true });
+    subscriptionRef.current = await Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 2000, distanceInterval: 4 },
+      handleLocation,
+      () => setPermission('denied'),
+    );
   };
 
-  const chooseZone = (next: (typeof ZONES)[number]) => {
+  const startSampleDrive = async () => {
+    subscriptionRef.current?.remove();
+    subscriptionRef.current = null;
+    const nextMetrics = { distanceKm: 9.4, durationSeconds: 14 * 60, currentSpeedKmh: 38, maxSpeedKmh: 82, speedingEvents: 0, hardBrakeEvents: 1 };
+    metricsRef.current = nextMetrics;
+    pointsRef.current = [{ lat: 43.639, lng: -79.443 }, { lat: 43.642, lng: -79.408 }, { lat: 43.650, lng: -79.381 }];
+    setMetrics(nextMetrics);
+    setSampleMode(true);
+    setActive(true);
+    await assessCurrent(nextMetrics, 'Toronto sample trip');
+  };
+
+  const stopDrive = async () => {
+    subscriptionRef.current?.remove();
+    subscriptionRef.current = null;
+    if (!sampleMode && pointsRef.current.length) await assessCurrent(metricsRef.current, 'Most recent drive');
+    await endDriveSurfaces();
+    setActive(false);
+  };
+
+  const selectZone = (next: Zone) => {
     setZone(next);
-    if (active) syncDriveSurfaces({ zone: next.name, context: next.context, factor: next.factor, active: true });
+    if (active && assessment) syncDriveSurfaces({ zone: next.name, context: next.context, score: assessment.assessment.score, speedKmh: metrics.currentSpeedKmh, active: true });
   };
 
-  const useCurrentArea = async () => {
-    setLocationState('working');
-    const foreground = await Location.requestForegroundPermissionsAsync();
-    if (foreground.status !== 'granted') return setLocationState('denied');
-    try {
-      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const point = { lat: Number(current.coords.latitude.toFixed(3)), lng: Number(current.coords.longitude.toFixed(3)) };
-      const shortCoarseSample = [point, { lat: point.lat, lng: Number((point.lng + 0.001).toFixed(3)) }];
-      const next = await assessDrive(shortCoarseSample, 0.5);
-      setAssessment(next);
-      setLocationState('used');
-      if (active) syncDriveSurfaces({ zone: 'Current coarse area', context: 'One-time foreground sample', factor: `${next.assessment.score} coaching`, active: true });
-    } catch {
-      setLocationState('denied');
-    }
-  };
+  const score = assessment?.assessment.score ?? 100;
 
   return (
     <Screen>
-      <Kicker>Auto · Protect</Kicker>
-      <Title style={st.title}>Understand the road around you.</Title>
-      <Body style={st.lead}>This foreground demo follows a synthetic Toronto route and explains its context. It never changes your estimate.</Body>
+      <ConsumerHeader title="Drive score" detail="A private coaching view for your current trip." />
+      <Kicker>AUTO INSIGHTS</Kicker>
+      <Title style={st.title}>See what shapes your score.</Title>
+      <Body style={st.lead}>Pixie combines phone-measured speed changes with coarse road context. A school approach or dense intersection can lower the context score even when your driving is steady.</Body>
+
       <Panel tone="ink">
-        <View accessible accessibilityLabel={`Synthetic route map. Selected zone: ${zone.name}. ${zone.context}.`} style={st.map}>
-          <View style={st.roadA} /><View style={st.roadB} /><View style={st.roadC} />
-          {ZONES.map((item, index) => <View key={item.id} style={[st.dot, st[`dot${index}` as 'dot0'], item.id === zone.id && st.dotOn]} />)}
-          <Text style={st.mapLabel}>SYNTHETIC TORONTO ROUTE</Text>
+        <View style={st.scoreHero}>
+          <View><Text style={st.score}>{score}</Text><Text style={st.scoreBand}>{assessment ? scoreLabel(score) : 'Ready to start'}</Text></View>
+          <View style={st.liveReadout}>
+            <Text style={st.liveLabel}>{active ? 'LIVE DRIVE' : 'LAST SESSION'}</Text>
+            <Text style={st.speed}>{metrics.currentSpeedKmh}<Text style={st.speedUnit}> km/h</Text></Text>
+          </View>
+        </View>
+        <View style={st.darkStats}>
+          <MiniStat inverse value={`${metrics.distanceKm.toFixed(1)} km`} label="DISTANCE" />
+          <MiniStat inverse value={timeLabel(metrics.durationSeconds)} label="TIME" />
+          <MiniStat inverse value={String(metrics.speedingEvents + metrics.hardBrakeEvents)} label="EVENTS" />
         </View>
       </Panel>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Synthetic route zones" style={st.zones}>
+
+      <View style={st.actionGap}>
+        {active ? <DrivingNativeAction label="Finish this drive" onPress={stopDrive} /> : Platform.OS === 'web' ? <Button label="Preview a sample drive" onPress={startSampleDrive} /> : <DrivingNativeAction label={permission === 'working' ? 'Starting GPS…' : 'Start a live drive'} onPress={startLiveDrive} />}
+      </View>
+      {!active && Platform.OS !== 'web' ? <Button kind="link" label="Preview with a Toronto sample" onPress={startSampleDrive} /> : null}
+      {permission === 'denied' ? <Text accessibilityLiveRegion="polite" style={st.denied}>Location is unavailable. You can still use the Toronto sample.</Text> : null}
+
+      <Kicker style={st.section}>What appears on your iPhone</Kicker>
+      <View style={st.surfaceRow}>
+        <View style={st.widgetPreview}>
+          <Text style={st.previewKicker}>PIXIE DRIVE SCORE</Text>
+          <Text style={st.previewArea}>{assessment?.assessment.routeFactors[0]?.areaLabel ?? zone.name}</Text>
+          <Text style={st.previewContext}>{assessment?.assessment.routeFactors[0]?.label ?? zone.context}</Text>
+          <Text style={st.previewScore}>{score} score · {metrics.currentSpeedKmh} km/h</Text>
+        </View>
+        <View style={st.lockPreview}>
+          <Text style={st.previewKicker}>DRIVE SCORE ACTIVE</Text>
+          <View style={st.lockRow}><Text style={st.lockScore}>{score}</Text><Text style={st.lockDetail}>{zone.name}{'\n'}{metrics.currentSpeedKmh} km/h</Text></View>
+          <Text style={st.lockFoot}>Lock Screen + Dynamic Island</Text>
+        </View>
+      </View>
+      <Body style={st.previewNote}>{nativeIos ? 'The installed development build updates these native surfaces during the drive.' : 'Preview shown here. Install the iOS development build to add the widget and start the Live Activity.'}</Body>
+
+      <Kicker style={st.section}>Road context</Kicker>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Road context examples" style={st.zones}>
         {ZONES.map((item) => (
-          <Pressable key={item.id} accessibilityRole="radio" accessibilityState={{ checked: zone.id === item.id }} onPress={() => chooseZone(item)} style={({ pressed }) => [st.zone, zone.id === item.id && st.zoneOn, pressed && { opacity: 0.75 }]}>
-            <Text style={st.zoneName}>{item.name}</Text><Text style={st.zoneContext}>{item.context}</Text>
+          <Pressable key={item.id} accessibilityRole="radio" accessibilityState={{ checked: zone.id === item.id }} onPress={() => selectZone(item)} style={({ pressed }) => [st.zone, zone.id === item.id && st.zoneOn, pressed && { opacity: 0.74 }]}>
+            <View style={{ flex: 1 }}><Text style={st.zoneName}>{item.name}</Text><Text style={st.zoneContext}>{item.context}</Text></View>
+            <Text style={st.zoneLimit}>{item.speedLimit}<Text style={st.zoneUnit}> km/h sample</Text></Text>
           </Pressable>
         ))}
       </View>
-      <Panel tone="warm">
-        <SourceMark live={false} />
-        <Kicker style={{ marginTop: 12 }}>Visible context factors</Kicker>
-        <View style={st.factor}><Text style={st.factorLabel}>Road class</Text><Text style={st.factorValue}>{zone.factor.split(' · ')[1]}</Text></View>
-        <View style={st.factor}><Text style={st.factorLabel}>Traffic pattern</Text><Text style={st.factorValue}>{zone.context}</Text></View>
-        <Body style={st.disclosure}>These are explanatory synthetic factors. Pixie does not turn this route or raw location history into a premium, and no insurer has approved it.</Body>
-      </Panel>
-      <View style={{ marginTop: 14 }}>
-        <DrivingNativeAction label={active ? 'End foreground drive' : 'Start foreground drive'} onPress={toggleDrive} />
-      </View>
-      <Text accessibilityLiveRegion="polite" style={st.status}>{active ? `Drive context active: ${zone.name}.` : 'Drive context is off.'}</Text>
+
       {assessment ? (
-        <Panel>
-          <SourceMark live={assessment.source === 'shared-api'} />
-          <View style={st.scoreRow}><Text style={st.score}>{assessment.assessment.score}</Text><View style={{ flex: 1 }}><Kicker>COMPOSITE · {assessment.assessment.band}</Kicker><Body style={st.scoreLabel}>{assessment.assessment.composite.formula}</Body></View></View>
-          <View style={st.factor}><Text style={st.factorLabel}>Behavior score</Text><Text style={st.factorValue}>{assessment.assessment.behaviorScore}</Text></View>
-          <View style={st.factor}><Text style={st.factorLabel}>Route context score</Text><Text style={st.factorValue}>{assessment.assessment.routeContextScore}</Text></View>
-          {assessment.assessment.factors.map((factor) => <View key={factor.key} style={st.factor}><Text style={st.factorLabel}>{factor.label}</Text><Text style={st.factorValue}>{factor.observed} observed · {factor.effectPoints} pts</Text></View>)}
-          {assessment.assessment.routeFactors.slice(0, 2).map((factor) => <View key={factor.key} style={st.factor}><Text style={st.factorLabel}>{factor.label}</Text><Text style={st.factorValue}>{factor.areaLabel} · {factor.contextScore}</Text></View>)}
-          <Body style={st.disclosure}>{assessment.assessment.label} The service stores no route and returns no raw coordinates.</Body>
+        <Panel tone="warm">
+          <Kicker>Your score, explained</Kicker>
+          <View style={st.resultRow}><Text style={st.resultLabel}>Driving behavior</Text><Text style={st.resultValue}>{assessment.assessment.behaviorScore}</Text></View>
+          <View style={st.resultRow}><Text style={st.resultLabel}>Road context</Text><Text style={st.resultValue}>{Math.round(assessment.assessment.routeContextScore)}</Text></View>
+          {assessment.assessment.routeFactors.slice(0, 3).map((factor) => <Body key={factor.key} style={st.factor}>• {factor.label}: {factor.areaLabel}</Body>)}
+          <Body style={st.disclosure}>The coaching score is 75% driving events and 25% route context. It cannot change an estimate or premium.</Body>
         </Panel>
       ) : null}
+
       <Panel>
-        <Kicker>Foreground location</Kicker>
-        <Body style={st.nativeText}>{nativeIos ? 'Starting the drive updates the Pixie widget and opens a Live Activity.' : 'DEV BUILD · The iOS widget and Live Activity require a development build. The foreground demo still works here.'}</Body>
-        <Button kind="secondary" label={locationState === 'working' ? 'Reading current area…' : locationState === 'used' ? 'Current area used once' : 'Use current location once'} disabled={Platform.OS === 'web' || locationState === 'working'} onPress={useCurrentArea} />
-        <Body style={st.permission}>Optional. Pixie rounds the foreground location to three decimals, sends a coarse two-point area sample, and does not retain or return the coordinates.</Body>
-        {locationState === 'denied' ? <Text accessibilityLiveRegion="polite" style={st.denied}>Location was not available. The synthetic route still works.</Text> : null}
+        <Kicker>Your privacy</Kicker>
+        <Body style={st.disclosure}>Tracking runs only while this screen’s foreground drive is active. Pixie rounds route points to three decimals, sends at most 50 coarse points for classification, stores no route, and keeps this coaching score separate from pricing.</Body>
       </Panel>
     </Screen>
   );
 }
 
 const st = StyleSheet.create({
-  title: { marginTop: 8 }, lead: { marginTop: 10, marginBottom: 20, color: C.dim },
-  map: { height: 190, overflow: 'hidden' },
-  mapLabel: { position: 'absolute', left: 0, bottom: 0, fontFamily: F.monoMedium, fontSize: 10, color: '#AFC1C4', letterSpacing: 0.8 },
-  roadA: { position: 'absolute', left: -20, right: -20, top: 45, height: 3, backgroundColor: '#66777A', transform: [{ rotate: '-8deg' }] },
-  roadB: { position: 'absolute', left: 40, right: -40, top: 105, height: 6, backgroundColor: C.ochre, transform: [{ rotate: '12deg' }] },
-  roadC: { position: 'absolute', left: 145, top: -20, width: 3, height: 230, backgroundColor: '#66777A', transform: [{ rotate: '7deg' }] },
-  dot: { position: 'absolute', width: 15, height: 15, borderRadius: 8, backgroundColor: C.paper, borderWidth: 3, borderColor: C.ink },
-  dotOn: { width: 22, height: 22, borderRadius: 11, borderColor: C.ochre, backgroundColor: C.paper },
-  dot0: { left: '15%', top: 75 }, dot1: { left: '48%', top: 96 }, dot2: { right: '12%', top: 65 },
-  zones: { marginVertical: 14, gap: 8 },
-  zone: { minHeight: 64, borderWidth: 1, borderColor: C.rule, borderRadius: 13, padding: 12 }, zoneOn: { borderColor: C.ochre, backgroundColor: C.ochreSoft },
-  zoneName: { fontFamily: F.sansBold, fontSize: 15, color: C.ink }, zoneContext: { marginTop: 3, fontFamily: F.sans, fontSize: 13, color: C.dim },
-  factor: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingTop: 11 },
-  factorLabel: { fontFamily: F.sansMedium, fontSize: 14, color: C.dim }, factorValue: { flex: 1, textAlign: 'right', fontFamily: F.sansBold, fontSize: 14, color: C.ink },
-  disclosure: { marginTop: 14, fontSize: 13, lineHeight: 19, color: C.dim },
-  status: { marginVertical: 12, fontFamily: F.sansMedium, color: C.moss }, nativeText: { marginVertical: 10, fontSize: 14, color: C.dim },
-  permission: { marginTop: 10, fontSize: 12, lineHeight: 18, color: C.dim }, denied: { marginTop: 8, fontFamily: F.sansMedium, color: C.rust },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14, marginBottom: 6 }, score: { fontFamily: F.monoMedium, fontSize: 38, color: C.ink }, scoreLabel: { marginTop: 2, fontSize: 13, color: C.dim },
+  title: { marginTop: 7 },
+  lead: { marginTop: 10, marginBottom: 18, color: C.dim },
+  scoreHero: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 14 },
+  score: { color: C.paper, fontFamily: F.monoMedium, fontSize: 68, lineHeight: 70 },
+  scoreBand: { marginTop: 2, color: '#BFD0D2', fontFamily: F.sansMedium, fontSize: 13 },
+  liveReadout: { alignItems: 'flex-end', paddingBottom: 4 },
+  liveLabel: { color: '#FF8B7C', fontFamily: F.monoMedium, fontSize: 9, letterSpacing: 1 },
+  speed: { marginTop: 7, color: C.paper, fontFamily: F.monoMedium, fontSize: 25 },
+  speedUnit: { color: '#BFD0D2', fontFamily: F.sans, fontSize: 12 },
+  darkStats: { flexDirection: 'row', marginTop: 15, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#456066' },
+  actionGap: { marginTop: 14 },
+  denied: { marginTop: 8, color: C.ochre, fontFamily: F.sansMedium, fontSize: 13 },
+  section: { marginTop: 24, marginBottom: 9 },
+  surfaceRow: { flexDirection: 'row', gap: 10 },
+  widgetPreview: { flex: 0.85, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: '#E7ECEC', justifyContent: 'space-between' },
+  lockPreview: { flex: 1.15, minHeight: 164, padding: 14, borderRadius: 24, backgroundColor: C.ink },
+  previewKicker: { color: C.ochre, fontFamily: F.monoMedium, fontSize: 8, letterSpacing: 0.8 },
+  previewArea: { marginTop: 11, color: C.ink, fontFamily: F.sansBold, fontSize: 17, lineHeight: 20 },
+  previewContext: { marginTop: 5, color: C.dim, fontFamily: F.sans, fontSize: 11, lineHeight: 15 },
+  previewScore: { marginTop: 10, color: C.ink, fontFamily: F.monoMedium, fontSize: 10 },
+  lockRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 },
+  lockScore: { color: C.paper, fontFamily: F.monoMedium, fontSize: 40 },
+  lockDetail: { flex: 1, color: C.paper, fontFamily: F.sansMedium, fontSize: 12, lineHeight: 17 },
+  lockFoot: { marginTop: 'auto', color: '#AFC1C4', fontFamily: F.sans, fontSize: 10 },
+  previewNote: { marginTop: 9, color: C.dim, fontSize: 12, lineHeight: 17 },
+  zones: { gap: 8 },
+  zone: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderWidth: 1, borderColor: C.rule, borderRadius: 14 },
+  zoneOn: { borderColor: C.ochre, backgroundColor: C.ochreSoft },
+  zoneName: { fontFamily: F.sansBold, fontSize: 15, color: C.ink },
+  zoneContext: { marginTop: 3, fontFamily: F.sans, fontSize: 12, lineHeight: 16, color: C.dim },
+  zoneLimit: { color: C.ink, fontFamily: F.monoMedium, fontSize: 16 },
+  zoneUnit: { color: C.dim, fontFamily: F.sans, fontSize: 8 },
+  resultRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#E4BBB5' },
+  resultLabel: { color: C.dim, fontFamily: F.sansMedium, fontSize: 14 },
+  resultValue: { color: C.ink, fontFamily: F.monoMedium, fontSize: 18 },
+  factor: { marginTop: 9, color: C.dim, fontSize: 12, lineHeight: 17 },
+  disclosure: { marginTop: 12, color: C.dim, fontSize: 12, lineHeight: 18 },
 });

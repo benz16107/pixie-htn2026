@@ -23,7 +23,7 @@ engine.assess() evaluates commercial cases and the tenant quote uses the same pr
 
 The Federato web product is an underwriter workbench. It shows the queue, score interval, source trail, decision waterfall, sensitivity, precedent, portfolio impact, agent events, guideline changes, and bounded overrides.
 
-The Intact web product is a presentation surface for Quote, Decide, Protect, and Recover. The Expo app is the working consumer product. Home routes to the existing tenant quote, inventory, and prevention flows. Auto routes to vehicle comparison, scenario testing, protection records, driving context, and recovery.
+The Intact web product maps Quote, Decide, Protect, and Recover to their services and working proof. The Expo app is the consumer product and uses Home, Compare, Safety, and Help navigation. Home routes to the tenant estimate, inventory, and prevention flows. Auto routes to vehicle comparison, scenario testing, prevention records, Drive Score, and recovery.
 
 ## Consumer service boundary
 
@@ -35,11 +35,11 @@ The Intact web product is a presentation surface for Quote, Decide, Protect, and
 
 ## Native Expo surfaces
 
-- Expo Router owns the four-stage navigation and supporting screens.
+- Expo Router owns the Home, Compare, Safety, and Help navigation plus supporting screens.
 - @expo/ui supplies native SwiftUI and Jetpack Compose controls in development builds.
 - expo-widgets supplies the iOS drive-context widget and Live Activity.
 - Expo Go and web use a labelled foreground fallback because native extensions cannot load there.
-- The quote and driving flows request location only after an explicit action.
+- The quote and Drive Score flows request location only after an explicit action. Drive Score uses foreground GPS speed and derives aggregate speeding and hard-brake events.
 
 ## MCP boundary
 

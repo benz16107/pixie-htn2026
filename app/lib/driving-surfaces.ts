@@ -1,4 +1,4 @@
-export type DriveSurfaceState = { zone: string; context: string; factor: string; active: boolean };
+export type DriveSurfaceState = { zone: string; context: string; score: number; speedKmh: number; active: boolean };
 
 export function syncDriveSurfaces(_state: DriveSurfaceState): boolean {
   return false;

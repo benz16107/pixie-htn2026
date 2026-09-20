@@ -8,6 +8,6 @@ For Federato:
 
 For Intact:
 
-> Most quote apps stop when the customer buys. Pixie stays useful through Quote, Decide, Protect, and Recover for tenant and Auto, with the same facts and source trail at every stage.
+> Pixie gives customers one place to estimate tenant coverage, compare a car with its insurance cost, measure a private Drive Score, and organize help after an incident. The web explains how the system connects. The phone proves the customer experience.
 
 Spend most of the five minutes on the sponsor named on the card. Show one input, one provider-specific operation, and one visible result. End with the exact limitation printed on the card.

@@ -18,8 +18,8 @@ const GUARDRAILS = [
 ];
 
 const LIMITS = [
-  'Prices are illustrative, from our documented model. They are not an Intact price or an offer of insurance.',
-  'The base price and the contents, deductible and liability steps are invented constants, labelled as such on the receipt.',
+  'Prices are illustrative Pixie estimates. They are not an Intact price or an offer of insurance.',
+  'The base price and the contents, deductible and liability steps use example constants. The receipt labels each source.',
   'Police place each break-in at the nearest intersection, so the finest honest grid is about one block.',
   'Toronto only. Two or more claims in five years, or a unit in a floodline, goes to an advisor rather than getting a price.',
   'Nothing is stored against your name: a quote keeps the address, your coverage choices and the receipt so an advisor can open it.',
@@ -28,10 +28,9 @@ const LIMITS = [
 export default function About() {
   return (
     <Screen>
-      <Title>How Pixie prices a rental</Title>
+      <Title>Your data and your estimate</Title>
       <Body style={{ marginTop: 8 }}>
-        Code sets every number. An AI model only helps turn messy input into answers and writes plain-language explanations
-        from numbers that are already computed. The same engine runs the underwriter desk.
+        Pixie uses the details you confirm and public Toronto data to prepare an itemized estimate. Fixed rules calculate every number. An assistant can explain the result, but it cannot change the price.
       </Body>
 
       <Kicker style={{ marginTop: 24, marginBottom: 6 }}>Fairness guardrails</Kicker>
@@ -65,7 +64,7 @@ export default function About() {
         </Body>
       ))}
       <Dim style={{ fontSize: 13, marginTop: 12 }}>
-        Built at Hack the North 2026 by one person with AI coding agents. Map data © OpenStreetMap contributors.
+        Map data © OpenStreetMap contributors.
       </Dim>
     </Screen>
   );

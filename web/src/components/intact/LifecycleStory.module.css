@@ -65,7 +65,10 @@
   border: 1px solid #71878b;
   background: #243f45;
   color: #dce7e9;
+  text-decoration: none;
 }
+
+a.systemNode:hover { border-color: #ff8b7c; background: #315159; }
 
 .systemNode[data-active="true"] { border-color: #ff8b7c; background: #315159; }
 .systemNode > span { grid-row: 1 / 3; color: #ff8b7c; font: 600 9px/1 var(--font-mono); }

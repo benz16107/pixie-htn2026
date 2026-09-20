@@ -23,10 +23,11 @@ Serve the production Next.js build during judging. A development server can intr
 
 1. Open `/queue`, `/cases/138`, `/map`, `/guideline`, `/backtest`, and `/intact`.
 2. Confirm the product switch moves between the Federato and Intact experiences.
-3. On the phone, open the four lifecycle tabs. Prepare the Auto comparison, drive context, and one tenant receipt.
-4. If using a native iOS development build, start the drive-context Live Activity and confirm the widget snapshot. Expo Go cannot run these native extensions.
-5. Keep replay selected on the live desk unless the judge explicitly wants a live model run.
-6. Open the relevant provider console before a Sentry or Elastic pitch.
+3. On the phone, open Home, Compare, Safety, and Help. Prepare the Auto comparison, Drive Score sample, and one tenant receipt.
+4. Open `/intact/agent`, run the tenant estimate once, and leave the sourced answer visible.
+5. If using a native iOS development build, start the Drive Score Live Activity and confirm the widget snapshot. Expo Go cannot run these native extensions.
+6. Keep replay selected on the live desk unless the judge explicitly wants a live model run.
+7. Open the relevant provider console before a Sentry or Elastic pitch.
 
 ## Verify
 
@@ -40,7 +41,7 @@ cd app && npx expo config --type public
 
 A physical phone cannot reach `localhost` on the server. Set `EXPO_PUBLIC_API_URL` to the server's reachable HTTP or HTTPS address before starting Expo. The native widget and Live Activity require a development build. Expo Go and web use the labelled fallback.
 
-For that native build, use the NVM Node path, complete `npx expo login --browser`, then run `npx eas-cli build --platform ios --profile development` from `app/`. The project already includes `expo-dev-client` and `app/eas.json`.
+For that native build, register the device with `npx eas-cli device:create`, then run `npx eas-cli build --platform ios --profile development` from `app/`. The Expo CLI is already signed in and the project includes `expo-dev-client` and `app/eas.json`. EAS still requires private Apple Developer authentication.
 
 ## Recovery
 

@@ -21,13 +21,13 @@ export default function HomeInventoryScreen() {
     <Screen>
       <Kicker>Home & tenant · room inventory</Kicker>
       <Title style={st.title}>Know what you would need to replace.</Title>
-      <Body style={st.lead}>Run the bundled living-room scan, review every item, then save the total to your protection record.</Body>
+      <Body style={st.lead}>Review a room inventory, adjust what you own, and save the total with your insurance records.</Body>
       {!scanned ? (
         <Panel tone="ink">
           <Text style={st.room}>LIVING ROOM</Text>
-          <Text style={st.scanTitle}>4 common items are ready for this demo.</Text>
-          <Body style={st.inverse}>No camera permission is needed. This flow shows the review step a real room scan should have.</Body>
-          <View style={{ marginTop: 18 }}><Button label="Run demo room scan" onPress={() => setScanned(true)} /></View>
+          <Text style={st.scanTitle}>Start with four common household items.</Text>
+          <Body style={st.inverse}>You review every detected item before anything is saved. This preview does not need camera access.</Body>
+          <View style={{ marginTop: 18 }}><Button label="Preview room inventory" onPress={() => setScanned(true)} /></View>
         </Panel>
       ) : (
         <Panel>
@@ -41,7 +41,7 @@ export default function HomeInventoryScreen() {
           {saved ? <Text accessibilityLiveRegion="polite" style={st.saved}>Saved to your protection record.</Text> : null}
         </Panel>
       )}
-      <Body style={st.context}>Your tenant quote currently uses ${answers.contentsValue.toLocaleString('en-CA')} of contents coverage. This one-room demo records ${total.toLocaleString('en-CA')}; it does not change that coverage amount.</Body>
+      <Body style={st.context}>Your tenant estimate currently uses ${answers.contentsValue.toLocaleString('en-CA')} of contents coverage. This room inventory totals ${total.toLocaleString('en-CA')}; saving it does not change that coverage amount.</Body>
     </Screen>
   );
 }

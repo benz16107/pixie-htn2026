@@ -1,6 +1,6 @@
 # Intact submission images
 
-These files are ready for the Intact Devpost gallery. Use `01-connected-lifecycle.png` as the cover after recapturing it from the final system graph.
+Use the connected web diagram as the Devpost cover after its final capture. Files `14` through `16` contain the current consumer navigation, Drive Score, and live MCP interface. Files `03` through `13` document the earlier proof flows and should be replaced where their old Quote, Decide, Protect, or Recover tab labels are visible.
 
 | File | Use | Caption |
 | --- | --- | --- |
@@ -17,5 +17,8 @@ These files are ready for the Intact Devpost gallery. Use `01-connected-lifecycl
 | `11-home-tenant-overview.png` | Home introduction | The Home path starts with a working Toronto tenant estimate and a room inventory tool. |
 | `12-home-tenant-address.png` | Home intake | Address intake collects only the facts needed for the estimate. |
 | `13-home-tenant-coverage.png` | Home decision | Coverage choices state their price effect before the customer requests the estimate. |
+| `14-consumer-home.png` | Current phone introduction | Pixie gives consumers Home, Compare, Safety, and Help, with one switch for Home and Auto. |
+| `15-drive-score-native-surfaces.png` | Current Drive Score | A sample drive shows speed, distance, events, coaching score, and previews of the iOS widget and Live Activity. |
+| `16-live-mcp-agent.png` | MCP proof | A live tenant request shows the selected tool, exact arguments, calculated estimate, and source for every receipt line. |
 
-The Expo app captures from `03` through `13` are 390 by 844 pixels. They contain no browser chrome, Expo developer menus, or account screens. The responsive web proof is a full-page Pixel 7 capture.
+The current Expo captures `14` and `15` are 390 by 844 pixels. They contain no browser chrome, Expo developer menus, or account screens. The MCP proof is a 1440-pixel desktop capture.

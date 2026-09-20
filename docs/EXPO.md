@@ -1,61 +1,77 @@
 # Expo mobile experience
 
-The consumer app uses Expo Router for Quote, Decide, Protect, and Recover. Home and Auto share the lifecycle shell while keeping their data and actions separate.
+Pixie is a consumer insurance app for Home and Auto. The phone does not expose the presentation framework used on the website. Customers see four everyday destinations: Home, Compare, Safety, and Help. A Home and Auto switch changes the tools and policy context without moving the customer into a second app.
 
-## Working flows
+## What works
 
-Home starts with the existing Toronto tenant quote. A customer can enter an address, inspect the optional risk map, review five prefilled choices, request an itemized estimate, save or share a PDF, and open an advisor referral. The Home protection route adds a reviewed room-inventory demo. No homeowner tariff exists.
+Home includes the complete Toronto tenant estimate. A customer can enter an address or use location, inspect the neighbourhood data used by the model, confirm coverage, receive an itemized estimate, listen to the result, and save or share a PDF. The Safety tab includes a reviewed room inventory. Home pricing currently covers tenant insurance only.
 
-Auto compares three bundled synthetic vehicles against one driver scenario. The customer can change annual distance, parking, deductible, or claims, then keep the selected scenario. Protect records prevention work and opens Drive context. Recover asks what happened, requires a safety confirmation, records what the customer has, and creates a local PDF plan that they can save or share.
+Auto compares three illustrative vehicle listings with the same driver profile. Compare changes annual distance, parking, deductible, or claims without overwriting the saved profile. Safety contains prevention tasks and Drive Score. Help creates a private recovery checklist and a local PDF after an incident.
 
-## Native Expo features
+## Drive Score
 
-- Expo Router owns lifecycle tabs, edit loops, and supporting screens.
-- Expo Location handles explicit address and coarse drive-context location actions.
-- Expo UI supplies a SwiftUI button on iOS and a Jetpack Compose button on Android.
-- expo-widgets supplies an iOS home-screen widget and Live Activity for the active drive context.
-- Haptics, Speech, Print, Sharing, Web Browser, and Reanimated support the existing tenant quote.
+Drive Score uses `Location.watchPositionAsync` after the customer taps **Start a live drive**. The app reads foreground GPS speed and calculates speed from distance and time when the device does not supply it. It counts a speeding event when the observed speed crosses the selected road-context threshold. It counts a hard brake when speed falls by at least 12 km/h within five seconds from a starting speed of at least 25 km/h.
 
-The widget, Live Activity, SwiftUI, and Jetpack Compose components require a native development build. Expo Go and web render the same foreground flows with a clear development-build label. They do not prove the native extensions.
+The app rounds coordinates to three decimal places and sends at most 50 points to the stateless driving service. The service returns two scores:
 
-## Using the widget and Live Activity
+- Driving behavior, based on aggregate speeding and hard-brake events.
+- Road context, based on coarse examples such as a school approach, dense downtown streets, or a controlled-access corridor.
 
-The iOS extension is named `DriveContext`. Its Home Screen widget supports the small and medium families. Its Live Activity has Lock Screen, compact Dynamic Island, minimal Dynamic Island, and expanded Dynamic Island layouts.
+The displayed coaching score weights behavior at 75% and road context at 25%. It cannot change an insurance estimate or premium. The service stores no route and returns no coordinates. Tracking stops when the customer finishes the drive or leaves the screen.
 
-After installing the development build:
+The **Preview with a Toronto sample** action runs the complete screen while the phone is stationary. It is the reliable judging path when a real drive is impractical.
 
-1. Start Metro with `npx expo start --dev-client --lan`.
-2. Open the installed Pixie development app on the iPhone.
-3. Open **Auto**, then **Protect**, then **Open drive context**.
-4. Tap **Start drive context**. Pixie writes the current zone to the widget and starts the Live Activity.
-5. Select Parkdale streets, Gardiner corridor, Downtown core, or use the current coarse area. Pixie updates both native surfaces.
-6. Tap **Stop drive context** to end the Live Activity.
+## Widget and Live Activity
 
-To place the widget on the Home Screen, long-press the Home Screen, open the widget picker, search for Pixie, and add the small or medium Pixie drive context widget. The Live Activity appears on the Lock Screen and, on supported phones, the Dynamic Island after the drive context starts. Enable Live Activities for Pixie in iOS Settings if the system has disabled them.
+The Drive Score screen contains faithful previews of both native surfaces. A development build publishes the same score, current speed, area, and road context through `expo-widgets`.
 
-## Driving-context boundary
+The Home Screen widget supports small and medium sizes. Add it by long-pressing the iPhone Home Screen, opening the widget picker, searching for Pixie, and choosing a size.
 
-Drive context sends route points rounded to three decimal places and aggregate driving events to the API. The API returns a behavior score, a synthetic route-context score, and a documented coaching composite. It stores no coordinates and returns none. The result cannot change a quote or premium.
+The Live Activity starts when a drive begins. It appears on the Lock Screen and, on supported iPhones, the Dynamic Island. It updates with the current score, speed, and area, then ends when the customer finishes the drive. If it does not appear, enable Live Activities for Pixie in iOS Settings.
 
-The location action is foreground-only and requires a tap. The app has no background-location permission. If location or the API is unavailable, a bundled synthetic Toronto route keeps the demo working and labels its source.
+Expo Go cannot load the widget extension, Live Activity, SwiftUI, or Jetpack Compose components. These features require the Pixie development build.
 
-## Running it
+## Expo services used
 
-Set `EXPO_PUBLIC_API_URL` to a reachable API URL for a physical phone. Run Expo Go for the JavaScript and React Native flow. Build a native development client to demonstrate Expo UI and expo-widgets.
+| Expo service | Product use |
+| --- | --- |
+| Expo Router | Home, Compare, Safety, Help tabs plus focused estimate, inventory, driving, and recovery screens |
+| Expo Location | Address lookup and foreground Drive Score samples |
+| Expo UI | Native SwiftUI and Jetpack Compose drive actions |
+| `expo-widgets` | iOS Home Screen widget and Live Activity |
+| Expo Haptics | Feedback for quote choices and results |
+| Expo Speech | Spoken tenant-estimate summary |
+| Expo Print and Sharing | Itemized estimate and recovery-plan PDFs |
+| Expo Web Browser | Explicit advisor handoff |
+| Reanimated | Press feedback and reduced-motion handling |
 
-The Expo CLI is signed in as `benz16107`, and the app is linked to the EAS project `@benz16107/pixie`. The Homebrew Node shared-library error was repaired on 2026-09-20.
+## Run it
+
+The Expo CLI is signed in as `benz16107`, and the app is linked to `@benz16107/pixie`. Set `EXPO_PUBLIC_API_URL` to an API URL the phone can reach.
+
+Use Expo Go for the React Native customer flow:
+
+```bash
+cd app
+npx expo start --lan
+```
+
+Use a development build for the widget, Live Activity, and Expo UI components:
 
 ```bash
 cd app
 npx eas-cli device:create
 npx eas-cli build --platform ios --profile development
-```
-
-Install the resulting internal build on the registered iPhone, then start its Metro session:
-
-```bash
-cd app
 npx expo start --dev-client --lan
 ```
 
-`expo-dev-client` and the `development` and `development-simulator` profiles already exist in the project. EAS still requires Apple Developer authentication and device registration for the physical iPhone build. The main app and `ExpoWidgetsTarget` need separate provisioning profiles, but they can share one distribution certificate.
+EAS still needs private Apple Developer authentication and device registration. The `Pixie` app and `ExpoWidgetsTarget` extension need separate provisioning profiles. They can share one distribution certificate.
+
+## Demo path
+
+1. Open Auto from Home.
+2. Open Safety, then Drive Score.
+3. Tap **Preview with a Toronto sample** while stationary, or **Start a live drive** on a moving test device.
+4. Point out current speed, distance, events, separate behavior and road-context scores, and the privacy boundary.
+5. Show the widget and Live Activity previews. Replace those previews with captures from the development build once Apple signing is available.
+6. Open Compare to change one assumption, then Help to build a recovery plan.

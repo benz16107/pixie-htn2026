@@ -142,7 +142,7 @@ export default function HomeQuoteScreen() {
         {busy ? <ActivityIndicator color={C.ink} accessibilityLabel="Working" /> : null}
       </View>
 
-      <Kicker style={{ marginTop: 28, marginBottom: 10 }}>Demo addresses</Kicker>
+      <Kicker style={{ marginTop: 28, marginBottom: 10 }}>Try a Toronto address</Kicker>
       {EXAMPLES.map((ex, i) => (
         <Choice key={ex.address} role="button" title={ex.address} detail={ex.hint} selected={picked?.address === ex.address} onPress={() => pickExample(i)} />
       ))}
