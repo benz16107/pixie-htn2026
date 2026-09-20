@@ -1,29 +1,53 @@
 import type { DecisionView, Interval, Provenance } from "@/contract";
 
-export const THRESHOLDS = [45, 70] as const;
+/** The guideline as filed. Since /guideline can move these, anything that can read the live
+ *  thresholds passes them in; this is only the fallback for a caller that cannot. */
+export const THRESHOLDS = { decline: 45, accept: 70 };
+export type Thresholds = { decline: number; accept: number };
+
+/** Which way a whole interval falls, by the same rule the score readout and the bar both use. */
+export function bandTone(score: Interval | null, t: Thresholds = THRESHOLDS): string {
+  if (!score) return "text-faint";
+  const straddles = score.lo < t.decline !== score.hi < t.decline || score.lo < t.accept !== score.hi < t.accept;
+  if (straddles) return "text-ochre";
+  return score.hi < t.decline ? "text-rust" : score.lo >= t.accept ? "text-moss" : "text-ochre";
+}
+
+/** "decline <45 · refer 45–70 · accept ≥70", read off whichever guideline is in force. */
+export function BandScale({ t = THRESHOLDS, className = "" }: { t?: Thresholds; className?: string }) {
+  return (
+    <p className={`flex justify-between text-[9px] uppercase tracking-[0.08em] text-faint ${className}`}>
+      <span>decline &lt;{t.decline}</span>
+      <span>
+        refer {t.decline}–{t.accept}
+      </span>
+      <span>accept ≥{t.accept}</span>
+    </p>
+  );
+}
 
 /**
  * The score as a band ruler. The three guideline zones are painted faintly behind it, so a
  * glance says not only where the interval sits but how much of it is still on the wrong side.
+ * The zones move when the guideline moves: /guideline can edit these two numbers.
  */
-export function IntervalBar({ score, compact = false }: { score: Interval | null; compact?: boolean }) {
+export function IntervalBar({ score, compact = false, t = THRESHOLDS }: { score: Interval | null; compact?: boolean; t?: Thresholds }) {
   if (!score) return <span className="num text-faint">—</span>;
   const h = compact ? 14 : 22;
   const barH = compact ? 8 : 12;
-  const straddles = score.lo < 45 !== score.hi < 45 || score.lo < 70 !== score.hi < 70;
-  const tone = straddles ? "bg-ochre" : score.hi < 45 ? "bg-rust" : score.lo >= 70 ? "bg-moss" : "bg-ochre";
+  const tone = bandTone(score, t).replace("text-", "bg-");
   return (
     <div
       role="img"
-      aria-label={`Score ${score.lo} to ${score.hi}; decline under 45, refer 45 to 70, accept over 70`}
+      aria-label={`Score ${score.lo} to ${score.hi}; decline under ${t.decline}, refer ${t.decline} to ${t.accept}, accept ${t.accept} or over`}
       className="relative w-full border border-rule bg-paper"
       style={{ height: h }}
     >
-      <span aria-hidden className="absolute inset-y-0 left-0 bg-rust/10" style={{ width: "45%" }} />
-      <span aria-hidden className="absolute inset-y-0 bg-ochre/10" style={{ left: "45%", width: "25%" }} />
-      <span aria-hidden className="absolute inset-y-0 right-0 bg-moss/10" style={{ width: "30%" }} />
-      {THRESHOLDS.map((t) => (
-        <span key={t} aria-hidden className="absolute inset-y-0 w-px bg-edge" style={{ left: `${t}%` }} />
+      <span aria-hidden className="absolute inset-y-0 left-0 bg-rust/10" style={{ width: `${t.decline}%` }} />
+      <span aria-hidden className="absolute inset-y-0 bg-ochre/10" style={{ left: `${t.decline}%`, width: `${Math.max(t.accept - t.decline, 0)}%` }} />
+      <span aria-hidden className="absolute inset-y-0 right-0 bg-moss/10" style={{ width: `${Math.max(100 - t.accept, 0)}%` }} />
+      {[t.decline, t.accept].map((at) => (
+        <span key={at} aria-hidden className="absolute inset-y-0 w-px bg-edge" style={{ left: `${at}%` }} />
       ))}
       <div
         className={`iv absolute origin-left ${tone}`}

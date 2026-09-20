@@ -30,6 +30,22 @@ three cells showing which guideline bands that fact still allows. The `· the gu
 as …` suffix appears only when the guideline's reading differs from the displayed value, which is
 why TIV is silent and loss history says `0.0` against a displayed `$0`.
 
+**`/guideline` is the appetite as a terminal.** The document on the left in a monospaced table
+(thresholds with a three-zone ruler, then one row per factor and one row per band with every number
+editable in place), the five scenarios and the diff on the right. `1`–`5` load a scenario, `a`
+applies, `d` discards, `r` restores the filed guideline, and each key is printed on its control. The
+diff lands in the same place every time, so the eye already knows where to look when the book
+re-ranks: `1 case changed decision · 1 decline became open · $26.3M into the queue · 158 re-scored in
+57.6 ms`, then the named cases, then the queue-order moves. A refused edit prints the API's own
+sentence in ember and applies nothing.
+
+**The bounded override** sits on the case page under the readout line. The engine's interval keeps
+its label and its amber; the human's sits beside it in plain `ink`, which is this feature's colour
+everywhere it appears: the adjustment strip, the `UW+4` flag in the blotter, the `UNDERWRITER` field
+in the preview, and the final ink bar on the waterfall behind a dashed divider tagged `HUMAN`. The
+engine owns amber, jade and ember; the human owns ink, so on any screen you can tell whose number
+you are looking at without reading a word. `o` focuses the reason field.
+
 **`/live` keeps its layout** — it was already a console — and gains the night palette, amber for
 every active state, a keycap on every demo beat, and a real status bar carrying the key legend
 and the settled count, replacing a floating note that used to sit on top of the agent lanes.
@@ -118,13 +134,27 @@ carries a label or a `title`. Colour never carries meaning alone.
 1. **Promote the nine sizes to `@theme` tokens** (`--text-data`, `--text-prose`, …) and replace
    the remaining `text-[11px]` arbitrary values. The scale is consolidated and documented but
    still written as raw values in about 200 places.
-2. **Make the right rail on the case page a sticky two-section split** so the precedent panel and
+2. **Persist a guideline edit past a restart.** It lives in the API process only, which is right for
+   a demo and wrong for a carrier; `docs/GUIDELINE.md` lists that plus versioning, approval and
+   permissions as the four things a real Control Tower needs and this does not have.
+3. **Make the right rail on the case page a sticky two-section split** so the precedent panel and
    its `[elastic]` badge are visible without scrolling past the Challenger's third risk.
-3. **A command palette on `:`** — the `g`-leader already exists and the key bus already routes it,
+4. **A command palette on `:`** — the `g`-leader already exists and the key bus already routes it,
    so `:138` to jump to a case and `:open` to filter is a small addition and the most trading-desk
    feature still missing.
-4. **Density toggle.** 25px rows suit 900px; on a real 1440p desk the same grid could show 40 rows
+5. **Density toggle.** 25px rows suit 900px; on a real 1440p desk the same grid could show 40 rows
    at 22px. One token, one key.
+
+## One bug the guideline editor exposed
+
+`IntervalBar` hardcoded the two thresholds at 45 and 70, and so did the `decline <45 · refer 45–70 ·
+accept ≥70` scale under it. That was fine while the guideline was a file read once at startup. It is
+not fine now that `/guideline` can move those numbers: move the accept line to 60 and every band
+ruler on the desk quietly disagrees with the waterfall beside it. `bits.tsx` now takes the
+thresholds as a prop, `/queue` reads them from `GET /guideline` alongside the rows it already
+fetches, and the case page takes them from the guideline that scored the case
+(`explain.thresholds`). Verified by moving the thresholds to 25/60 and reading the scale back off
+the blotter and the case page.
 
 ## Files
 
@@ -136,6 +166,11 @@ Screens: `web/src/app/queue/page.tsx`, `web/src/app/cases/[id]/page.tsx`,
 Screenshots at 1512x900 in `web/screenshots/`: `d1-queue.png`, `d1-case.png`,
 `d1-case-decision-space.png`, `d1-case-whatif.png`, `d1-case-tenant.png`, `d1-live.png`,
 `d1-keys.png`, `d1-map.png`, `d1-backtest.png`, `d1-ask.png`.
+
+The guideline and the override: `d1-guideline-document.png`, `d1-guideline-pending.png`,
+`d1-guideline-diff.png`, `d1-guideline-refused.png`, `d1-guideline-scenario3.png`,
+`d1-guideline-rescored-queue.png`, `d1-override.png`, `d1-override-queue-row.png`,
+`d1-override-typed.png`, `d1-override-empty.png`.
 
 `d1-case-whatif.png` is the one to look at second: it was taken by pressing `f` then the right
 arrow 45 times, which walks the premium past $50,000 and flips the case to `83 ACCEPT` against

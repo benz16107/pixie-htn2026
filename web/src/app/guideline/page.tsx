@@ -125,7 +125,7 @@ function Band({ fact, band, pred, onPred }: { fact: string; band: string; pred: 
   }
   return (
     <>
-      <span className={`w-[92px] shrink-0 border px-1 text-center text-[9px] uppercase leading-[15px] tracking-[0.06em] ${BAND_TONE[band]}`}>
+      <span className={`w-[104px] shrink-0 whitespace-nowrap border px-1 text-center text-[9px] uppercase leading-[15px] tracking-[0.05em] ${BAND_TONE[band]}`}>
         {band.replace("_", " ")}
       </span>
       <span className="min-w-0 text-[11px]">{body}</span>
@@ -400,9 +400,8 @@ export default function GuidelinePage() {
             <span className={`num text-[17px] font-medium leading-[19px] ${t.label === "pending" && pending.n ? "text-ochre" : "text-ink"}`}>{t.value}</span>
           </div>
         ))}
-        <p className="cond hidden max-w-[52ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
-          This document is the desk. Change a band edge or a threshold and apply it: all 158 submissions are re-scored by
-          the same deterministic engine. Nothing here is a model output.
+        <p className="cond hidden max-w-[40ch] flex-1 items-center px-4 text-[12px] leading-snug text-dim xl:flex">
+          This document is the desk. Apply an edit and all 158 submissions re-score.
         </p>
         <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-rule px-3">
           <span

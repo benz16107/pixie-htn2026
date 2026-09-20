@@ -15,7 +15,7 @@ import { Briefing } from "@/components/case/Briefing";
 import { CaseNav } from "@/components/case/CaseNav";
 import { Deck } from "@/components/case/Deck";
 import { Override } from "@/components/case/Override";
-import { DecisionChip, IntervalBar, IssueTag, ProvenanceBadge } from "@/components/bits";
+import { BandScale, bandTone, DecisionChip, IntervalBar, IssueTag, ProvenanceBadge, THRESHOLDS } from "@/components/bits";
 import { PercentileLine } from "@/components/BookInsights";
 import { StatusBar } from "@/components/desk/Kbd";
 
@@ -31,13 +31,6 @@ function reads(display: string, asRead?: string) {
   if (!asRead) return "";
   const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9.]/g, "");
   return norm(asRead) === norm(display) || norm(display).includes(norm(asRead)) ? "" : ` · the guideline reads this as ${asRead}`;
-}
-
-/** Same rule the band ruler uses: amber while the interval still straddles a threshold. */
-function scoreTone(s: { lo: number; hi: number } | null) {
-  if (!s) return "text-faint";
-  if (s.lo < 45 !== s.hi < 45 || s.lo < 70 !== s.hi < 70) return "text-ochre";
-  return s.hi < 45 ? "text-rust" : s.lo >= 70 ? "text-moss" : "text-ochre";
 }
 
 function Rail({ title, note, children }: { title: string; note?: React.ReactNode; children: React.ReactNode }) {
@@ -76,6 +69,8 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const startAt = dollars.length ? Math.round(dollars.reduce((a, b) => a + b, 0) / dollars.length) : Math.round(((premium?.low.value ?? 0) + (premium?.high.value ?? 0)) / 2);
   const verdict = view.deskVerdict?.replaceAll("_", " ");
   const tenant = isTenantExplain(explain);
+  // /guideline can move these two numbers, so the ruler reads the guideline this case was scored by.
+  const bands = explain?.thresholds ?? THRESHOLDS;
   const banded = view.facts.filter((f) => view.factors.some((x) => x.fact === f.id)).length;
   const counts = {
     known: view.facts.filter((f) => f.provenance === "known").length,
@@ -114,7 +109,7 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
           <div className="flex items-start gap-5">
             <div className="shrink-0">
               <p className="kicker">{tenant ? "Annual price" : view.override ? "Engine interval" : "Score interval"}</p>
-              <p className={`num text-[32px] font-medium leading-[36px] ${scoreTone(view.score)}`}>
+              <p className={`num text-[32px] font-medium leading-[36px] ${bandTone(view.score, bands)}`}>
                 {tenant ? `$${explain.annual.toFixed(2)}` : view.score ? `${view.score.lo}–${view.score.hi}` : "—"}
               </p>
             </div>
@@ -128,12 +123,8 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
             )}
             {!tenant && (
               <div className="min-w-0 flex-1 pt-1">
-                <IntervalBar score={view.score} />
-                <p className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-faint">
-                  <span>decline &lt;45</span>
-                  <span>refer 45–70</span>
-                  <span>accept ≥70</span>
-                </p>
+                <IntervalBar score={view.score} t={bands} />
+                <BandScale t={bands} className="mt-1" />
               </div>
             )}
             {tenant && <p className="cond min-w-0 flex-1 pt-2 text-[12px] leading-snug text-dim">{explain.label}</p>}

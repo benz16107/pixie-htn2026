@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { DeclinesInsight } from "@/lib/api";
 import type { Row } from "@/lib/live";
 import { DeclinesPanel } from "../BookInsights";
-import { DecisionChip, IntervalBar, IssueTag, money } from "../bits";
+import { BandScale, DecisionChip, IntervalBar, IssueTag, money, THRESHOLDS, type Thresholds } from "../bits";
 import { QueueTable, whyLine, type Ranked } from "../QueueTable";
 import { StatusBar } from "./Kbd";
 import { useKeys } from "./keys";
@@ -23,7 +23,7 @@ const TILES = (rows: (Row & Extras)[]) => {
   ];
 };
 
-export function Blotter({ rows, view, declines }: { rows: (Row & Extras)[]; view: "open" | "all"; declines: DeclinesInsight | null }) {
+export function Blotter({ rows, view, declines, t = THRESHOLDS }: { rows: (Row & Extras)[]; view: "open" | "all"; declines: DeclinesInsight | null; t?: Thresholds }) {
   const router = useRouter();
   const [here, setHere] = useState<Ranked | null>(null);
   const [filter, setFilter] = useState("");
@@ -77,10 +77,10 @@ export function Blotter({ rows, view, declines }: { rows: (Row & Extras)[]; view
 
       <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_356px]">
         <div className="min-h-0 border-r border-edge">
-          <QueueTable rows={rows} view={view} onCursor={onCursor} filter={filter} setFilter={setFilter} />
+          <QueueTable rows={rows} view={view} onCursor={onCursor} filter={filter} setFilter={setFilter} t={t} />
         </div>
         <aside className="flex min-h-0 flex-col overflow-hidden" aria-label="The row under the cursor">
-          <Preview r={here} />
+          <Preview r={here} t={t} />
           {declines && (
             <div className="min-h-0 shrink-0 overflow-auto border-t border-edge">
               <DeclinesPanel d={declines} />
@@ -118,7 +118,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /** The cursor row, opened out. Nothing here is fetched: it is the blotter row's own fields. */
-function Preview({ r }: { r: Ranked | null }) {
+function Preview({ r, t }: { r: Ranked | null; t: Thresholds }) {
   if (!r)
     return (
       <div className="flex flex-1 items-center justify-center px-6 text-center text-[11px] text-faint">
@@ -146,19 +146,15 @@ function Preview({ r }: { r: Ranked | null }) {
       {r.score && r.decision.kind !== "routed" ? (
         <div className="mt-3">
           <p className="flex items-baseline justify-between">
-            <span className="kicker">Score interval</span>
+            <span className="kicker">{r.override ? "Engine interval" : "Score interval"}</span>
             <span className="num text-[20px] font-medium leading-none text-ink">
               {r.score.lo}–{r.score.hi}
             </span>
           </p>
           <div className="mt-1.5">
-            <IntervalBar score={r.score} />
+            <IntervalBar score={r.score} t={t} />
           </div>
-          <p className="mt-1 flex justify-between text-[9px] uppercase tracking-[0.08em] text-faint">
-            <span>decline &lt;45</span>
-            <span>refer 45–70</span>
-            <span>accept ≥70</span>
-          </p>
+          <BandScale t={t} className="mt-1" />
           {straddle !== null && <p className="mt-1 text-[11px] text-ochre">The interval straddles {straddle}, so one fact still settles it.</p>}
         </div>
       ) : (
@@ -189,6 +185,20 @@ function Preview({ r }: { r: Ranked | null }) {
             <span className="text-dim">agreed with the rules</span>
           )}
         </Field>
+        {r.override && (
+          <Field label="underwriter">
+            <span className="num text-ink">
+              {r.override.points > 0 ? "+" : "−"}
+              {Math.abs(r.override.points)}
+            </span>{" "}
+            <span className="text-ink">
+              → {r.override.score.lo}–{r.override.score.hi}, {r.override.decision.kind}
+            </span>
+            <span className="block text-faint" title={r.override.reason}>
+              &ldquo;{r.override.reason}&rdquo;
+            </span>
+          </Field>
+        )}
         <Field label="challenger">
           {r.challengeRisks ? (
             <span className="text-rust">{r.challengeRisks} risks raised</span>

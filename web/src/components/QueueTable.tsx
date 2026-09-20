@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DecisionChip, IntervalBar, IssueTag, money } from "./bits";
+import { DecisionChip, IntervalBar, IssueTag, money, THRESHOLDS, type Thresholds } from "./bits";
 import { useKeys } from "./desk/keys";
 import type { Row } from "@/lib/live";
 
@@ -52,12 +52,14 @@ export function QueueTable({
   onCursor,
   filter,
   setFilter,
+  t = THRESHOLDS,
 }: {
   rows: (Row & Extras)[];
   view: "open" | "all";
   onCursor: (r: Ranked | null) => void;
   filter: string;
   setFilter: (s: string) => void;
+  t?: Thresholds;
 }) {
   const router = useRouter();
   const ranked = useMemo<Ranked[]>(
@@ -163,7 +165,7 @@ export function QueueTable({
           </thead>
           <tbody>
             {sorted.map((r, i) => (
-              <BlotterRow key={r.caseId} r={r} on={i === at} onPick={() => setCursor(i)} onOpen={() => router.push(`/cases/${r.caseId}`)} />
+              <BlotterRow key={r.caseId} r={r} on={i === at} t={t} onPick={() => setCursor(i)} onOpen={() => router.push(`/cases/${r.caseId}`)} />
             ))}
             {!!sorted.length && (
               <tr>
@@ -202,7 +204,7 @@ export function whyLine(r: Ranked | (Row & Extras)): string {
   return "";
 }
 
-function BlotterRow({ r, on, onPick, onOpen }: { r: Ranked; on: boolean; onPick: () => void; onOpen: () => void }) {
+function BlotterRow({ r, on, t, onPick, onOpen }: { r: Ranked; on: boolean; t: Thresholds; onPick: () => void; onOpen: () => void }) {
   const has = scored(r);
   const moved = !!r.deskVerdict && !same(r.deskVerdict, r.decision.kind);
   // A routed row's reason is the same sentence 16 times over. Its destination is the news.
@@ -243,7 +245,7 @@ function BlotterRow({ r, on, onPick, onOpen }: { r: Ranked; on: boolean; onPick:
         {has ? (
           <span className="flex items-center gap-2">
             <span className="flex-1">
-              <IntervalBar score={r.score} compact />
+              <IntervalBar score={r.score} compact t={t} />
             </span>
             <span className="num w-[40px] shrink-0 text-right text-[11px]">
               {r.score!.lo}–{r.score!.hi}
@@ -264,18 +266,18 @@ function BlotterRow({ r, on, onPick, onOpen }: { r: Ranked; on: boolean; onPick:
             desk {VERDICT_SHORT[r.deskVerdict!] ?? r.deskVerdict!.replaceAll("_", " ")}
           </span>
         )}
-        {r.override && (
-          <span
-            title={`${r.override.by} moved the interval by ${r.override.points} points: ${r.override.reason}`}
-            className="ml-1.5 whitespace-nowrap rounded-sm border border-ink px-1 text-[9px] leading-[13px] text-ink"
-          >
-            UW {r.override.points > 0 ? "+" : "−"}
-            {Math.abs(r.override.points)}
-          </span>
-        )}
       </td>
       <td className="overflow-hidden px-2">
         <span className="flex gap-1 whitespace-nowrap">
+          {r.override && (
+            <span
+              title={`${r.override.by} moved the engine's interval by ${r.override.points} points: ${r.override.reason}`}
+              className="rounded-sm border border-ink px-1 text-[9px] leading-[13px] text-ink"
+            >
+              UW{r.override.points > 0 ? "+" : "−"}
+              {Math.abs(r.override.points)}
+            </span>
+          )}
           {!!r.challengeRisks && (
             <span title={`${r.challengeRisks} risks raised by the Challenger`} className="rounded-sm border border-rust/60 px-1 text-[9px] leading-[13px] text-rust">
               {r.challengeRisks}R
