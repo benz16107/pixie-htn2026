@@ -57,3 +57,15 @@ body { font: 13px/1.45 var(--font-sans); font-variant-numeric: tabular-nums; }
   .lane-card { transition: opacity 200ms ease; }
   @starting-style { .lane-card { transform: none; } }
 }
+
+/* D3 surface: an open decision hasn't settled, so its score bar breathes a couple of pixels
+   instead of sitting still. Purely decorative confirmation of what the OPEN chip already says in
+   text, so reduced motion drops the wobble and keeps the chip. */
+@keyframes unsettle {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+.unsettled { animation: unsettle 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .unsettled { animation: none; }
+}

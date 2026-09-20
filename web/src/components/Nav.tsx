@@ -9,9 +9,13 @@ const LINKS = [
   { href: "/backtest", label: "Backtest" },
 ];
 
+const SURFACE = ["/queue", "/cases", "/live", "/map"];
+
 export function Nav() {
   const path = usePathname();
-  if (path.startsWith("/live")) return null; // the live desk is its own full-screen surface
+  // The continuous surface (queue, a case, the map, the live desk) carries its own HUD in
+  // Shell.tsx; the classic top bar is for the pages that still swap.
+  if (SURFACE.some((p) => path.startsWith(p))) return null;
   return (
     <header className="contours flex h-12 items-center gap-10 border-b border-rule bg-land px-8">
       <Link href="/queue" className="text-[12px] font-semibold tracking-[0.16em]">
