@@ -102,11 +102,11 @@ export const intactSlides: IntactSlide[] = [
     "demo": "/driving-context",
     "demoLabel": "Open Drive score",
     "phone": true,
-    "narration": "The experience continues after the estimate. During an opt-in drive, Pixie measures speed changes and hard braking. It evaluates road context separately, so a demanding route is not confused with driving behaviour. The score is coaching only. The app also includes widget and Live Activity previews.",
+    "narration": "The experience continues after the estimate. During an opt-in drive, Pixie measures speed changes and hard braking. It evaluates road context separately, so a demanding route is not confused with driving behaviour. The score is coaching only. The iPhone widget and Live Activity keep the latest drive score visible.",
     "shots": [
       "Open Auto \u2192 Insights \u2192 Drive score and run the Toronto sample.",
       "Show Driving and Road context separately.",
-      "If the signed iPhone build works, replace the preview shot with a real Home Screen widget and Lock Screen recording."
+      "Reload the installed Pixie development app, run the Toronto sample, and leave it running while capturing the real Home Screen widget and Lock Screen Live Activity. Use labelled previews if native verification is incomplete."
     ],
     "limit": "Current GPS tracking is foreground-only. Widgets require a signed native build; do not present the in-app preview as native proof."
   },
@@ -145,10 +145,10 @@ export const intactSlides: IntactSlide[] = [
     "caption": "Web app \u00b7 Preset request through the MCP service",
     "demo": "/intact/agent",
     "demoLabel": "Open the MCP demo",
-    "narration": "Customers can also reach these tools through an AI agent. This page makes one MCP request visible: the chosen tool, its inputs, and the sourced result. Deterministic code calculates the price. An agent can choose the tool and explain the answer without inventing the premium.",
+    "narration": "Insurance questions can start in an AI conversation. With Pixie connected through MCP, the agent can compare cars or request a tenant estimate. Here is the actual tool request and its sourced answer. Pixie calculates the price; the agent explains it.",
     "shots": [
-      "Show the slide, then open the MCP demo.",
-      "Use Tenant estimate. Change the contents amount and click Run live agent request.",
+      "Show the customer question on the slide, then open the MCP tool inspector. An external-agent take can instead show the real prompt and tool call.",
+      "Use Tenant estimate. Set contents to $50,000 and click Run live agent request.",
       "Hold the shot on the result and its source lines."
     ],
     "limit": "The web demonstration selects a preset tool; it is not an autonomous planning agent. No full customer profile is exposed."

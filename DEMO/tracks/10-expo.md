@@ -67,3 +67,7 @@ The mobile app now includes Incident exchange for both drivers and bystanders. T
 ## Witness incentive to demonstrate
 
 Open Community on either Home or Auto, then **I witnessed an incident**. Each request states its offered demo credit. A submitted file waits for review before it earns anything. Accept it in the insurer workspace, then show the witness Home screen: the shared credit is split between Home and Auto. In Compare, move all of it to Auto and show the simulated next-payment reduction. The credit is one-time, not a recurring premium discount; no real insurer has approved this program. See [the connected walkthrough](../10-ROAD-HELP.md).
+
+## Native widget rehearsal
+
+If the widget displays a red "No layout found" block, reload the installed Pixie development project from port 8081. The fix registers layouts on app startup and corrects the iOS adapter resolution. Run the Toronto sample in Drive score, leave it running, and record the Home Screen widget and Lock Screen Live Activity. The screen now reports native errors and offers a retry. Follow the [device walkthrough](../../docs/EXPO.md#recover-a-blank-red-widget). On September 20, the user completed this check and confirmed that both native views display. Capture those views from the iPhone for the submission.

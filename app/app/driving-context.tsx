@@ -3,9 +3,9 @@ import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DrivingNativeAction } from '@/components/DrivingNativeAction';
-import { ConsumerHeader, MiniStat, Panel } from '@/components/consumer';
+import { MiniStat, Panel } from '@/components/consumer';
 import { Body, Button, Kicker, Screen, Title } from '@/components/ui';
-import { endDriveSurfaces, syncDriveSurfaces } from '@/lib/driving-surfaces';
+import { endDriveSurfaces, initializeDriveSurfaces, syncDriveSurfaces, type DriveSurfaceResult } from '@/lib/driving-surfaces';
 import { assessDrive, type DriveAssessmentResult, type DriveSessionSummary } from '@/lib/driving';
 import { useQuote } from '@/lib/store';
 import { C, F } from '@/lib/theme';
@@ -42,8 +42,12 @@ function scoreLabel(score: number) {
 
 export default function DrivingContextScreen() {
   const { setDriveSummary } = useQuote();
+  const [surfaceStatus, setSurfaceStatus] = useState<DriveSurfaceResult | null>(null);
+  const drivingRef = useRef(false);
+  const generationRef = useRef(0);
   const [zone, setZone] = useState<Zone>(ZONES[0]);
   const [active, setActive] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [sampleMode, setSampleMode] = useState(false);
   const [permission, setPermission] = useState<'idle' | 'working' | 'denied'>('idle');
   const [assessment, setAssessment] = useState<DriveAssessmentResult | null>(null);
@@ -60,7 +64,14 @@ export default function DrivingContextScreen() {
   const nativeIos = Platform.OS === 'ios' && nativeBuild;
 
   useEffect(() => { zoneRef.current = zone; }, [zone]);
+  useEffect(() => {
+    let mounted = true;
+    void initializeDriveSurfaces().then((result) => { if (mounted) setSurfaceStatus(result); });
+    return () => { mounted = false; };
+  }, []);
   useEffect(() => () => {
+    drivingRef.current = false;
+    generationRef.current += 1;
     subscriptionRef.current?.remove();
     void endDriveSurfaces();
   }, []);
@@ -78,21 +89,23 @@ export default function DrivingContextScreen() {
       source: next.source,
     };
     setDriveSummary(summary);
-    syncDriveSurfaces({ zone: area, context: next.assessment.routeFactors[0]?.label ?? zoneRef.current.context, score: summary.score, speedKmh: summary.currentSpeedKmh, active: true });
+    void syncDriveSurfaces({ zone: area, context: next.assessment.routeFactors[0]?.label ?? zoneRef.current.context, score: summary.score, speedKmh: summary.currentSpeedKmh, active: drivingRef.current }).then(setSurfaceStatus);
   };
 
   const assessCurrent = async (nextMetrics = metricsRef.current, area?: string) => {
+    const generation = generationRef.current;
     const next = await assessDrive({
       points: pointsRef.current,
       distanceKm: nextMetrics.distanceKm,
       speedingEvents: nextMetrics.speedingEvents,
       hardBrakeEvents: nextMetrics.hardBrakeEvents,
     });
-    publish(next, nextMetrics, area);
+    if (generation === generationRef.current) publish(next, nextMetrics, area);
     return next;
   };
 
   const handleLocation = (location: Location.LocationObject) => {
+    if (!drivingRef.current) return;
     const rawPoint = { lat: location.coords.latitude, lng: location.coords.longitude };
     const point = { lat: Number(rawPoint.lat.toFixed(3)), lng: Number(rawPoint.lng.toFixed(3)) };
     const previous = lastRef.current;
@@ -123,6 +136,7 @@ export default function DrivingContextScreen() {
   };
 
   const startLiveDrive = async () => {
+    if (permission === 'working') return;
     setPermission('working');
     const foreground = await Location.requestForegroundPermissionsAsync();
     if (foreground.status !== 'granted') {
@@ -138,14 +152,19 @@ export default function DrivingContextScreen() {
     setMetrics(EMPTY_METRICS);
     setAssessment(null);
     setSampleMode(false);
+    generationRef.current += 1;
+    drivingRef.current = true;
     setActive(true);
     setPermission('idle');
-    syncDriveSurfaces({ zone: 'Starting drive', context: 'Waiting for the first GPS sample', score: 100, speedKmh: 0, active: true });
-    subscriptionRef.current = await Location.watchPositionAsync(
+    void syncDriveSurfaces({ zone: 'Starting drive', context: 'Waiting for the first GPS sample', score: null, speedKmh: 0, active: true }).then(setSurfaceStatus);
+    const generation = generationRef.current;
+    const subscription = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 2000, distanceInterval: 4 },
       handleLocation,
       () => setPermission('denied'),
     );
+    if (!drivingRef.current || generation !== generationRef.current) subscription.remove();
+    else subscriptionRef.current = subscription;
   };
 
   const startSampleDrive = async () => {
@@ -156,21 +175,28 @@ export default function DrivingContextScreen() {
     pointsRef.current = [{ lat: 43.639, lng: -79.443 }, { lat: 43.642, lng: -79.408 }, { lat: 43.650, lng: -79.381 }];
     setMetrics(nextMetrics);
     setSampleMode(true);
+    generationRef.current += 1;
+    drivingRef.current = true;
     setActive(true);
     await assessCurrent(nextMetrics, 'Toronto sample trip');
   };
 
   const stopDrive = async () => {
+    if (finishing) return;
+    setFinishing(true);
+    drivingRef.current = false;
+    generationRef.current += 1;
     subscriptionRef.current?.remove();
     subscriptionRef.current = null;
     if (!sampleMode && pointsRef.current.length) await assessCurrent(metricsRef.current, 'Most recent drive');
-    await endDriveSurfaces();
+    setSurfaceStatus(await endDriveSurfaces());
     setActive(false);
+    setFinishing(false);
   };
 
   const selectZone = (next: Zone) => {
     setZone(next);
-    if (active && assessment) syncDriveSurfaces({ zone: next.name, context: next.context, score: assessment.assessment.score, speedKmh: metrics.currentSpeedKmh, active: true });
+    if (active && assessment) void syncDriveSurfaces({ zone: next.name, context: next.context, score: assessment.assessment.score, speedKmh: metrics.currentSpeedKmh, active: true }).then(setSurfaceStatus);
   };
 
   const score = assessment?.assessment.score ?? 100;
@@ -197,7 +223,7 @@ export default function DrivingContextScreen() {
       </Panel>
 
       <View style={st.actionGap}>
-        {active ? <DrivingNativeAction label="Finish this drive" onPress={stopDrive} /> : Platform.OS === 'web' ? <Button label="Preview a sample drive" onPress={startSampleDrive} /> : <DrivingNativeAction label={permission === 'working' ? 'Starting GPS…' : 'Start a live drive'} onPress={startLiveDrive} />}
+        {active ? <DrivingNativeAction disabled={finishing} label={finishing ? "Finishing drive…" : "Finish this drive"} onPress={stopDrive} /> : Platform.OS === 'web' ? <Button label="Preview a sample drive" onPress={startSampleDrive} /> : <DrivingNativeAction disabled={permission === 'working'} label={permission === 'working' ? 'Starting GPS…' : 'Start a live drive'} onPress={startLiveDrive} />}
       </View>
       {!active && Platform.OS !== 'web' ? <Button kind="link" label="Preview with a Toronto sample" onPress={startSampleDrive} /> : null}
       {permission === 'denied' ? <Text accessibilityLiveRegion="polite" style={st.denied}>Location is unavailable. You can still use the Toronto sample.</Text> : null}
@@ -208,15 +234,25 @@ export default function DrivingContextScreen() {
           <Text style={st.previewKicker}>Pixie Drive Score</Text>
           <Text style={st.previewArea}>{assessment?.assessment.routeFactors[0]?.areaLabel ?? zone.name}</Text>
           <Text style={st.previewContext}>{assessment?.assessment.routeFactors[0]?.label ?? zone.context}</Text>
-          <Text style={st.previewScore}>{score} score · {metrics.currentSpeedKmh} km/h</Text>
+          <Text style={st.previewScore}>{assessment ? `${score} score · ${metrics.currentSpeedKmh} km/h` : 'Ready for your next drive'}</Text>
         </View>
         <View style={st.lockPreview}>
           <Text style={[st.previewKicker, { color: C.paper }]}>Drive Score</Text>
-          <View style={st.lockRow}><Text style={st.lockScore}>{score}</Text><Text style={st.lockDetail}>{zone.name}{'\n'}{metrics.currentSpeedKmh} km/h</Text></View>
+          <View style={st.lockRow}><Text style={st.lockScore}>{assessment ? score : '—'}</Text><Text style={st.lockDetail}>{zone.name}{'\n'}{metrics.currentSpeedKmh} km/h</Text></View>
           <Text style={st.lockFoot}>Lock Screen + Dynamic Island</Text>
         </View>
       </View>
       <Body style={st.previewNote}>{nativeIos ? 'The installed development build updates these native surfaces during the drive.' : 'Preview shown here. Install the iOS development build to add the widget and start the Live Activity.'}</Body>
+
+      {nativeIos && surfaceStatus ? (
+        <View accessibilityLiveRegion="polite">
+          <Body style={st.previewNote}>{surfaceStatus.error ?? (surfaceStatus.liveActivity ? 'Live Activity started. Lock your iPhone to see it. The Home Screen widget has your latest score.' : surfaceStatus.widget ? 'Your widget is ready. Add Pixie Drive Score from the Home Screen widget gallery. Start a drive or the Toronto sample for a Live Activity.' : 'Native widgets are unavailable in this build.')}</Body>
+          {surfaceStatus.error ? <Button kind="link" label="Retry widget and Live Activity" onPress={() => {
+            const retry = active ? syncDriveSurfaces({ zone: sampleMode ? 'Toronto sample trip' : zone.name, context: assessment?.assessment.routeFactors[0]?.label ?? zone.context, score: assessment?.assessment.score ?? null, speedKmh: metrics.currentSpeedKmh, active: true }) : initializeDriveSurfaces();
+            void retry.then(setSurfaceStatus);
+          }} /> : null}
+        </View>
+      ) : null}
 
       <Kicker style={st.section}>Road context</Kicker>
       <View accessibilityRole="radiogroup" accessibilityLabel="Road context examples" style={st.zones}>

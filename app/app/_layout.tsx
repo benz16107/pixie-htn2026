@@ -9,6 +9,7 @@ import { CommunityProvider } from '@/lib/community-store';
 import { InventoryProvider } from '@/lib/inventory-store';
 import { QuoteProvider } from '@/lib/store';
 import { C, F } from '@/lib/theme';
+import { initializeDriveSurfaces } from '@/lib/driving-surfaces';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -26,6 +27,7 @@ Sentry.init({
 
 function RootLayout() {
   const reduced = useReducedMotion();
+  useEffect(() => { void initializeDriveSurfaces(); }, []);
   useEffect(() => { void SplashScreen.hideAsync(); }, []);
 
   return (

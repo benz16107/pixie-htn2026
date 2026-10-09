@@ -109,3 +109,22 @@ Auto → Community now includes driver reports and bystander contributions. Insi
 Home and Compare show accepted witness credits, a separate pending balance, and Home/Auto allocations. Compare and Explore your price let the customer choose Home, Auto, or an equal split. The next-payment preview subtracts the allocation once and never falls below zero. The quote itself stays unchanged. All credits are simulations without cash value or insurer approval. Community exposes witness requests for either product.
 
 The shared community provider persists the local identity and allocation, then refreshes evidence while the app is active. Review reversals remove the credit. An unavailable service hides the savings calculation instead of showing a stale balance as current.
+
+## Recover a blank red widget
+
+The September 20 bug was a platform-resolution error. Metro loaded `driving-surfaces.ts`, the no-op adapter, before `driving-surfaces.ios.tsx`. Nothing registered the `DriveContext` layout, so the extension displayed "No layout found" and no Live Activity started. Both adapters now use the `.tsx` suffix. App startup registers the native layouts and seeds an idle widget without an invented score.
+
+To load the fix on the already-installed development build:
+
+1. Open the installed **Pixie** app and reload its development project from `http://macserver:8081`. Opening Expo Go does not load the native extension.
+2. Open **Insights → Drive score**. The widget status should say that the widget is ready.
+3. Choose **Preview with a Toronto sample**. The status should report that the Live Activity started, or display the actual native error with a retry button.
+4. Return to the Home Screen. If the old red widget remains after the app reload, remove that widget and add **Pixie Drive Score** again. This asks iOS for a fresh snapshot.
+5. Lock the iPhone while the sample drive remains active. The Live Activity belongs on the Lock Screen and supported Dynamic Island. Do not finish the drive or navigate away from the Drive score screen before recording it.
+6. Return to Pixie and finish the drive. The Live Activity ends; the widget retains the latest score with speed zero.
+
+These changes require fresh JavaScript, not a new native entitlement or another signing step. The development build must already contain `ExpoWidgets`. If the status says it is unavailable, check that you opened Pixie rather than Expo Go. If iOS refuses the activity, check Pixie's Live Activities setting and use the retry button.
+
+The app records foreground GPS only. Locking the phone shows the latest published snapshot; it does not enable background tracking. iOS controls widget refresh timing, so the Home Screen is not a second-by-second speedometer.
+
+Verification: `cd app && npm run test:widgets` covers platform resolution, first-launch layout registration, preserving a stored timeline, Expo Go fallback, activity reuse, activity errors, stopping a drive, and compiling both layouts with the installed Expo Babel plugin. The served iOS bundle includes both native layout definitions. The user completed the iPhone walkthrough on September 20 and confirmed that both the widget and Live Activity now display.

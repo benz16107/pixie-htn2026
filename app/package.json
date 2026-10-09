@@ -51,7 +51,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:inventory": "node --test tests/inventory.test.mjs"
+    "test:inventory": "node --test tests/inventory.test.mjs",
+    "test:widgets": "node --test tests/driving-surfaces.test.cjs"
   },
   "private": true
 }

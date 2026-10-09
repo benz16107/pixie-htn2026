@@ -2,6 +2,14 @@
 
 Pixie is a Hack the North 2026 project with two products: a Federato underwriting desk and an Intact consumer insurance experience. They share deterministic calculation and evidence infrastructure, with separate rules for each product. The repository keeps the internal package name `atlas`.
 
+## Try Pixie
+
+- [Open the public underwriting website](https://pixie-underwriting.vercel.app)
+- [Open the public Expo app](https://pixie.expo.app)
+- [Browse the public source snapshot](https://github.com/benz16107/pixie-htn2026-public)
+
+The public deployments use bundled synthetic examples and do not contain provider credentials. The local judging setup adds the recorded Federato snapshot and the live Sentry, Elastic, OpenAI, and MCP integrations.
+
 ## Federato underwriting desk
 
 The desk assesses commercial submissions against the supplied property guideline. It keeps known, estimated and missing facts separate, exposes the score calculation, and lets agents investigate evidence that could change a decision.

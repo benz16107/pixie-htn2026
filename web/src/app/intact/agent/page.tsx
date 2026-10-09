@@ -38,7 +38,7 @@ function Result({ payload }: { payload: AgentResult }) {
     const lines = Array.isArray(result.lines) ? result.lines as Array<Record<string, unknown>> : [];
     return (
       <div className={styles.answer}>
-        <div className={styles.answerHead}><span>Agent answer</span><strong>${String(result.monthly)} / month</strong></div>
+        <div className={styles.answerHead}><span>Tool result</span><strong>${String(result.monthly)} / month</strong></div>
         <p>{String(result.label)}</p>
         <div className={styles.receipt}>
           {lines.slice(0, 4).map((line) => <div key={String(line.label)}><span>{String(line.label)}</span><b>{Number(line.dollars) >= 0 ? "+" : ""}${String(line.dollars)}</b><small>{String(line.source)}</small></div>)}
@@ -50,7 +50,7 @@ function Result({ payload }: { payload: AgentResult }) {
     const factors = Array.isArray(result.routeFactors) ? result.routeFactors as Array<Record<string, unknown>> : [];
     return (
       <div className={styles.answer}>
-        <div className={styles.answerHead}><span>Agent answer</span><strong>{String(result.score)} coaching score</strong></div>
+        <div className={styles.answerHead}><span>Tool result</span><strong>{String(result.score)} coaching score</strong></div>
         <div className={styles.scoreSplit}><div><b>{String(result.behaviorScore)}</b><span>Driving</span></div><div><b>{String(result.routeContextScore)}</b><span>Road context</span></div></div>
         {factors.slice(0, 3).map((factor) => <p key={String(factor.key)}>{String(factor.label)} · {String(factor.areaLabel)}</p>)}
       </div>
@@ -59,7 +59,7 @@ function Result({ payload }: { payload: AgentResult }) {
   const rows = Array.isArray(result.rows) ? result.rows as Array<Record<string, unknown>> : [];
   return (
     <div className={styles.answer}>
-      <div className={styles.answerHead}><span>Agent answer</span><strong>Vehicle comparison ready</strong></div>
+      <div className={styles.answerHead}><span>Tool result</span><strong>Vehicle comparison ready</strong></div>
       <p>{String(result.label)}</p>
       <div className={styles.receipt}>
         {rows.map((row) => <div key={String(row.id)}><span>{String(row.name)}</span><b>${String(row.monthly)} / month</b><small>${Number(row.listingPrice).toLocaleString("en-CA")} example listing</small></div>)}
@@ -98,7 +98,7 @@ export default function AgentDemoPage() {
     <main className={`intact-page ${styles.page}`}>
       <header className={styles.header}>
         <div><p>Pixie agent interface</p><h1>Let an agent ask. Keep the insurance math in tools.</h1></div>
-        <div><p>This is a live MCP call, not a chat mockup. The agent selects one narrow tool, the deterministic service computes the result, and Pixie returns its sources.</p><Link href="/intact">Back to system map</Link></div>
+        <div><p>An AI client can use MCP to call Pixie’s insurance tools. In this inspector, you select a preset tool and send a real request. Pixie calculates the result and returns its sources.</p><Link href="/intact">Back to system map</Link></div>
       </header>
 
       <section className={styles.flow} aria-label="MCP request flow">
@@ -111,7 +111,7 @@ export default function AgentDemoPage() {
           <div className={styles.scenarioTabs}>
             {QUICK_RUNS.map((item, index) => <button aria-pressed={selected === index} key={item.label} onClick={() => { setSelected(index); setPayload(null); setError(""); }}>{item.label}</button>)}
           </div>
-          <div className={styles.prompt}><span>Customer</span><p>{scenario.prompt}</p></div>
+          <div className={styles.prompt}><span>Customer</span><p>{selected === 0 ? `Estimate tenant coverage for ${address} with $${contents.toLocaleString("en-CA")} of contents.` : scenario.prompt}</p></div>
           {selected === 0 ? (
             <div className={styles.quoteInputs}>
               <label><span>Address</span><input value={address} onChange={(event) => setAddress(event.target.value)} /></label>

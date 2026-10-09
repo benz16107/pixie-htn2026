@@ -41,3 +41,9 @@ Run the protocol-level tests:
 cd mcp
 uv run pytest -q
 ```
+
+## Use it in an agent or a recording
+
+[The Intact recording guide](../DEMO/11-INTACT-VIDEO.md#connect-an-actual-agent-for-the-mcp-scene) has tested Codex CLI setup syntax, a tenant prompt, a car-comparison prompt, and the 20-second video sequence. The website at `/intact/agent` is a real MCP tool inspector with preset tool selection. It is not an autonomous chat client. The tools receive the arguments the caller supplies; they do not automatically read the Expo user's private profile.
+
+The stdio option runs on the same machine as the agent. The HTTP option needs the server's host to be reachable. To reach macserver from another device, bind the service to `0.0.0.0`, as `start.sh` does; the loopback-only command above is reachable only on macserver.

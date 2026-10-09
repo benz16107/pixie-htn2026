@@ -1,55 +1,90 @@
-import { HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding } from '@expo/ui/swift-ui/modifiers';
-import { createLiveActivity, createWidget, type LiveActivity } from 'expo-widgets';
+import { requireOptionalNativeModule } from 'expo-modules-core';
+import type { DriveSurfaceResult, DriveSurfaceState } from './driving-surface-types';
 
-export type DriveSurfaceState = { zone: string; context: string; score: number; speedKmh: number; active: boolean };
+export type { DriveSurfaceResult, DriveSurfaceState } from './driving-surface-types';
 
-const DriveWidget = createWidget<DriveSurfaceState>('DriveContext', (state) => {
-  'widget';
-  return (
-    <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 14 })]}>
-      <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle('#365C45')]}>Pixie Drive Score</Text>
-      <Text modifiers={[font({ size: 19, weight: 'bold' })]}>{state.zone}</Text>
-      <Text modifiers={[font({ size: 13 })]}>{state.context}</Text>
-      <Text modifiers={[font({ size: 11 }), foregroundStyle('#63675E')]}>{state.score} score · {state.speedKmh} km/h</Text>
-    </VStack>
-  );
-});
+type Widgets = typeof import('./driving-widgets.ios');
+let widgets: Widgets | null = null;
+let lastState: DriveSurfaceState | null = null;
 
-const DriveActivity = createLiveActivity<DriveSurfaceState>('DriveContext', (state) => {
-  'widget';
-  const compact = <Text modifiers={[font({ size: 12, weight: 'bold' })]}>PX</Text>;
-  return {
-    banner: (
-      <HStack spacing={8} modifiers={[padding({ all: 14 })]}>
-        <VStack alignment="leading" spacing={3}>
-          <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle('#365C45')]}>Drive score active</Text>
-          <Text modifiers={[font({ size: 16, weight: 'bold' })]}>{state.zone}</Text>
-          <Text modifiers={[font({ size: 12 })]}>{state.context}</Text>
-        </VStack>
-        <Spacer />
-        <Text modifiers={[font({ size: 11 })]}>{state.score} · {state.speedKmh} km/h</Text>
-      </HStack>
-    ),
-    compactLeading: compact,
-    compactTrailing: <Text modifiers={[font({ size: 11 })]}>{state.score}</Text>,
-    minimal: compact,
-    expandedCenter: <Text modifiers={[font({ size: 14, weight: 'semibold' })]}>{state.zone}: {state.score} score</Text>,
-  };
-});
+const unavailable: DriveSurfaceResult = {
+  widget: false,
+  liveActivity: false,
+  error: 'Open the installed Pixie development build. Expo Go cannot display these widgets or Live Activities.',
+};
 
-let activity: LiveActivity<DriveSurfaceState> | null = null;
-
-export function syncDriveSurfaces(state: DriveSurfaceState): boolean {
-  DriveWidget.updateSnapshot(state);
-  if (state.active) {
-    if (activity) void activity.update(state);
-    else activity = DriveActivity.start(state, 'pixie://driving-context');
-  }
-  return true;
+function loadWidgets(): Widgets | null {
+  if (!requireOptionalNativeModule('ExpoWidgets')) return null;
+  widgets ??= require('./driving-widgets.ios') as Widgets;
+  return widgets;
 }
 
-export async function endDriveSurfaces(): Promise<void> {
-  if (activity) await activity.end('immediate');
-  activity = null;
+function widgetState(state: DriveSurfaceState): import('./driving-widgets.ios').DriveWidgetState {
+  const { score, ...rest } = state;
+  return score === null ? rest : { ...rest, score };
+}
+
+function failure(error: unknown, widget: boolean): DriveSurfaceResult {
+  const detail = error instanceof Error ? error.message : String(error);
+  return {
+    widget,
+    liveActivity: false,
+    error: `${widget ? 'The widget updated, but the Live Activity request failed. Check Live Activities in iPhone Settings for Pixie.' : 'The iPhone widget could not update. Reopen Pixie and retry.'} ${detail}`,
+  };
+}
+
+export async function initializeDriveSurfaces(): Promise<DriveSurfaceResult> {
+  try {
+    const native = loadWidgets();
+    if (!native) return unavailable;
+    const timeline = await native.DriveWidget.getTimeline();
+    if (!timeline.length && !lastState) {
+      native.DriveWidget.updateSnapshot({
+        zone: 'Ready for your next drive',
+        context: 'Open Pixie to start a drive or try the Toronto sample.',
+        speedKmh: 0,
+        active: false,
+      });
+    }
+    native.DriveWidget.reload();
+    return { widget: true, liveActivity: false, error: null };
+  } catch (error) {
+    return failure(error, false);
+  }
+}
+
+export async function syncDriveSurfaces(state: DriveSurfaceState): Promise<DriveSurfaceResult> {
+  let widget = false;
+  try {
+    const native = loadWidgets();
+    if (!native) return unavailable;
+    lastState = state;
+    native.DriveWidget.updateSnapshot(widgetState(state));
+    widget = true;
+    if (state.active) {
+      const current = native.DriveActivity.getInstances()[0];
+      if (current) await current.update(state);
+      else native.DriveActivity.start(state, 'pixie://driving-context');
+    }
+    return { widget: true, liveActivity: state.active, error: null };
+  } catch (error) {
+    return failure(error, widget);
+  }
+}
+
+export async function endDriveSurfaces(): Promise<DriveSurfaceResult> {
+  let widget = false;
+  try {
+    const native = loadWidgets();
+    if (!native) return unavailable;
+    if (lastState) {
+      lastState = { ...lastState, active: false, speedKmh: 0 };
+      native.DriveWidget.updateSnapshot(widgetState(lastState));
+    }
+    widget = true;
+    await Promise.all(native.DriveActivity.getInstances().map((activity) => activity.end('immediate')));
+    return { widget: true, liveActivity: false, error: null };
+  } catch (error) {
+    return failure(error, widget);
+  }
 }

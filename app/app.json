@@ -95,7 +95,8 @@
           "microphonePermission": false
         }
       ],
-      "expo-video"
+      "expo-video",
+      "./plugins/withIOSSceneLifecycle.cjs"
     ],
     "experiments": {
       "typedRoutes": false
